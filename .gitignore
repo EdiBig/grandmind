@@ -43,3 +43,42 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Firebase configuration (contains API keys)
+google-services.json
+firebase_options.dart
+lib/firebase_options.dart
+
+# Environment variables and secrets
+.env
+.env.*
+*.env
+**/secrets.dart
+**/*_secrets.dart
+
+# API keys
+**/api_key.dart
+**/*api_key*.dart
+
+# Temporary test files
+pix/
+scripts/test_api.dart
+scripts/set_api_key.dart
+scripts/setup_api_key.dart
+test_claude_api.dart
+test/claude_api_*.dart
+lib/core/config/setup_api_key.dart
+
+# Documentation files (temporary)
+*_GUIDE.md
+*_STATUS.md
+*_SUMMARY.md
+*_COMPLETE.md
+AI_*.md
+CLAUDE_*.md
+FIREBASE_*.md
+FIX_*.md
+GET_*.md
+PROJECT_BACKLOG.md
+WEB_*.md
+WEEK_*.md

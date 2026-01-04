@@ -13,8 +13,12 @@ import '../features/onboarding/presentation/screens/time_availability_screen.dar
 import '../features/onboarding/presentation/screens/limitations_screen.dart';
 import '../features/onboarding/presentation/screens/coach_tone_screen.dart';
 import '../features/home/presentation/screens/home_screen.dart';
+import '../features/home/presentation/screens/log_activity_screen.dart';
 import '../features/profile/presentation/screens/profile_screen.dart';
 import '../features/settings/presentation/screens/settings_screen.dart';
+import '../features/settings/presentation/screens/api_key_setup_screen.dart';
+import '../features/ai/presentation/screens/ai_coach_screen.dart';
+import '../features/habits/presentation/screens/create_habit_screen.dart';
 
 /// Provider for the app router
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -85,6 +89,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const HomeScreen(),
       ),
       GoRoute(
+        path: RouteConstants.logActivity,
+        name: 'logActivity',
+        builder: (context, state) => const LogActivityScreen(),
+      ),
+      GoRoute(
         path: RouteConstants.profile,
         name: 'profile',
         builder: (context, state) => const ProfileScreen(),
@@ -94,12 +103,33 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'settings',
         builder: (context, state) => const SettingsScreen(),
       ),
+      GoRoute(
+        path: RouteConstants.apiKeySetup,
+        name: 'apiKeySetup',
+        builder: (context, state) => const ApiKeySetupScreen(),
+      ),
 
-      // TODO: Add more routes as features are implemented
-      // Onboarding routes
-      // Settings sub-routes
-      // Workout routes
-      // Habit routes
+      // AI Features
+      GoRoute(
+        path: RouteConstants.aiCoach,
+        name: 'aiCoach',
+        builder: (context, state) => const AICoachScreen(),
+      ),
+
+      // Habits Routes
+      GoRoute(
+        path: RouteConstants.createHabit,
+        name: 'createHabit',
+        builder: (context, state) => const CreateHabitScreen(),
+      ),
+      GoRoute(
+        path: RouteConstants.editHabit,
+        name: 'editHabit',
+        builder: (context, state) {
+          final habitId = state.pathParameters['id'];
+          return CreateHabitScreen(habitId: habitId);
+        },
+      ),
     ],
     errorBuilder: (context, state) => Scaffold(
       body: Center(

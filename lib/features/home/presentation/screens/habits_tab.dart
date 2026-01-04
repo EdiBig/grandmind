@@ -1,130 +1,241 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../habits/domain/models/habit.dart';
+import '../../../habits/presentation/providers/habit_providers.dart';
+import '../../../habits/presentation/widgets/habit_icon_helper.dart';
 
 class HabitsTab extends ConsumerWidget {
   const HabitsTab({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final habitsAsync = ref.watch(userHabitsProvider);
+    final statsAsync = ref.watch(habitStatsProvider);
+    final todayLogsAsync = ref.watch(todayHabitLogsProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Habits'),
         actions: [
           IconButton(
             icon: const Icon(Icons.calendar_today),
-            onPressed: () {},
+            onPressed: () {
+              // TODO: Navigate to habit calendar view
+            },
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _buildProgressSummary(context),
-          const SizedBox(height: 24),
-          Text(
-            'Today\'s Habits',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-          const SizedBox(height: 16),
-          _buildHabitItem(
-            context,
-            'Drink 8 glasses of water',
-            '6/8 completed',
-            0.75,
-            Icons.local_drink,
-            AppColors.primary,
-            true,
-          ),
-          const SizedBox(height: 12),
-          _buildHabitItem(
-            context,
-            'Get 8 hours of sleep',
-            'Not tracked today',
-            0.0,
-            Icons.bedtime,
-            AppColors.secondary,
-            false,
-          ),
-          const SizedBox(height: 12),
-          _buildHabitItem(
-            context,
-            'Meditate for 10 minutes',
-            'Completed',
-            1.0,
-            Icons.self_improvement,
-            AppColors.accent,
-            true,
-          ),
-          const SizedBox(height: 12),
-          _buildHabitItem(
-            context,
-            'Walk 10,000 steps',
-            '7,500 steps',
-            0.75,
-            Icons.directions_walk,
-            AppColors.primary,
-            true,
-          ),
-          const SizedBox(height: 12),
-          _buildHabitItem(
-            context,
-            'Read for 30 minutes',
-            'Not started',
-            0.0,
-            Icons.menu_book,
-            AppColors.secondary,
-            false,
-          ),
-        ],
+      body: habitsAsync.when(
+        data: (habits) {
+          return todayLogsAsync.when(
+            data: (todayLogs) {
+              return RefreshIndicator(
+                onRefresh: () async {
+                  ref.invalidate(userHabitsProvider);
+                  ref.invalidate(habitStatsProvider);
+                  ref.invalidate(todayHabitLogsProvider);
+                },
+                child: habits.isEmpty
+                    ? _buildEmptyState(context)
+                    : _buildHabitsList(context, ref, habits, todayLogs, statsAsync),
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, _) => _buildErrorState(context, error.toString()),
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => _buildErrorState(context, error.toString()),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () {
+          context.push('/habits/create');
+        },
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.add),
       ),
     );
   }
 
-  Widget _buildProgressSummary(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
-        borderRadius: BorderRadius.circular(16),
-      ),
+  Widget _buildHabitsList(
+    BuildContext context,
+    WidgetRef ref,
+    List<Habit> habits,
+    List todayLogs,
+    AsyncValue<Map<String, dynamic>> statsAsync,
+  ) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _buildProgressSummary(context, statsAsync),
+        const SizedBox(height: 24),
+        Text(
+          'Today\'s Habits',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: 16),
+        ...habits.map((habit) {
+          final matchingLogs = todayLogs.where((log) => log.habitId == habit.id);
+          final isCompletedToday = matchingLogs.isNotEmpty;
+          final todayLog = matchingLogs.isNotEmpty ? matchingLogs.first : null;
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _buildHabitItem(
+              context,
+              ref,
+              habit,
+              isCompletedToday,
+              todayLog?.count ?? 0,
+            ),
+          );
+        }).toList(),
+      ],
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          Icon(
+            Icons.track_changes,
+            size: 80,
+            color: Colors.grey[300],
+          ),
+          const SizedBox(height: 16),
           Text(
-            'Today\'s Progress',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.white,
+            'No habits yet',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: Colors.grey[600],
                   fontWeight: FontWeight.bold,
                 ),
           ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildProgressItem(context, '3', '5', 'Completed'),
-              Container(
-                height: 50,
-                width: 1,
-                color: Colors.white.withOpacity(0.3),
-              ),
-              _buildProgressItem(context, '60%', '', 'Completion'),
-              Container(
-                height: 50,
-                width: 1,
-                color: Colors.white.withOpacity(0.3),
-              ),
-              _buildProgressItem(context, '12', '', 'Day Streak'),
-            ],
+          const SizedBox(height: 8),
+          Text(
+            'Start building healthy habits today!',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Colors.grey[500],
+                ),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () {
+              context.push('/habits/create');
+            },
+            icon: const Icon(Icons.add),
+            label: const Text('Create Your First Habit'),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildErrorState(BuildContext context, String error) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, size: 64, color: Colors.red),
+          const SizedBox(height: 16),
+          Text(
+            'Error loading habits',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            error,
+            style: Theme.of(context).textTheme.bodySmall,
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProgressSummary(
+    BuildContext context,
+    AsyncValue<Map<String, dynamic>> statsAsync,
+  ) {
+    return statsAsync.when(
+      data: (stats) {
+        final totalHabits = stats['totalHabits'] ?? 0;
+        final completedToday = stats['completedToday'] ?? 0;
+        final completionRate = stats['completionRate'] ?? 0;
+        final longestStreak = stats['longestStreak'] ?? 0;
+
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: AppColors.primaryGradient,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            children: [
+              Text(
+                'Today\'s Progress',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildProgressItem(
+                    context,
+                    completedToday.toString(),
+                    totalHabits.toString(),
+                    'Completed',
+                  ),
+                  Container(
+                    height: 50,
+                    width: 1,
+                    color: Colors.white.withOpacity(0.3),
+                  ),
+                  _buildProgressItem(
+                    context,
+                    '$completionRate%',
+                    '',
+                    'Completion',
+                  ),
+                  Container(
+                    height: 50,
+                    width: 1,
+                    color: Colors.white.withOpacity(0.3),
+                  ),
+                  _buildProgressItem(
+                    context,
+                    longestStreak.toString(),
+                    '',
+                    'Best Streak',
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+      loading: () => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: AppColors.primaryGradient,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Center(
+          child: CircularProgressIndicator(color: Colors.white),
+        ),
+      ),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 
@@ -168,20 +279,47 @@ class HabitsTab extends ConsumerWidget {
 
   Widget _buildHabitItem(
     BuildContext context,
-    String title,
-    String subtitle,
-    double progress,
-    IconData icon,
-    Color color,
-    bool isActive,
+    WidgetRef ref,
+    Habit habit,
+    bool isCompletedToday,
+    int count,
   ) {
+    final color = HabitIconHelper.getColor(habit.color);
+    final icon = HabitIconHelper.getIconData(habit.icon);
+    final habitOps = ref.read(habitOperationsProvider.notifier);
+
+    // Calculate progress for quantifiable habits
+    double progress = 0.0;
+    String subtitle = '';
+
+    if (habit.targetCount > 0) {
+      progress = count / habit.targetCount;
+      if (progress >= 1.0) {
+        subtitle = 'Completed';
+      } else if (count > 0) {
+        subtitle = '$count/${habit.targetCount} ${habit.unit ?? ''}';
+      } else {
+        subtitle = 'Not started';
+      }
+    } else {
+      // Simple yes/no habits
+      if (isCompletedToday) {
+        progress = 1.0;
+        subtitle = 'Completed';
+      } else {
+        subtitle = 'Not started';
+      }
+    }
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isActive ? color.withOpacity(0.3) : Colors.grey.withOpacity(0.2),
+          color: isCompletedToday
+              ? color.withOpacity(0.3)
+              : Colors.grey.withOpacity(0.2),
         ),
       ),
       child: Column(
@@ -203,17 +341,35 @@ class HabitsTab extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      title,
+                      habit.name,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey,
+                    Row(
+                      children: [
+                        Text(
+                          subtitle,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Colors.grey,
+                              ),
+                        ),
+                        if (habit.currentStreak > 0) ...[
+                          const SizedBox(width: 8),
+                          const Icon(Icons.local_fire_department,
+                              size: 14, color: Colors.orange),
+                          const SizedBox(width: 2),
+                          Text(
+                            '${habit.currentStreak} day${habit.currentStreak > 1 ? 's' : ''}',
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Colors.orange,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                           ),
+                        ],
+                      ],
                     ),
                   ],
                 ),
@@ -224,7 +380,18 @@ class HabitsTab extends ConsumerWidget {
                 IconButton(
                   icon: const Icon(Icons.check_circle_outline),
                   color: Colors.grey,
-                  onPressed: () {},
+                  onPressed: () async {
+                    // For quantifiable habits, mark as complete with target count
+                    if (habit.targetCount > 0) {
+                      await habitOps.logHabitWithCount(habit, habit.targetCount);
+                    } else {
+                      // For simple yes/no habits, toggle completion
+                      await habitOps.toggleHabitCompletion(habit);
+                    }
+                    ref.invalidate(todayHabitLogsProvider);
+                    ref.invalidate(userHabitsProvider);
+                    ref.invalidate(habitStatsProvider);
+                  },
                 ),
             ],
           ),
