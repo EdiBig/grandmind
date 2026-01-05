@@ -19,6 +19,8 @@ import '../features/settings/presentation/screens/settings_screen.dart';
 import '../features/settings/presentation/screens/api_key_setup_screen.dart';
 import '../features/ai/presentation/screens/ai_coach_screen.dart';
 import '../features/habits/presentation/screens/create_habit_screen.dart';
+import '../features/habits/presentation/screens/habit_insights_screen.dart';
+import '../features/habits/data/services/habit_insights_service.dart';
 
 /// Provider for the app router
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -128,6 +130,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final habitId = state.pathParameters['id'];
           return CreateHabitScreen(habitId: habitId);
+        },
+      ),
+      GoRoute(
+        path: '/habits/insights',
+        name: 'habitInsights',
+        builder: (context, state) {
+          final insights = state.extra as HabitInsights;
+          return HabitInsightsScreen(insights: insights);
         },
       ),
     ],

@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../habits/domain/models/habit.dart';
 import '../../../habits/presentation/providers/habit_providers.dart';
 import '../../../habits/presentation/widgets/habit_icon_helper.dart';
+import '../../../habits/presentation/widgets/ai_insights_card.dart';
 
 class HabitsTab extends ConsumerWidget {
   const HabitsTab({super.key});
@@ -71,6 +72,7 @@ class HabitsTab extends ConsumerWidget {
       children: [
         _buildProgressSummary(context, statsAsync),
         const SizedBox(height: 24),
+        const AIInsightsCard(),
         Text(
           'Today\'s Habits',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -311,18 +313,22 @@ class HabitsTab extends ConsumerWidget {
       }
     }
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isCompletedToday
-              ? color.withOpacity(0.3)
-              : Colors.grey.withOpacity(0.2),
+    return GestureDetector(
+      onLongPress: () {
+        _showHabitOptions(context, ref, habit);
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isCompletedToday
+                ? color.withOpacity(0.3)
+                : Colors.grey.withOpacity(0.2),
+          ),
         ),
-      ),
-      child: Column(
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -404,6 +410,84 @@ class HabitsTab extends ConsumerWidget {
               borderRadius: BorderRadius.circular(4),
             ),
           ],
+        ],
+      ),
+      ),
+    );
+  }
+
+  void _showHabitOptions(BuildContext context, WidgetRef ref, Habit habit) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('Edit Habit'),
+              onTap: () {
+                context.pop();
+                context.push('/habits/edit/${habit.id}');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.red),
+              title: const Text('Delete Habit', style: TextStyle(color: Colors.red)),
+              onTap: () {
+                context.pop();
+                _confirmDeleteHabit(context, ref, habit);
+              },
+            ),
+            ListTile(
+              leading: Icon(habit.isActive ? Icons.archive : Icons.unarchive),
+              title: Text(habit.isActive ? 'Archive Habit' : 'Unarchive Habit'),
+              onTap: () async {
+                context.pop();
+                final habitOps = ref.read(habitOperationsProvider.notifier);
+                await habitOps.setHabitActive(habit.id, !habit.isActive);
+                ref.invalidate(userHabitsProvider);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmDeleteHabit(BuildContext context, WidgetRef ref, Habit habit) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Habit?'),
+        content: Text('Are you sure you want to delete "${habit.name}"? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => context.pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              context.pop();
+              final habitOps = ref.read(habitOperationsProvider.notifier);
+              final success = await habitOps.deleteHabit(habit.id);
+
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(success
+                        ? 'Habit deleted successfully'
+                        : 'Failed to delete habit'),
+                  ),
+                );
+              }
+
+              ref.invalidate(userHabitsProvider);
+              ref.invalidate(habitStatsProvider);
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
         ],
       ),
     );

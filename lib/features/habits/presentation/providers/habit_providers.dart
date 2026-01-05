@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../domain/models/habit.dart';
 import '../../domain/models/habit_log.dart';
 import '../../data/repositories/habit_repository.dart';
+import '../../data/services/habit_insights_service.dart';
 
 /// Provider for user's habits stream
 final userHabitsProvider = StreamProvider<List<Habit>>((ref) {
@@ -222,4 +223,34 @@ final habitOperationsProvider =
     StateNotifierProvider<HabitOperations, AsyncValue<void>>((ref) {
   final repository = ref.watch(habitRepositoryProvider);
   return HabitOperations(repository);
+});
+
+/// Provider for AI-generated habit insights
+final habitInsightsProvider = FutureProvider<HabitInsights>((ref) async {
+  final userId = FirebaseAuth.instance.currentUser?.uid;
+  if (userId == null) return HabitInsights.empty();
+
+  final insightsService = ref.watch(habitInsightsServiceProvider);
+  final repository = ref.watch(habitRepositoryProvider);
+
+  // Get user's habits
+  final habits = await repository.getUserHabits(userId, isActive: true);
+  if (habits.isEmpty) return HabitInsights.empty();
+
+  // Get recent logs (last 30 days)
+  final now = DateTime.now();
+  final thirtyDaysAgo = now.subtract(const Duration(days: 30));
+
+  final allLogs = <HabitLog>[];
+  for (var habit in habits) {
+    final logs = await repository.getHabitLogs(
+      habit.id,
+      startDate: thirtyDaysAgo,
+      endDate: now,
+    );
+    allLogs.addAll(logs);
+  }
+
+  // Generate insights
+  return insightsService.generateInsights(userId, habits, allLogs);
 });
