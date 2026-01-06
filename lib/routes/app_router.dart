@@ -21,6 +21,7 @@ import '../features/ai/presentation/screens/ai_coach_screen.dart';
 import '../features/habits/presentation/screens/create_habit_screen.dart';
 import '../features/habits/presentation/screens/habit_insights_screen.dart';
 import '../features/habits/data/services/habit_insights_service.dart';
+import '../features/health/presentation/screens/health_details_screen.dart';
 
 /// Provider for the app router
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -139,6 +140,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final insights = state.extra as HabitInsights;
           return HabitInsightsScreen(insights: insights);
         },
+      ),
+
+      // Health Routes
+      GoRoute(
+        path: RouteConstants.healthDetails,
+        name: 'healthDetails',
+        builder: (context, state) => const HealthDetailsScreen(),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

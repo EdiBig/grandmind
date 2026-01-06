@@ -1,216 +1,191 @@
-# GrandMind - Holistic Fitness & Wellbeing App
+﻿# Kinesa - Holistic Fitness & Wellbeing App
 
-A comprehensive wellness app built with Flutter that integrates fitness tracking, habit building, workout management, and health monitoring with personalized insights and progress tracking.
+A comprehensive wellness app built with Flutter that integrates fitness tracking, habit building, workout management, health monitoring, and AI-powered coaching.
 
-## 🎯 Project Overview
+## Project Overview
 
 **Target Users:** Busy professionals, fitness beginners, health-conscious individuals (ages 25-50)
-**Platforms:** iOS & Android
-**Status:** MVP Complete ✅
+**Platforms:** iOS and Android
+**Status:** MVP complete
 
-## ✨ Features
+## Features
 
-### Authentication & User Management
-- ✅ Email/Password authentication
-- ✅ Google Sign-In integration
-- ✅ Password reset functionality
-- ✅ Automatic login persistence
-- ✅ User profile management
+### Authentication and User Management
+- Email/password authentication
+- Google Sign-In integration
+- Password reset flow
+- User profile management
 
-### Dashboard & Navigation
-- ✅ Bottom navigation with 4 main tabs
-- ✅ Dashboard with personalized welcome
-- ✅ Quick stats overview
-- ✅ Today's activity plan
-- ✅ Recent activity feed
+### Dashboard and Navigation
+- Bottom navigation with 4 main tabs
+- Dashboard with personalized welcome
+- Quick stats overview
+- Today's activity plan
+- Recent activity feed
 
 ### Workouts
-- ✅ Workout library with categorized exercises
-- ✅ Workout cards with duration and difficulty
-- ✅ Interactive workout interface
-- ✅ Progress tracking
+- Workout library with categorized exercises
+- Workout cards with duration and difficulty
+- Progress tracking
 
 ### Habits Tracking
-- ✅ Daily habit management
-- ✅ Habit completion tracking
-- ✅ Progress visualization
-- ✅ Streak tracking
-- ✅ Custom habit creation
+- Daily habit management
+- Habit completion tracking
+- Streak tracking
+- Custom habit creation
 
-### Progress & Analytics
-- ✅ Weekly activity overview
-- ✅ Performance metrics
-- ✅ Achievement system
-- ✅ Progress visualization
-- ✅ Historical data tracking
+### Progress and Analytics
+- Weekly activity overview
+- Performance metrics
+- Progress visualization
+- Historical data tracking
 
 ### Health Integration
-- ✅ Health data synchronization
-- ✅ Steps tracking
-- ✅ Heart rate monitoring
-- ✅ Sleep tracking
-- ✅ Workout logging
-- ✅ Weight and height tracking
+- Health data synchronization
+- Steps tracking
+- Heart rate monitoring
+- Sleep tracking
+- Workout logging
+- Weight and height tracking
 
 ### Notifications
-- ✅ Local push notifications
-- ✅ Scheduled reminders
-- ✅ Daily recurring notifications
-- ✅ Notification management
+- Local push notifications
+- Scheduled reminders
+- Daily recurring notifications
+- Notification management
 
-### Settings & Customization
-- ✅ Profile editing
-- ✅ App preferences
-- ✅ Notification settings
-- ✅ Health sync configuration
-- ✅ Privacy controls
-- ✅ Dark mode support
+### Settings and Customization
+- Profile editing
+- App preferences
+- Notification settings
+- Health sync configuration
+- Privacy controls
+- Dark mode support
 
-## 🛠 Tech Stack
+### AI Coaching (In Progress)
+- Personalized recommendations
+- Mood insights
+- Recovery guidance
+- Prompt templates and caching
+
+## Tech Stack
 
 ### Frontend
-- **Flutter** 3.10.4+ (Dart)
-- **State Management:** Riverpod 2.6.1
-- **UI Framework:** Material Design 3
-- **Navigation:** go_router 14.6.2
-- **Charts:** fl_chart 0.70.1
+- Flutter 3.10.4+ (Dart)
+- State management: Riverpod 2.6.1
+- UI: Material Design 3
+- Navigation: go_router 14.6.2
+- Charts: fl_chart 0.70.1
 
-### Backend & Services
-- **Firebase Authentication** - User authentication & authorization
-- **Cloud Firestore** - Real-time NoSQL database
-- **Firebase Storage** - File storage for images/videos
-- **Firebase Messaging** - Push notifications
-- **Firebase Analytics** - User behavior tracking
-- **Firebase Crashlytics** - Error monitoring & crash reporting
+### Backend and Services
+- Firebase Authentication
+- Cloud Firestore
+- Firebase Storage
+- Firebase Messaging
+- Firebase Analytics
+- Firebase Crashlytics
+- Firebase Remote Config
 
-### Health & Device Integration
-- **health** 13.2.1 - HealthKit (iOS) & Health Connect (Android)
-- **flutter_local_notifications** 18.0.1 - Local notifications
-- **timezone** 0.9.4 - Timezone support for scheduling
+### Health and Device Integration
+- health 10.0.0 (HealthKit and Health Connect)
+- flutter_local_notifications 18.0.1
+- timezone 0.9.4
 
 ### Additional Libraries
-- **google_sign_in** 6.2.2 - Google OAuth
-- **cached_network_image** 3.4.1 - Image caching
-- **image_picker** 1.1.2 - Camera/gallery access
-- **shared_preferences** 2.3.4 - Local data persistence
-- **connectivity_plus** 6.1.2 - Network status monitoring
+- google_sign_in, sign_in_with_apple
+- cached_network_image, image_picker
+- shared_preferences, flutter_secure_storage
+- dio, hive, sentry_flutter
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 lib/
-├── core/
-│   ├── constants/
-│   │   ├── app_constants.dart       # App-wide constants
-│   │   ├── route_constants.dart     # Navigation routes
-│   │   └── firebase_constants.dart  # Firebase config
-│   ├── theme/
-│   │   ├── app_theme.dart           # Theme configuration
-│   │   └── app_colors.dart          # Color palette
-│   ├── utils/
-│   │   ├── validators.dart          # Form validators
-│   │   ├── formatters.dart          # Data formatters
-│   │   └── helpers.dart             # Helper functions
-│   └── errors/
-│       ├── exceptions.dart          # Custom exceptions
-│       └── failures.dart            # Error handling
-│
-├── features/
-│   ├── authentication/
-│   │   ├── data/
-│   │   │   └── repositories/
-│   │   │       └── auth_repository.dart
-│   │   └── presentation/
-│   │       ├── providers/
-│   │       │   └── auth_provider.dart
-│   │       └── screens/
-│   │           ├── splash_screen.dart
-│   │           ├── login_screen.dart
-│   │           ├── signup_screen.dart
-│   │           └── forgot_password_screen.dart
-│   │
-│   ├── home/
-│   │   └── presentation/
-│   │       ├── screens/
-│   │       │   ├── home_screen.dart
-│   │       │   ├── dashboard_tab.dart
-│   │       │   ├── workouts_tab.dart
-│   │       │   ├── habits_tab.dart
-│   │       │   └── progress_tab.dart
-│   │       └── widgets/
-│   │           └── bottom_nav_bar.dart
-│   │
-│   ├── profile/
-│   │   └── presentation/
-│   │       └── screens/
-│   │           └── profile_screen.dart
-│   │
-│   ├── settings/
-│   │   └── presentation/
-│   │       └── screens/
-│   │           └── settings_screen.dart
-│   │
-│   ├── health/
-│   │   └── data/
-│   │       └── services/
-│   │           └── health_service.dart
-│   │
-│   ├── notifications/
-│   │   └── data/
-│   │       └── services/
-│   │           └── notification_service.dart
-│   │
-│   └── user/
-│       └── data/
-│           ├── models/
-│           │   └── user_model.dart
-│           └── services/
-│               └── firestore_service.dart
-│
-├── routes/
-│   └── app_router.dart              # Route configuration
-│
-├── app.dart                         # App widget
-├── main.dart                        # App entry point
-└── firebase_options.dart            # Firebase config (auto-generated)
+  core/
+    config/
+    constants/
+    errors/
+    theme/
+    utils/
+  features/
+    ai/
+      data/
+      domain/
+      presentation/
+    authentication/
+      data/
+      domain/
+      presentation/
+    health/
+      data/
+      domain/
+      presentation/
+    home/
+      data/
+      domain/
+      presentation/
+    notifications/
+      data/
+      domain/
+      presentation/
+    onboarding/
+      data/
+      domain/
+      presentation/
+    profile/
+      data/
+      domain/
+      presentation/
+    settings/
+      data/
+      domain/
+      presentation/
+    user/
+      data/
+      domain/
+      presentation/
+  routes/
+  app.dart
+  main.dart
+  firebase_options.dart
 ```
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
-1. **Flutter SDK** (3.10.4 or higher)
+1. Flutter SDK (3.10.4 or higher)
    ```bash
    flutter doctor
    ```
 
-2. **Android Studio** or **Xcode** (for iOS development on Mac)
+2. Android Studio or Xcode (for iOS development on Mac)
 
-3. **Firebase CLI**
+3. Firebase CLI
    ```bash
    npm install -g firebase-tools
    firebase login
    ```
 
-4. **FlutterFire CLI**
+4. FlutterFire CLI
    ```bash
    dart pub global activate flutterfire_cli
    ```
 
-### Installation & Setup
+### Installation and Setup
 
-1. **Clone the repository**
+1. Clone the repository
    ```bash
    git clone <repository-url>
-   cd grandmind
+   cd kinesa
    ```
 
-2. **Install dependencies**
+2. Install dependencies
    ```bash
    flutter pub get
    ```
 
-3. **Configure Firebase**
+3. Configure Firebase
 
    a. Create a Firebase project at https://console.firebase.google.com/
 
@@ -221,6 +196,7 @@ lib/
       - Firebase Messaging
       - Firebase Analytics
       - Firebase Crashlytics
+      - Firebase Remote Config
 
    c. Run FlutterFire configuration:
       ```bash
@@ -229,7 +205,7 @@ lib/
 
    d. Select platforms (android, ios)
 
-4. **Android-specific setup**
+4. Android-specific setup
 
    Update `android/app/build.gradle.kts`:
    ```kotlin
@@ -249,7 +225,7 @@ lib/
    }
    ```
 
-5. **iOS-specific setup** (Mac only)
+5. iOS-specific setup (Mac only)
 
    Update `ios/Podfile`:
    ```ruby
@@ -264,164 +240,112 @@ lib/
    <string>We need permission to update your health data</string>
    ```
 
-6. **Run the app**
+6. Run the app
    ```bash
-   # List available devices
    flutter devices
-
-   # Run on specific device
    flutter run -d <device-id>
-
-   # Run in release mode
-   flutter run --release
    ```
 
-## 🔧 Configuration
+## AI API Key Setup
 
-### Firebase Configuration
+The app supports two ways to configure the Claude API key:
 
-The app uses Firebase for backend services. Configuration is stored in:
-- `lib/firebase_options.dart` (auto-generated by FlutterFire CLI)
-- `android/app/google-services.json` (Android)
-- `ios/Runner/GoogleService-Info.plist` (iOS)
+1. **Firebase Remote Config (recommended)**
+   - Set the key `claude_api_key` in Remote Config.
+   - On first run, the app fetches and stores it in secure storage.
 
-### Environment Variables
+2. **Local secure storage (development only)**
+   - Use `lib/core/config/setup_api_key.dart` to store a key locally.
+   - Example usage is documented in that file.
 
-Create a `.env` file in the root directory for sensitive configuration:
-```env
-API_KEY=your_api_key
-DEBUG_MODE=true
-```
+## Testing
 
-## 🧪 Testing
-
-Run tests with:
 ```bash
-# Unit tests
 flutter test
-
-# Integration tests
 flutter test integration_test/
-
-# Widget tests
-flutter test test/widgets/
 ```
 
-## 📱 Building for Production
+## Building for Production
 
 ### Android
 ```bash
-# Generate release APK
 flutter build apk --release
-
-# Generate App Bundle (recommended for Play Store)
 flutter build appbundle --release
 ```
 
 ### iOS (Mac only)
 ```bash
-# Generate IPA
 flutter build ipa --release
 ```
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
-### Build Issues
+- **Gradle build fails**
+  ```bash
+  cd android
+  ./gradlew clean
+  cd ..
+  flutter clean
+  flutter pub get
+  ```
 
-1. **Gradle build fails**
-   ```bash
-   cd android
-   ./gradlew clean
-   cd ..
-   flutter clean
-   flutter pub get
-   ```
+- **CocoaPods issues (iOS)**
+  ```bash
+  cd ios
+  pod deintegrate
+  pod install
+  cd ..
+  ```
 
-2. **CocoaPods issues (iOS)**
-   ```bash
-   cd ios
-   pod deintegrate
-   pod install
-   cd ..
-   ```
+- **Firebase configuration errors**
+  ```bash
+  flutterfire configure --force
+  ```
 
-3. **Firebase configuration errors**
-   ```bash
-   flutterfire configure --force
-   ```
+## Development Phases
 
-### Common Issues
-
-- **minSdk error**: Ensure `minSdk = 26` in `android/app/build.gradle.kts`
-- **Core library desugaring**: Add desugaring dependency and enable it
-- **Health permissions**: Verify permissions are added to platform-specific files
-
-## 🏗 Development Phases
-
-### ✅ Phase 0: Project Setup (Completed)
+### Phase 0: Project Setup (Complete)
 - Project initialization
 - Dependencies configuration
 - Firebase integration
 - Core architecture setup
 
-### ✅ Phase 1: Authentication (Completed)
+### Phase 1: Authentication (Complete)
 - Email/password authentication
 - Google Sign-In
 - Password reset flow
 - Auth state management
 
-### ✅ Phase 2: Home & Navigation (Completed)
+### Phase 2: Home and Navigation (Complete)
 - Bottom navigation implementation
 - Dashboard with stats
 - Workouts tab
 - Habits tab
 - Progress tab
 
-### ✅ Phase 3: User Profile & Settings (Completed)
+### Phase 3: User Profile and Settings (Complete)
 - Profile screen
 - Settings screen
 - User preferences
 - Account management
 
-### ✅ Phase 4: Integrations (Completed)
+### Phase 4: Integrations (Complete)
 - Health data integration
 - Local notifications
 - Firestore database
-- Data models & services
+- Data models and services
 
-### 🚧 Phase 5: Advanced Features (Upcoming)
+### Phase 5: Advanced Features (Upcoming)
 - Workout player with video
 - Custom habit builder
-- Advanced analytics & charts
+- Advanced analytics and charts
 - Social features
 - AI-powered recommendations
 
-## 📖 Code Standards
-
-- **Architecture:** Clean Architecture with feature-first organization
-- **State Management:** Riverpod for reactive state management
-- **Code Style:** Official Flutter/Dart style guide
-- **Naming:** descriptive_snake_case for files, PascalCase for classes
-- **Documentation:** Inline comments for complex logic
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 📄 License
+## License
 
 Proprietary - All rights reserved
 
-## 📞 Support
-
-For issues and questions:
-- Create an issue in the repository
-- Contact the development team
-
 ---
 
-**Built with ❤️ using Flutter**
+Built with Flutter.

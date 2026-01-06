@@ -1,29 +1,56 @@
 import 'package:health/health.dart';
+import 'package:flutter/foundation.dart';
 
+/// Service for managing health data integration with HealthKit (iOS) and Health Connect (Android)
 class HealthService {
   final Health _health = Health();
 
-  Future<bool> requestAuthorization() async {
-    final types = [
-      HealthDataType.STEPS,
-      HealthDataType.WEIGHT,
-      HealthDataType.HEIGHT,
-      HealthDataType.ACTIVE_ENERGY_BURNED,
-      HealthDataType.HEART_RATE,
-      HealthDataType.SLEEP_ASLEEP,
-      HealthDataType.WORKOUT,
-    ];
+  // Health data types we want to access
+  static const List<HealthDataType> _types = [
+    HealthDataType.STEPS,
+    HealthDataType.DISTANCE_DELTA,
+    HealthDataType.ACTIVE_ENERGY_BURNED,
+    HealthDataType.HEART_RATE,
+    HealthDataType.SLEEP_ASLEEP,
+    HealthDataType.SLEEP_IN_BED,
+    HealthDataType.WEIGHT,
+    HealthDataType.WORKOUT,
+  ];
 
-    final permissions = types.map((type) => HealthDataAccess.READ_WRITE).toList();
+  /// Request permissions for health data access
+  Future<bool> requestAuthorization() async {
+    final permissions = _types.map((type) => HealthDataAccess.READ_WRITE).toList();
 
     try {
-      final granted = await _health.requestAuthorization(types, permissions: permissions);
+      final granted = await _health.requestAuthorization(_types, permissions: permissions);
+      if (kDebugMode) {
+        print('Health authorization: $granted');
+      }
       return granted ?? false;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error requesting health authorization: $e');
+      }
+      return false;
+    }
+  }
+
+  /// Check if we have authorization
+  Future<bool> hasPermissions() async {
+    try {
+      for (var type in _types) {
+        final status = await _health.hasPermissions([type]);
+        if (status == null || !status) {
+          return false;
+        }
+      }
+      return true;
     } catch (e) {
       return false;
     }
   }
 
+  /// Get steps for today
   Future<int?> getTodaySteps() async {
     final now = DateTime.now();
     final midnight = DateTime(now.year, now.month, now.day);
@@ -32,8 +59,177 @@ class HealthService {
       final steps = await _health.getTotalStepsInInterval(midnight, now);
       return steps;
     } catch (e) {
+      if (kDebugMode) {
+        print('Error fetching steps: $e');
+      }
       return null;
     }
+  }
+
+  /// Get total steps for a date range
+  Future<int> getSteps(DateTime startDate, DateTime endDate) async {
+    try {
+      final steps = await _health.getTotalStepsInInterval(startDate, endDate);
+      return steps ?? 0;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  /// Get distance for a date range (in meters)
+  Future<double> getDistance(DateTime startDate, DateTime endDate) async {
+    try {
+      final healthData = await _health.getHealthDataFromTypes(
+        types: [HealthDataType.DISTANCE_DELTA],
+        startTime: startDate,
+        endTime: endDate,
+      );
+
+      double totalDistance = 0.0;
+      for (var point in healthData) {
+        if (point.value is NumericHealthValue) {
+          totalDistance += (point.value as NumericHealthValue).numericValue;
+        }
+      }
+      return totalDistance;
+    } catch (e) {
+      return 0.0;
+    }
+  }
+
+  /// Get calories burned for a date range
+  Future<double> getCaloriesBurned(DateTime startDate, DateTime endDate) async {
+    try {
+      final healthData = await _health.getHealthDataFromTypes(
+        types: [HealthDataType.ACTIVE_ENERGY_BURNED],
+        startTime: startDate,
+        endTime: endDate,
+      );
+
+      double totalCalories = 0.0;
+      for (var point in healthData) {
+        if (point.value is NumericHealthValue) {
+          totalCalories += (point.value as NumericHealthValue).numericValue;
+        }
+      }
+      return totalCalories;
+    } catch (e) {
+      return 0.0;
+    }
+  }
+
+  /// Get average heart rate for a date range
+  Future<double?> getAverageHeartRate(DateTime startDate, DateTime endDate) async {
+    try {
+      final healthData = await _health.getHealthDataFromTypes(
+        types: [HealthDataType.HEART_RATE],
+        startTime: startDate,
+        endTime: endDate,
+      );
+
+      if (healthData.isEmpty) return null;
+
+      double total = 0.0;
+      int count = 0;
+      for (var point in healthData) {
+        if (point.value is NumericHealthValue) {
+          total += (point.value as NumericHealthValue).numericValue;
+          count++;
+        }
+      }
+      return count > 0 ? total / count : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Get sleep duration for a date range (in hours)
+  Future<double> getSleepHours(DateTime startDate, DateTime endDate) async {
+    try {
+      final healthData = await _health.getHealthDataFromTypes(
+        types: [HealthDataType.SLEEP_ASLEEP, HealthDataType.SLEEP_IN_BED],
+        startTime: startDate,
+        endTime: endDate,
+      );
+
+      double totalMinutes = 0.0;
+      for (var point in healthData) {
+        if (point.type == HealthDataType.SLEEP_ASLEEP) {
+          final duration = point.dateTo.difference(point.dateFrom).abs();
+          totalMinutes += duration.inMinutes.toDouble();
+        }
+      }
+      return totalMinutes / 60.0;
+    } catch (e) {
+      return 0.0;
+    }
+  }
+
+  /// Write a workout to health data
+  Future<bool> writeWorkout({
+    required HealthWorkoutActivityType activityType,
+    required DateTime startTime,
+    required DateTime endTime,
+    int? totalEnergyBurned,
+    double? totalDistance,
+  }) async {
+    try {
+      final success = await _health.writeWorkoutData(
+        activityType: activityType,
+        start: startTime,
+        end: endTime,
+        totalEnergyBurned: totalEnergyBurned,
+        totalDistance: totalDistance?.toInt(),
+      );
+      return success;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error writing workout: $e');
+      }
+      return false;
+    }
+  }
+
+  /// Write weight to health data
+  Future<bool> writeWeight(double weightKg, DateTime date) async {
+    try {
+      final success = await _health.writeHealthData(
+        value: weightKg,
+        type: HealthDataType.WEIGHT,
+        startTime: date,
+        endTime: date,
+      );
+      return success;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error writing weight: $e');
+      }
+      return false;
+    }
+  }
+
+  /// Get today's health summary
+  Future<HealthSummary> getTodaySummary() async {
+    final now = DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day);
+
+    final steps = await getTodaySteps() ?? 0;
+    final distance = await getDistance(startOfDay, now);
+    final calories = await getCaloriesBurned(startOfDay, now);
+    final heartRate = await getAverageHeartRate(startOfDay, now);
+
+    // Get sleep from yesterday night to this morning
+    final sleepStart = startOfDay.subtract(const Duration(hours: 12));
+    final sleep = await getSleepHours(sleepStart, now);
+
+    return HealthSummary(
+      steps: steps,
+      distanceMeters: distance,
+      caloriesBurned: calories,
+      averageHeartRate: heartRate,
+      sleepHours: sleep,
+      date: startOfDay,
+    );
   }
 
   Future<List<HealthDataPoint>> getHealthData({
@@ -42,17 +238,11 @@ class HealthService {
     required List<HealthDataType> types,
   }) async {
     try {
-      final granted = await requestAuthorization();
-      if (!granted) {
-        return [];
-      }
-
       final healthData = await _health.getHealthDataFromTypes(
         startTime: startTime,
         endTime: endTime,
         types: types,
       );
-
       return healthData;
     } catch (e) {
       return [];
@@ -66,21 +256,39 @@ class HealthService {
     required DateTime endTime,
   }) async {
     try {
-      final granted = await requestAuthorization();
-      if (!granted) {
-        return false;
-      }
-
       final success = await _health.writeHealthData(
         value: value,
         type: type,
         startTime: startTime,
         endTime: endTime,
       );
-
       return success;
     } catch (e) {
       return false;
     }
   }
+}
+
+/// Model for health data summary
+class HealthSummary {
+  final int steps;
+  final double distanceMeters;
+  final double caloriesBurned;
+  final double? averageHeartRate;
+  final double sleepHours;
+  final DateTime date;
+
+  HealthSummary({
+    required this.steps,
+    required this.distanceMeters,
+    required this.caloriesBurned,
+    required this.averageHeartRate,
+    required this.sleepHours,
+    required this.date,
+  });
+
+  double get distanceKm => distanceMeters / 1000.0;
+
+  bool get hasMeaningfulData =>
+      steps > 0 || distanceMeters > 0 || caloriesBurned > 0 || sleepHours > 0;
 }

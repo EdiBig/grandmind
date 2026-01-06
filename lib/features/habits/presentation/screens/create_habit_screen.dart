@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../domain/models/habit.dart';
+import '../../data/repositories/habit_repository.dart';
 import '../providers/habit_providers.dart';
 import '../widgets/habit_icon_helper.dart';
 
@@ -28,6 +29,36 @@ class _CreateHabitScreenState extends ConsumerState<CreateHabitScreen> {
   HabitFrequency _selectedFrequency = HabitFrequency.daily;
   bool _hasTargetCount = false;
   bool _isLoading = false;
+  bool _isInitialized = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isInitialized && widget.habitId != null) {
+      _loadHabit();
+      _isInitialized = true;
+    }
+  }
+
+  Future<void> _loadHabit() async {
+    final repository = ref.read(habitRepositoryProvider);
+    final habit = await repository.getHabit(widget.habitId!);
+
+    if (habit != null && mounted) {
+      setState(() {
+        _nameController.text = habit.name;
+        _descriptionController.text = habit.description;
+        _selectedIcon = habit.icon;
+        _selectedColor = habit.color;
+        _selectedFrequency = habit.frequency;
+        _hasTargetCount = habit.targetCount > 0;
+        if (_hasTargetCount) {
+          _targetCountController.text = habit.targetCount.toString();
+          _unitController.text = habit.unit ?? '';
+        }
+      });
+    }
+  }
 
   @override
   void dispose() {

@@ -22,8 +22,8 @@ class FirestoreService {
 
   Future<UserModel?> getUser(String userId) async {
     final doc = await _firestore.collection(_usersCollection).doc(userId).get();
-    if (doc.exists) {
-      return UserModel.fromFirestore(doc);
+    if (doc.exists && doc.data() != null) {
+      return UserModel.fromFirestore(doc.data()!, doc.id);
     }
     return null;
   }
@@ -38,7 +38,9 @@ class FirestoreService {
         .collection(_usersCollection)
         .doc(userId)
         .snapshots()
-        .map((doc) => doc.exists ? UserModel.fromFirestore(doc) : null);
+        .map((doc) => (doc.exists && doc.data() != null)
+            ? UserModel.fromFirestore(doc.data()!, doc.id)
+            : null);
   }
 
   Future<void> deleteUser(String userId) async {

@@ -22,6 +22,8 @@ class RouteConstants {
   static const String workoutDetail = '/workouts/:id';
   static const String workoutPlayer = '/workouts/:id/player';
   static const String habits = '/habits';
+  static const String createHabit = '/habits/create';
+  static const String editHabit = '/habits/:id/edit';
   static const String progress = '/progress';
   static const String plan = '/plan';
   static const String profile = '/profile';
@@ -36,9 +38,19 @@ class RouteConstants {
   static const String help = '/settings/help';
   static const String termsOfService = '/settings/terms';
   static const String privacyPolicy = '/settings/privacy-policy';
+  static const String apiKeySetup = '/settings/api-key-setup';
+
+  // AI Features
+  static const String aiCoach = '/ai-coach';
+  static const String aiInsights = '/ai-insights';
+  static const String aiNutrition = '/ai-nutrition';
+  static const String aiRecovery = '/ai-recovery';
 
   // Quick Actions
   static const String logActivity = '/log-activity';
   static const String logWeight = '/log-weight';
   static const String logHabit = '/log-habit';
+
+  // Health Routes
+  static const String healthDetails = '/health/details';
 }

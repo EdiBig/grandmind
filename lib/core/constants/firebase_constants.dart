@@ -12,6 +12,12 @@ class FirebaseConstants {
   static const String weightEntriesCollection = 'weightEntries';
   static const String healthMetricsCollection = 'healthMetrics';
 
+  // Progress Tracking Collections
+  static const String progressWeightCollection = 'progress_weight';
+  static const String progressMeasurementsCollection = 'progress_measurements';
+  static const String progressPhotosCollection = 'progress_photos';
+  static const String progressGoalsCollection = 'progress_goals';
+
   // User Fields
   static const String userUid = 'uid';
   static const String userEmail = 'email';
@@ -40,4 +46,5 @@ class FirebaseConstants {
   static const String profilePicturesPath = 'profile_pictures';
   static const String workoutVideosPath = 'workout_videos';
   static const String exerciseGifsPath = 'exercise_gifs';
+  static const String progressPhotosPath = 'progress_photos';
 }

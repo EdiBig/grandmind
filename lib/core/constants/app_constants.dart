@@ -3,7 +3,7 @@ class AppConstants {
   AppConstants._();
 
   // App Info
-  static const String appName = 'GrandMind';
+  static const String appName = 'Kinesa';
   static const String appTagline = 'Your Holistic Wellness Companion';
 
   // Dimensions

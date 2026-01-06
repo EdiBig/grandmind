@@ -13,7 +13,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>grandmind</string>
+	<string>kinesa</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -45,5 +45,10 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- HealthKit Permissions -->
+	<key>NSHealthShareUsageDescription</key>
+	<string>Kinesa needs access to your health data to track your fitness progress, including steps, workouts, heart rate, and sleep.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Kinesa writes your workout data to the Health app so you can track all your fitness activities in one place.</string>
 </dict>
 </plist>

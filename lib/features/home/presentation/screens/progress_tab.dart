@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../progress/presentation/widgets/weight_input_dialog.dart';
+import '../../../progress/presentation/screens/weight_tracking_screen.dart';
+import '../../../progress/presentation/screens/measurements_screen.dart';
+import '../../../progress/presentation/screens/progress_photos_screen.dart';
+import '../../../progress/presentation/screens/goals_screen.dart';
 
 class ProgressTab extends ConsumerWidget {
   const ProgressTab({super.key});
@@ -26,6 +31,70 @@ class ProgressTab extends ConsumerWidget {
         children: [
           _buildOverviewCard(context),
           const SizedBox(height: 24),
+          // Quick Access Card for Weight Tracking
+          _buildQuickAccessCard(
+            context,
+            'Weight Tracking',
+            'Track your weight progress',
+            Icons.monitor_weight,
+            AppColors.primary,
+            () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const WeightTrackingScreen(),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          // Quick Access Card for Body Measurements
+          _buildQuickAccessCard(
+            context,
+            'Body Measurements',
+            'Track your body measurements',
+            Icons.straighten,
+            AppColors.secondary,
+            () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const MeasurementsScreen(),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          // Quick Access Card for Progress Photos
+          _buildQuickAccessCard(
+            context,
+            'Progress Photos',
+            'Track your visual transformation',
+            Icons.photo_camera,
+            AppColors.accent,
+            () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const ProgressPhotosScreen(),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          // Quick Access Card for Goals
+          _buildQuickAccessCard(
+            context,
+            'Goals',
+            'Set and track your fitness goals',
+            Icons.flag,
+            Colors.purple,
+            () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const GoalsScreen(),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
           _buildMetricCard(
             context,
             'Weekly Activity',
@@ -62,6 +131,11 @@ class ProgressTab extends ConsumerWidget {
           const SizedBox(height: 12),
           _buildAchievementsList(context),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => WeightInputDialog.show(context),
+        icon: const Icon(Icons.monitor_weight),
+        label: const Text('Log Weight'),
       ),
     );
   }
@@ -122,6 +196,61 @@ class ProgressTab extends ConsumerWidget {
               ),
         ),
       ],
+    );
+  }
+
+  Widget _buildQuickAccessCard(
+    BuildContext context,
+    String title,
+    String subtitle,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.3)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios, color: Colors.grey[400], size: 16),
+          ],
+        ),
+      ),
     );
   }
 

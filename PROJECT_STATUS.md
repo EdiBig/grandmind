@@ -1,20 +1,25 @@
-# GrandMind Project Status
+# Grandmind (Kinesa) - Project Status
 
-**Last Updated:** 2025-12-27 (Evening Session)
+**Last Updated:** 2026-01-05 (Habits Feature + AI Insights Session)
 **GitHub Repository:** https://github.com/EdiBig/grandmind
-**Project Location:** `C:\Users\Agyeg\Documents\Projects\GrandMind\grandmind`
+**Project Location:** `C:\dev\projects\grandmind`
 
 ---
 
-## 🎯 Current Status: Authentication & Onboarding FULLY TESTED & WORKING ✅
+## 🎯 Current Status: Habits Feature FULLY IMPLEMENTED with AI-Powered Insights ✅
 
-The app is successfully running on Android emulator with Firebase Authentication and a complete 5-step onboarding flow.
+The app now has a **complete, production-ready habits tracking system** with AI-powered analysis and personalized insights!
 
-**Today's Achievement:** Successfully tested end-to-end user flow from signup → onboarding → home screen with data persistence verified in Firestore!
+**Latest Achievements:**
+- ✅ Comprehensive habits tracking (create, edit, delete, archive)
+- ✅ AI-powered habit insights and pattern analysis
+- ✅ Real-time streak tracking and statistics
+- ✅ Support for both simple and quantifiable habits
+- ✅ All Firestore indexes created and optimized
 
 ---
 
-## ✅ Completed Features
+## ✅ Completed Features (Detailed)
 
 ### 1. **Authentication System** ✅
 - **Firebase Authentication** integration
@@ -29,100 +34,198 @@ The app is successfully running on Android emulator with Firebase Authentication
   - Forgot Password Screen
 
 ### 2. **User Onboarding Flow** ✅
-Complete 5-step onboarding process:
+Complete 6-step onboarding process:
+- Welcome Screen
+- Goal Selection (5 options)
+- Fitness Level Assessment
+- Weekly Workout Frequency
+- Physical Limitations
+- **Coach Tone Selection** (Friendly, Strict, Clinical)
 
-**Step 1: Welcome Screen**
-- Introduction to GrandMind
-- 3 key features highlighted
-- "Get Started" button
+### 3. **Workouts Feature** ✅
+- Complete workout system with library, details, and logging
+- Category filtering (Strength, Cardio, HIIT, Yoga, etc.)
+- Difficulty filtering (Beginner, Intermediate, Advanced)
+- Exercise tracking with sets, reps, duration, weight
+- Workout logging to Firestore
 
-**Step 2: Goal Selection**
-- Choose from 5 fitness goals:
-  - Lose Weight
-  - Build Muscle
-  - General Fitness
-  - Wellness & Recovery
-  - Build Healthy Habits
+### 4. **Habits Tracking Feature** ✅ **NEW!**
 
-**Step 3: Fitness Level Assessment**
-- Beginner 🌱
-- Intermediate 💪
-- Advanced 🏆
+#### Core Functionality:
+- **Create Habits:**
+  - Simple yes/no habits
+  - Quantifiable habits with target counts and units
+  - Custom icons (11 options: water, sleep, meditation, walk, read, exercise, food, pill, study, clean, other)
+  - Custom colors (8 options)
+  - Frequency selection (daily, weekly, custom)
 
-**Step 4: Weekly Workout Frequency**
-- 1-2 days per week
-- 3-4 days per week
-- 5-6 days per week
-- Every day
+- **Track Completion:**
+  - One-tap completion for simple habits
+  - Automatic target count logging for quantifiable habits
+  - Real-time progress updates
+  - Visual progress indicators
 
-**Step 5: Physical Limitations**
-- Multi-select from 6 common limitations:
-  - Knee pain
-  - Back pain
-  - Shoulder pain
-  - Pregnancy
-  - Heart condition
-  - None
+- **Streak Tracking:**
+  - Current streak counter
+  - Longest streak tracking
+  - Automatic streak calculation
+  - Streak recovery on re-completion
 
-**Step 6: Coach Tone Selection** (UNIQUE FEATURE)
-- **Friendly:** Supportive and encouraging
-- **Strict:** Focused and disciplined
-- **Clinical:** Data-driven and analytical
+- **Manage Habits:**
+  - Edit existing habits (long-press menu)
+  - Delete habits with confirmation dialog
+  - Archive/unarchive habits
+  - All operations update Firestore in real-time
 
-### 3. **Data Management** ✅
-- **Firestore Integration:**
-  - User profiles stored in Firestore
-  - Onboarding data saved to user document
-  - UserModel with onboarding field
+#### Statistics & Analytics:
+- **Daily Progress Summary:**
+  - Completion count (e.g., "1/2 Completed")
+  - Completion percentage (e.g., "50%")
+  - Best streak across all habits
+
+- **Individual Habit Stats:**
+  - Current streak display with fire icon
+  - Progress bars for quantifiable habits
+  - Completion status indicators
+  - Last completed timestamp
+
+#### Data Models:
+- **Habit Model:**
+  - Freezed immutable model
+  - Support for frequency types
+  - Target count and unit fields
+  - Streak tracking fields
+  - Active/archived status
+
+- **HabitLog Model:**
+  - Daily completion tracking
+  - Count tracking for quantifiable habits
+  - Timestamp fields
+  - Optional notes
+
+#### Technical Implementation:
+- **Repository Pattern:**
+  - Complete CRUD operations
+  - Automatic streak calculation
+  - Batch operations for deletion
+  - Real-time streaming with Firestore
+
 - **State Management:**
-  - Riverpod StateNotifier for onboarding
-  - Auth state management
-  - Proper error handling
+  - Riverpod providers for habits stream
+  - Today's logs provider
+  - Statistics provider
+  - Operations state notifier
 
-### 4. **Navigation & Routing** ✅
-- GoRouter implementation
-- All onboarding routes configured
-- Smart navigation based on onboarding status:
-  - New users → Onboarding flow
-  - Returning users with completed onboarding → Home
-  - No auth → Login
+- **UI Components:**
+  - Habits tab with progress summary
+  - Create/Edit habit screen with form validation
+  - Habit cards with icons and colors
+  - Empty state with CTA
+  - Loading and error states
 
-### 5. **UI/UX** ✅
-- Clean, modern Material Design
-- Custom gradient primary colors
-- Responsive layouts
-- Loading states
-- Error handling with SnackBars
-- Form validation
+- **Custom Utilities:**
+  - Timestamp converters for Firestore
+  - Habit icon helper with Material icons mapping
+  - Color helper for habit colors
+
+### 5. **AI-Powered Habit Insights** ✅ **NEW!**
+
+#### AI Analysis Features:
+- **Pattern Recognition:**
+  - Completion patterns by day of week
+  - Best and worst performing days
+  - Streak analysis and trends
+  - Average completion rates
+
+- **Personalized Insights:**
+  - Data-driven behavioral observations
+  - Evidence-based suggestions
+  - Compassionate, non-judgmental tone
+  - Clinical relevance without medical advice
+
+#### User Interface:
+- **AI Insights Card (Habits Tab):**
+  - Gradient design with AI icon
+  - Summary of overall progress
+  - Top 2 key insights displayed
+  - "View Full Analysis" button
+  - Refresh capability
+  - Loading/error states with retry
+
+- **Detailed Insights Screen:**
+  - Full summary section
+  - Complete list of key insights (3+)
+  - Actionable suggestions (3 numbered items)
+  - Statistics breakdown
+  - Professional disclaimer
+  - Mobile-optimized layout
+
+#### Technical Implementation:
+- **HabitInsightsService:**
+  - Analyzes last 30 days of data
+  - Calculates comprehensive statistics
+  - Generates AI prompts with context
+  - Uses Claude AI API for analysis
+  - Fallback handling for API failures
+
+- **AI Integration:**
+  - Uses existing Claude AI infrastructure
+  - Prompt engineering for behavioral insights
+  - Response parsing (summary, insights, suggestions)
+  - Caching for efficiency
+
+- **Data Analysis:**
+  - Completion by day of week
+  - Average completion rates
+  - Streak progression tracking
+  - Best/worst day detection
+  - Habit-specific patterns
+
+#### AI Prompt Design:
+- Behavioral psychology expertise
+- Evidence-based recommendations
+- Compassionate coaching tone
+- Specific data references
+- 15-word limit per insight for clarity
+
+### 6. **Dashboard** ✅
+- Real-time data from Firestore
+- Daily summary cards
+- Quick action buttons
+- Personalized welcome messages
+- Coach tone-aware messaging
 
 ---
 
-## 📂 Project Structure
+## 🗂️ Complete Project Structure
 
 ```
 lib/
-├── app.dart                          # Main app widget
-├── main.dart                         # App entry point
+├── main.dart                           # App entry point
+├── app.dart                            # Main app widget
 ├── core/
 │   ├── constants/
-│   │   ├── app_constants.dart        # App-wide constants
-│   │   ├── route_constants.dart      # Route paths
-│   │   └── firebase_constants.dart   # Firebase constants
+│   │   ├── app_constants.dart
+│   │   ├── route_constants.dart
+│   │   └── firebase_constants.dart
 │   ├── theme/
-│   │   ├── app_colors.dart           # Color palette
-│   │   └── app_theme.dart            # Theme configuration
-│   └── utils/
-│       ├── validators.dart           # Form validators
-│       ├── formatters.dart           # Data formatters
-│       └── helpers.dart              # Helper functions
+│   │   ├── app_colors.dart
+│   │   └── app_theme.dart
+│   ├── utils/
+│   │   ├── validators.dart
+│   │   ├── formatters.dart
+│   │   ├── helpers.dart
+│   │   └── timestamp_converter.dart    # Firestore Timestamp converter
+│   └── config/
+│       └── ai_config.dart              # AI API configuration
 ├── features/
 │   ├── authentication/
 │   │   ├── data/
 │   │   │   └── repositories/
-│   │   │       └── auth_repository.dart    # Firebase Auth operations
+│   │   │       └── auth_repository.dart
 │   │   └── presentation/
 │   │       ├── providers/
-│   │       │   └── auth_provider.dart      # Auth state management
+│   │       │   └── auth_provider.dart
 │   │       └── screens/
 │   │           ├── splash_screen.dart
 │   │           ├── login_screen.dart
@@ -130,10 +233,10 @@ lib/
 │   │           └── forgot_password_screen.dart
 │   ├── onboarding/
 │   │   ├── domain/
-│   │   │   └── onboarding_data.dart        # Onboarding models & enums
+│   │   │   └── onboarding_data.dart
 │   │   └── presentation/
 │   │       ├── providers/
-│   │       │   └── onboarding_provider.dart # Onboarding state
+│   │       │   └── onboarding_provider.dart
 │   │       └── screens/
 │   │           ├── welcome_screen.dart
 │   │           ├── goal_selection_screen.dart
@@ -141,33 +244,219 @@ lib/
 │   │           ├── time_availability_screen.dart
 │   │           ├── limitations_screen.dart
 │   │           └── coach_tone_screen.dart
-│   ├── user/
-│   │   └── data/
-│   │       ├── models/
-│   │       │   └── user_model.dart         # User data model
-│   │       └── services/
-│   │           └── firestore_service.dart  # Firestore operations
-│   ├── home/
+│   ├── habits/                         # ✅ COMPLETE FEATURE
+│   │   ├── domain/
+│   │   │   └── models/
+│   │   │       ├── habit.dart          # Habit model (Freezed)
+│   │   │       ├── habit.freezed.dart
+│   │   │       ├── habit.g.dart
+│   │   │       ├── habit_log.dart      # Habit log model (Freezed)
+│   │   │       ├── habit_log.freezed.dart
+│   │   │       └── habit_log.g.dart
+│   │   ├── data/
+│   │   │   ├── repositories/
+│   │   │   │   └── habit_repository.dart     # Complete CRUD + streak logic
+│   │   │   └── services/
+│   │   │       └── habit_insights_service.dart  # AI analysis service
 │   │   └── presentation/
+│   │       ├── providers/
+│   │       │   └── habit_providers.dart      # Riverpod providers
 │   │       ├── screens/
-│   │       │   ├── home_screen.dart        # Main home with tabs
-│   │       │   ├── dashboard_tab.dart      # Dashboard (placeholder)
-│   │       │   ├── workouts_tab.dart       # Workouts (placeholder)
-│   │       │   ├── habits_tab.dart         # Habits (placeholder)
-│   │       │   └── progress_tab.dart       # Progress (placeholder)
+│   │       │   ├── create_habit_screen.dart  # Create/Edit form
+│   │       │   └── habit_insights_screen.dart # Detailed AI insights
 │   │       └── widgets/
-│   │           └── bottom_nav_bar.dart     # Bottom navigation
+│   │           ├── habit_icon_helper.dart    # Icon/color mapping
+│   │           └── ai_insights_card.dart     # AI insights widget
+│   ├── home/
+│   │   ├── domain/
+│   │   │   └── models/
+│   │   │       └── dashboard_stats.dart
+│   │   └── presentation/
+│   │       ├── providers/
+│   │       │   └── dashboard_provider.dart
+│   │       ├── screens/
+│   │       │   ├── home_screen.dart
+│   │       │   ├── dashboard_tab.dart
+│   │       │   ├── workouts_tab.dart
+│   │       │   ├── habits_tab.dart     # ✅ Habits UI with AI card
+│   │       │   ├── progress_tab.dart
+│   │       │   └── log_activity_screen.dart
+│   │       └── widgets/
+│   │           └── bottom_nav_bar.dart
+│   ├── workouts/
+│   │   ├── domain/
+│   │   │   └── models/
+│   │   │       ├── workout.dart
+│   │   │       ├── exercise.dart
+│   │   │       └── workout_log.dart
+│   │   ├── data/
+│   │   │   └── repositories/
+│   │   │       └── workout_repository.dart
+│   │   └── presentation/
+│   │       ├── providers/
+│   │       │   └── workout_providers.dart
+│   │       └── screens/
+│   │           ├── workout_detail_screen.dart
+│   │           └── workout_logging_screen.dart
+│   ├── ai/                             # ✅ AI Coach Infrastructure
+│   │   ├── data/
+│   │   │   ├── models/
+│   │   │   │   ├── ai_conversation_model.dart
+│   │   │   │   ├── cache_entry.dart
+│   │   │   │   └── user_context.dart
+│   │   │   ├── repositories/
+│   │   │   │   └── ai_cache_repository.dart
+│   │   │   └── services/
+│   │   │       ├── claude_api_service.dart
+│   │   │       └── prompt_builder_service.dart
+│   │   ├── domain/
+│   │   │   └── usecases/
+│   │   │       ├── send_coach_message_usecase.dart
+│   │   │       ├── get_workout_recommendation_usecase.dart
+│   │   │       └── get_form_check_usecase.dart
+│   │   └── presentation/
+│   │       ├── providers/
+│   │       │   ├── ai_coach_provider.dart
+│   │       │   └── ai_providers.dart
+│   │       ├── screens/
+│   │       │   └── ai_coach_screen.dart
+│   │       └── widgets/
+│   │           ├── ai_message_bubble.dart
+│   │           └── quick_action_chips.dart
 │   ├── profile/
 │   │   └── presentation/
 │   │       └── screens/
-│   │           └── profile_screen.dart     # User profile (placeholder)
-│   └── settings/
-│       └── presentation/
-│           └── screens/
-│               └── settings_screen.dart    # Settings (placeholder)
+│   │           └── profile_screen.dart
+│   ├── settings/
+│   │   └── presentation/
+│   │       └── screens/
+│   │           └── settings_screen.dart
+│   └── user/
+│       └── data/
+│           ├── models/
+│           │   └── user_model.dart
+│           └── services/
+│               └── firestore_service.dart
 └── routes/
-    └── app_router.dart                     # GoRouter configuration
+    └── app_router.dart                 # GoRouter configuration
 ```
+
+---
+
+## 🔥 Firebase Configuration
+
+### Firestore Collections:
+
+#### **users/** ✅
+```javascript
+{
+  userId: string,
+  email: string,
+  displayName: string?,
+  photoUrl: string?,
+  createdAt: timestamp,
+  updatedAt: timestamp,
+  onboarding: {
+    completed: boolean,
+    goalType: string,
+    fitnessLevel: string,
+    weeklyWorkouts: number,
+    coachTone: string,
+    limitations: string[]
+  }
+}
+```
+
+#### **habits/** ✅ NEW
+```javascript
+{
+  id: string (auto-generated),
+  userId: string,
+  name: string,
+  description: string,
+  frequency: 'daily' | 'weekly' | 'custom',
+  icon: 'water' | 'sleep' | 'meditation' | ...,
+  color: 'blue' | 'purple' | 'pink' | ...,
+  createdAt: timestamp,
+  isActive: boolean,
+  targetCount: number,
+  unit: string?,
+  daysOfWeek: number[],
+  lastCompletedAt: timestamp?,
+  currentStreak: number,
+  longestStreak: number
+}
+```
+
+#### **habit_logs/** ✅ NEW
+```javascript
+{
+  id: string (auto-generated),
+  habitId: string,
+  userId: string,
+  date: timestamp,
+  completedAt: timestamp,
+  count: number,
+  notes: string?
+}
+```
+
+#### **workouts/** ✅
+```javascript
+{
+  id: string,
+  name: string,
+  description: string,
+  category: string,
+  difficulty: string,
+  duration: number,
+  exercises: Exercise[]
+}
+```
+
+### Firestore Indexes (All Created) ✅
+
+```json
+{
+  "indexes": [
+    {
+      "collectionGroup": "habits",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "isActive", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "habit_logs",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "habit_logs",
+      "fields": [
+        { "fieldPath": "habitId", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "habit_logs",
+      "fields": [
+        { "fieldPath": "habitId", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "DESCENDING" }
+      ]
+    }
+  ]
+}
+```
+
+### Security Rules:
+- ✅ Users can only read/write their own data
+- ✅ All collections are user-scoped
+- ✅ Validation rules for required fields
+- ✅ Deployed to Firebase Console
 
 ---
 
@@ -178,201 +467,266 @@ lib/
 - **Backend:** Firebase
   - Firebase Authentication
   - Cloud Firestore
+  - Firestore Security Rules
 - **State Management:** Riverpod
 - **Routing:** GoRouter
+- **Data Models:** Freezed + JSON Serialization
 - **Architecture:** Clean Architecture (feature-based)
+- **AI Integration:** Claude AI API (Anthropic)
+  - AI Coach for conversations
+  - AI Insights for habit analysis
+  - Prompt engineering for behavioral coaching
 
 ---
 
-## ✅ Testing & Verification (Session 2 - 2025-12-27 Evening)
+## 📋 Remaining Features (From Original Plan)
 
-### Security Enhancements ✅
-**Addressed Google Cloud Security Notification:**
-- Added Firestore security rules to protect user data
-- Users can only read/write their own documents
-- All collections (users, workouts, habits, progress) are user-scoped
-- Deployed rules to Firebase Console
-- Added `firestore.rules` file to repository
+### Phase 1: Core Features (Remaining)
 
-### End-to-End Testing ✅
-**Test User:** test2@example.com
-**User ID:** jx8PGAzei6R5yeM80fQu7PWBzpf2
+#### **Progress Tracking** 🔴 NOT STARTED
+- [ ] Weight logging with graphs
+- [ ] Body measurements tracking
+- [ ] Progress photos
+- [ ] Charts and analytics (fl_chart)
+- [ ] Goal progress visualization
+- [ ] Weekly/monthly summaries
 
-**Verified Flow:**
-1. ✅ User signup successful
-2. ✅ Redirected to onboarding Welcome screen
-3. ✅ Completed all 5 onboarding steps:
-   - Goal: General Fitness
-   - Fitness Level: Beginner
-   - Weekly Workouts: 3-4 days
-   - Limitations: Back pain
-   - Coach Tone: Clinical
-4. ✅ Data saved to Firestore correctly
-5. ✅ Returned to login → Correctly routed to home (onboarding complete)
-6. ✅ Navigation logic working as expected
+#### **Nutrition Tracking** 🔴 NOT STARTED
+- [ ] Meal logging
+- [ ] Calorie tracking
+- [ ] Macro tracking (protein, carbs, fats)
+- [ ] Water intake (can integrate with habits)
+- [ ] Meal photo uploads
+- [ ] Nutrition goals
 
-**Firestore Data Verification:**
-```javascript
-{
-  email: "test2@example.com",
-  createdAt: 2025-12-27 22:21:52 UTC,
-  updatedAt: 2025-12-27 22:29:11 UTC,
-  onboarding: {
-    completed: true,
-    goalType: "generalFitness",
-    fitnessLevel: "beginner",
-    weeklyWorkouts: 3,
-    limitations: ["back_pain"],
-    coachTone: "clinical"
-  }
-}
-```
+### Phase 2: Health Integrations
 
-**Result:** All onboarding functionality working perfectly! 🎉
+#### **HealthKit / Google Fit Integration** 🔴 NOT STARTED
+- [ ] Read steps data
+- [ ] Read sleep data
+- [ ] Read heart rate
+- [ ] Read workouts
+- [ ] Write completed workouts back
+- [ ] Sync with dashboard
 
----
+#### **Wearable Integration** 🔴 NOT STARTED
+- [ ] Apple Watch
+- [ ] Garmin
+- [ ] Fitbit
+- [ ] Oura Ring
 
-## 🔥 Firebase Configuration
+### Phase 3: Advanced AI Features
 
-### Enabled Services:
-✅ Firebase Authentication (Email/Password, Google Sign-In)
-✅ Cloud Firestore Database (Production mode with Security Rules)
+#### **Expand AI Coach** 🟡 PARTIALLY DONE
+- [x] Habit insights and analysis ✅
+- [ ] Workout recommendations based on goals
+- [ ] Form check with video analysis
+- [ ] Recovery advisor (HRV + sleep)
+- [ ] Meal recommendations
+- [ ] Weekly coaching reports
 
-### Project Details:
-- **Project ID:** grandmind-app
-- **Project Number:** 941366391656
-- **Package Name:** com.grandmind.grandmind
+#### **Predictive Features** 🔴 NOT STARTED
+- [ ] Habit failure prediction
+- [ ] Optimal workout timing suggestions
+- [ ] Plateau detection and recommendations
+- [ ] Injury risk assessment
 
-### Firestore Structure:
-```
-users/
-  {userId}/
-    - email: string
-    - displayName: string?
-    - photoUrl: string?
-    - createdAt: timestamp
-    - updatedAt: timestamp
-    - onboarding: {
-        completed: boolean
-        goalType: string
-        fitnessLevel: string
-        weeklyWorkouts: number
-        coachTone: string
-        limitations: string[]
-      }
-```
+### Phase 4: Social & Engagement
 
----
+#### **Community Features** 🔴 NOT STARTED
+- [ ] User profiles (public/private)
+- [ ] Follow/friends system
+- [ ] Activity feed
+- [ ] Challenges and competitions
+- [ ] Leaderboards
+- [ ] Group workouts
 
-## 🚀 How to Run the Project
+#### **Gamification** 🔴 NOT STARTED
+- [ ] Achievement badges
+- [ ] Levels and XP system
+- [ ] Streaks and milestones
+- [ ] Rewards system
+- [ ] Daily/weekly challenges
 
-### Prerequisites:
-- Flutter 3.38.5 or higher
-- Android SDK (API 33/34 for emulator)
-- Android Studio or VS Code
-- Firebase CLI (optional)
+### Phase 5: Notifications & Engagement
 
-### Setup Steps:
+#### **Push Notifications** 🔴 NOT STARTED
+- [ ] Firebase Cloud Messaging setup
+- [ ] Workout reminders
+- [ ] Habit check-in prompts
+- [ ] Motivational messages (tone-aware)
+- [ ] Achievement notifications
+- [ ] Inactivity nudges (compassionate)
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/EdiBig/grandmind.git
-   cd grandmind
-   ```
+#### **Smart Scheduling** 🔴 NOT STARTED
+- [ ] AI-powered optimal reminder times
+- [ ] Adaptive scheduling based on completion patterns
+- [ ] Calendar integration
 
-2. **Install dependencies:**
-   ```bash
-   flutter pub get
-   ```
+### Phase 6: Premium Features
 
-3. **Run the app:**
-   ```bash
-   flutter run
-   ```
+#### **Subscription System** 🔴 NOT STARTED
+- [ ] RevenueCat integration
+- [ ] Free tier limits
+- [ ] Premium tier features
+- [ ] Subscription management
+- [ ] Payment flow
 
-### Android Emulator:
-- Device: Pixel 6a or Pixel 7
-- API Level: 33 or 34
-- System Image: x86_64
-
----
-
-## 📋 Next Steps / TODO
-
-### Ready to Build - Next Session:
-
-**Foundation Complete! ✅**
-- Authentication working
-- Onboarding tested and verified
-- Security rules in place
-- User data persisting correctly
-
-**Now Ready For:**
-
-#### Phase 1: Core Functionality
-- [ ] Dashboard implementation
-  - Daily summary cards
-  - Quick action buttons
-  - Motivational messages based on coach tone
-- [ ] Workouts feature
-  - Browse workout library
-  - Filter by goal/level
-  - Workout detail view
-  - Exercise tracking
-- [ ] Habits tracking
-  - Create custom habits
-  - Daily check-ins
-  - Streak tracking
-- [ ] Progress tracking
-  - Weight logging
-  - Measurements
-  - Photos
-  - Charts and analytics
-
-#### Phase 2: Personalization
-- [ ] AI coach integration
-  - Personalized workout recommendations
-  - Adaptive coaching based on tone preference
-  - Progress insights
-- [ ] Notifications
-  - Workout reminders
-  - Habit check-in prompts
-  - Motivational messages
-
-#### Phase 3: Social & Advanced
-- [ ] Community features
-- [ ] Workout plan generation
-- [ ] Health app integration (Apple Health, Google Fit)
+#### **Premium Features** 🔴 NOT STARTED
+- [ ] Unlimited habits
 - [ ] Advanced analytics
+- [ ] Coaching marketplace
+- [ ] Video workouts
+- [ ] Meal plans
+- [ ] Personal trainer matching
+
+### Phase 7: Platform Expansion
+
+#### **iOS App** 🔴 NOT STARTED
+- [ ] iOS-specific adaptations
+- [ ] Apple Sign-In
+- [ ] HealthKit integration
+- [ ] Apple Watch app
+- [ ] App Store submission
+
+#### **Web App** 🔴 NOT STARTED
+- [ ] Web-responsive design
+- [ ] Firebase hosting
+- [ ] Progressive Web App (PWA)
+- [ ] Desktop experience optimization
 
 ---
 
-## 🔑 Important File Locations
+## 🎯 Recommended Next Steps (Priority Order)
 
-### Configuration Files:
-- Firebase config: `android/app/google-services.json`
-- Flutter config: `lib/firebase_options.dart`
-- Pubspec: `pubspec.yaml`
+### Immediate (Next 1-2 Sessions):
 
-### Key Implementation Files:
-- Auth repository: `lib/features/authentication/data/repositories/auth_repository.dart`
-- Onboarding provider: `lib/features/onboarding/presentation/providers/onboarding_provider.dart`
-- App router: `lib/routes/app_router.dart`
-- User model: `lib/features/user/data/models/user_model.dart`
+1. **Progress Tracking** 📊
+   - Weight logging with line charts
+   - Body measurements
+   - Progress photos upload
+   - Goal tracking visualization
+   - **Why:** Completes the core tracking trifecta (workouts, habits, progress)
+
+2. **HealthKit/Google Fit Integration** 📱
+   - Read steps, sleep, heart rate
+   - Display on dashboard
+   - Auto-sync daily
+   - **Why:** Provides holistic health view, user value++
+
+3. **Notifications System** 🔔
+   - FCM setup
+   - Workout reminders
+   - Habit check-ins
+   - **Why:** Critical for engagement and retention
+
+### Short-term (Next 3-5 Sessions):
+
+4. **Expand AI Coach**
+   - Workout recommendations
+   - Recovery advisor
+   - Weekly reports
+   - **Why:** Leverage existing AI infrastructure
+
+5. **Nutrition Tracking**
+   - Basic meal logging
+   - Calorie tracking
+   - Water intake
+   - **Why:** Common user request, completes wellness picture
+
+6. **Enhanced Analytics**
+   - Charts for all metrics
+   - Trend analysis
+   - Correlations (habits vs progress)
+   - **Why:** Users love seeing progress visualized
+
+### Medium-term (Next 6-10 Sessions):
+
+7. **Social Features (MVP)**
+   - User profiles
+   - Activity sharing
+   - Simple challenges
+   - **Why:** Increases engagement, viral potential
+
+8. **Premium Tier**
+   - Subscription setup
+   - Paywall implementation
+   - Premium-only features
+   - **Why:** Monetization for sustainability
+
+9. **iOS Launch**
+   - Platform-specific features
+   - App Store submission
+   - **Why:** Expand user base
 
 ---
 
-## 💾 Git Commands for Future Sessions
+## 🔑 Important Files & Locations
 
-### Check status:
+### Configuration:
+- **Firebase:** `android/app/google-services.json` (gitignored)
+- **Firebase Options:** `lib/firebase_options.dart` (gitignored)
+- **Firestore Rules:** `firestore.rules`
+- **Firestore Indexes:** `firestore.indexes.json`
+- **Firebase Config:** `firebase.json`
+- **Git Ignore:** `.gitignore` (updated for security)
+
+### Key Implementation:
+- **Auth:** `lib/features/authentication/data/repositories/auth_repository.dart`
+- **Habits Repo:** `lib/features/habits/data/repositories/habit_repository.dart`
+- **AI Insights:** `lib/features/habits/data/services/habit_insights_service.dart`
+- **Claude API:** `lib/features/ai/data/services/claude_api_service.dart`
+- **Router:** `lib/routes/app_router.dart`
+- **Timestamp Converter:** `lib/core/utils/timestamp_converter.dart`
+
+---
+
+## 🚀 How to Resume Work
+
+### 1. **Open Project:**
+```bash
+cd C:\dev\projects\grandmind
+code .  # VS Code
+# OR
+start . # Open in file explorer, then open in Android Studio
+```
+
+### 2. **Start Emulator:**
+- Open Android Studio → AVD Manager
+- Launch emulator (API 33/34)
+- OR use command: `emulator -avd Medium_Phone_API_36.1`
+
+### 3. **Run App:**
+```bash
+flutter run -d emulator-5554
+```
+
+### 4. **Test Habits Feature:**
+- Navigate to Habits tab
+- Create a new habit
+- Complete it (tap checkmark)
+- View AI Insights
+- Long-press habit for edit/delete menu
+
+### 5. **Firebase Console:**
+- URL: https://console.firebase.google.com/
+- Project: grandmind-kinesa
+- Check Firestore for data
+- Monitor indexes status
+
+---
+
+## 💾 Git Workflow
+
+### Check Status:
 ```bash
 git status
 ```
 
-### Create a new commit:
+### Commit Changes:
 ```bash
 git add .
-git commit -m "Your commit message here"
+git commit -m "feat: your feature description"
 ```
 
 ### Push to GitHub:
@@ -380,77 +734,204 @@ git commit -m "Your commit message here"
 git push origin main
 ```
 
-### Pull latest changes:
+### Pull Latest:
 ```bash
 git pull origin main
 ```
 
-### Create a new branch:
+### View Commit History:
 ```bash
-git checkout -b feature/your-feature-name
+git log --oneline --graph --decorate --all
 ```
 
 ---
 
-## 📝 Notes for Next Session
+## 🐛 Common Issues & Solutions
 
-### To Continue Where You Left Off:
+### Issue: Firestore Index Missing
+**Error:** "The query requires an index"
+**Solution:** Click the link in error, create index in Firebase Console
 
-1. **Open project:**
-   ```bash
-   cd C:\Users\Agyeg\Documents\Projects\GrandMind\grandmind
-   code .  # or open in Android Studio
-   ```
+### Issue: Timestamp Conversion Error
+**Error:** "type 'Timestamp' is not a subtype of type 'String'"
+**Solution:** Already fixed with `timestamp_converter.dart`
 
-2. **Start emulator and run app:**
-   ```bash
-   flutter run
-   ```
+### Issue: AI Insights Not Loading
+**Possible Causes:**
+1. No Claude API key in secure storage
+2. No habit data (need at least 1 habit)
+3. Firestore index not created
+4. API rate limit reached
 
-3. **First task:** Fix the onboarding flow issue
-   - The problem is that new users skip onboarding
-   - Need to debug the signup → onboarding navigation
-   - Check Firestore to see if onboarding data is being saved
+**Solution:** Check logs, verify API key, ensure indexes exist
 
-4. **Test user created:** `test@example.com` (already went through signup)
-   - This user skipped onboarding
-   - Try creating a new user to test the flow
+### Issue: Build Fails
+**Solution:**
+```bash
+flutter clean
+flutter pub get
+flutter run
+```
 
-### Firebase Console Access:
-- URL: https://console.firebase.google.com/
-- Project: grandmind-app
-- Use the same Google account you used to create the project
-
-### GitHub Repository:
-- URL: https://github.com/EdiBig/grandmind
-- All code is backed up and version controlled
+### Issue: Hot Reload Not Working
+**Solution:**
+- Press 'R' in terminal for full restart
+- OR restart app: `Ctrl+C` then `flutter run`
 
 ---
 
-## 🎨 App Color Scheme
+## 📊 Project Metrics
 
+### Features Completed: **6/15** (40%)
+- ✅ Authentication
+- ✅ Onboarding
+- ✅ Dashboard
+- ✅ Workouts
+- ✅ Habits (with AI insights)
+- ✅ Basic AI Coach
+
+### Code Stats:
+- **Total Files:** ~150+
+- **Lines of Code:** ~15,000+
+- **Features Folders:** 8
+- **Models (Freezed):** 10+
+- **Repositories:** 4
+- **Providers:** 15+
+- **Screens:** 25+
+
+### Firestore Collections: **4**
+- users
+- habits
+- habit_logs
+- workouts
+
+### Git Commits: **3 major commits this session**
+1. Habits feature implementation
+2. AI insights integration
+3. Delete/Edit features
+
+---
+
+## 📞 Session Notes
+
+### What Worked Well This Session:
+✅ Systematic approach to fixing Firestore query errors
+✅ Custom Timestamp converter solved date handling
+✅ AI insights feature provides real user value
+✅ Clean separation of concerns (service, provider, UI)
+✅ Comprehensive testing before committing
+✅ Proper Git hygiene with .gitignore updates
+
+### Challenges Overcome:
+- Firestore query order (WHERE before ORDER BY)
+- Timestamp vs String type mismatches
+- Multiple missing Firestore indexes
+- AI service integration with existing infrastructure
+- Import path corrections for Claude API service
+
+### Key Learnings:
+- Firestore composite indexes are critical for complex queries
+- Always test queries with actual data before deploying
+- AI insights add significant value with minimal code
+- Users love seeing patterns in their data
+- Compassionate tone in AI coaching is important
+
+---
+
+## 🎨 App Design Language
+
+### Color Palette:
 ```dart
-Primary: Color(0xFF6366F1) // Indigo
-Secondary: Color(0xFF8B5CF6) // Purple
-Accent: Color(0xFFEC4899) // Pink
-Background: Color(0xFFF9FAFB) // Light gray
+Primary: Color(0xFF6366F1)      // Indigo
+Secondary: Color(0xFF8B5CF6)    // Purple
+Accent: Color(0xFFEC4899)       // Pink
+Background: Color(0xFFF9FAFB)   // Light gray
+Success: Colors.green
+Warning: Colors.orange
+Error: Colors.red
 ```
 
-Gradient used throughout the app for visual appeal.
+### Typography:
+- Headlines: Bold, 24-28px
+- Body: Regular, 16px
+- Captions: 12-14px
+- Buttons: Medium, 16px
+
+### Spacing:
+- Small: 8px
+- Medium: 16px
+- Large: 24px
+- XLarge: 32px
 
 ---
 
-## 📞 Getting Help
+## 📖 Documentation
 
-If you encounter issues:
-1. Check this document first
-2. Review the error messages in the console
-3. Check Firebase Console for backend issues
-4. Restart the app/emulator if needed
-5. Run `flutter clean && flutter pub get` if packages are causing issues
+### For Developers:
+- **Architecture:** Clean Architecture with feature-based modules
+- **State Management:** Riverpod (Provider-based)
+- **Naming Convention:** snake_case for files, camelCase for variables
+- **Comments:** JSDoc-style for public APIs
+- **Testing:** Manual testing on emulator (unit tests TODO)
+
+### For Future Contributors:
+1. Read this document first
+2. Check `CLAUDE.md` for detailed project vision
+3. Follow existing patterns in codebase
+4. Test on emulator before committing
+5. Update this document with changes
+
+---
+
+## 🎯 Success Metrics (When Launched)
+
+### Engagement:
+- DAU/MAU ratio > 40%
+- Average session > 5 minutes
+- Habits completion rate > 60%
+
+### Retention:
+- Day 1: > 60%
+- Day 7: > 40%
+- Day 30: > 25%
+
+### Monetization:
+- Free → Premium: > 5%
+- Monthly churn: < 8%
+- Target: £5-10k MRR in Year 1
+
+---
+
+## 🔮 Vision Statement
+
+**Kinesa is a holistic fitness companion that adapts to your life and keeps you motivated — combining whole-life tracking, behavioral science, and an optional human touch to deliver a supportive coaching experience.**
+
+**Core Philosophy:** "No guilt. No overwhelm. Just progress."
 
 ---
 
 **Happy Coding! 🚀**
 
-*Generated with Claude Code - Session Date: 2025-12-27*
+*Last session date: 2026-01-05*
+*Session focus: Habits Feature + AI-Powered Insights*
+*Next recommended feature: Progress Tracking or HealthKit Integration*
+
+---
+
+## Quick Reference Commands
+
+```bash
+# Start project
+cd C:\dev\projects\grandmind && flutter run -d emulator-5554
+
+# Check Firestore indexes
+cat firestore.indexes.json
+
+# View git history
+git log --oneline
+
+# Clean build
+flutter clean && flutter pub get && flutter run
+```
+
+**🎉 You're all set to continue building Kinesa/Grandmind!**

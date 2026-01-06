@@ -1,4 +1,4 @@
-// Basic widget test for GrandMind app
+// Basic widget test for Kinesa app
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

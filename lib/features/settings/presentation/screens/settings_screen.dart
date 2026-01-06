@@ -67,6 +67,19 @@ class SettingsScreen extends ConsumerWidget {
           ),
           _buildSection(
             context,
+            'AI Features',
+            [
+              _buildSettingsTile(
+                context,
+                'AI API Key Setup',
+                'Configure your Claude API key',
+                Icons.vpn_key_outlined,
+                () => context.push(RouteConstants.apiKeySetup),
+              ),
+            ],
+          ),
+          _buildSection(
+            context,
             'Privacy & Security',
             [
               _buildSettingsTile(

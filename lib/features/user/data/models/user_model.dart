@@ -33,10 +33,9 @@ class UserModel {
     required this.updatedAt,
   });
 
-  factory UserModel.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+  factory UserModel.fromFirestore(Map<String, dynamic> data, String id) {
     return UserModel(
-      id: doc.id,
+      id: id,
       email: data['email'] ?? '',
       displayName: data['displayName'],
       photoUrl: data['photoUrl'],
