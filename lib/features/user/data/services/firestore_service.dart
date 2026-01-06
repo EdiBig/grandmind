@@ -30,7 +30,19 @@ class FirestoreService {
 
   Future<void> updateUser(String userId, Map<String, dynamic> data) async {
     data['updatedAt'] = Timestamp.now();
-    await _firestore.collection(_usersCollection).doc(userId).update(data);
+    try {
+      await _firestore.collection(_usersCollection).doc(userId).update(data);
+    } on FirebaseException catch (e) {
+      if (e.code != 'not-found') {
+        rethrow;
+      }
+      final createData = Map<String, dynamic>.from(data);
+      createData['createdAt'] = Timestamp.now();
+      await _firestore
+          .collection(_usersCollection)
+          .doc(userId)
+          .set(createData, SetOptions(merge: true));
+    }
   }
 
   Stream<UserModel?> getUserStream(String userId) {

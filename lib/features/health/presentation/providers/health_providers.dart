@@ -114,13 +114,15 @@ final lastHealthSyncProvider = FutureProvider<DateTime?>((ref) async {
 /// Provider to trigger health data sync
 final healthSyncProvider = FutureProvider<bool>((ref) async {
   final healthService = ref.watch(healthServiceProvider);
+  final repository = ref.watch(healthRepositoryProvider);
+  final userId = ref.watch(_currentUserIdProvider);
 
   final hasPermissions = await healthService.hasPermissions();
-  if (!hasPermissions) return false;
+  if (!hasPermissions || userId == null) return false;
 
   try {
-    // Fetch today's data to trigger sync
-    await healthService.getTodaySummary();
+    // Fetch today's data and persist to Firestore
+    await repository.syncTodayHealthData(userId);
 
     // Save sync timestamp
     final prefs = await SharedPreferences.getInstance();
@@ -130,6 +132,10 @@ final healthSyncProvider = FutureProvider<bool>((ref) async {
     ref.invalidate(todayHealthSummaryProvider);
     ref.invalidate(todayStepsProvider);
     ref.invalidate(weeklyStepsProvider);
+    ref.invalidate(syncedTodayHealthDataProvider);
+    ref.invalidate(last7DaysHealthDataProvider);
+    ref.invalidate(last30DaysHealthDataProvider);
+    ref.invalidate(weeklyHealthStatsProvider);
 
     return true;
   } catch (e) {

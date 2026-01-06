@@ -15,13 +15,17 @@ import '../features/onboarding/presentation/screens/coach_tone_screen.dart';
 import '../features/home/presentation/screens/home_screen.dart';
 import '../features/home/presentation/screens/log_activity_screen.dart';
 import '../features/profile/presentation/screens/profile_screen.dart';
+import '../features/profile/presentation/screens/edit_profile_enhanced_screen.dart';
 import '../features/settings/presentation/screens/settings_screen.dart';
 import '../features/settings/presentation/screens/api_key_setup_screen.dart';
+import '../features/settings/presentation/screens/data_management_screen.dart';
 import '../features/ai/presentation/screens/ai_coach_screen.dart';
 import '../features/habits/presentation/screens/create_habit_screen.dart';
 import '../features/habits/presentation/screens/habit_insights_screen.dart';
 import '../features/habits/data/services/habit_insights_service.dart';
 import '../features/health/presentation/screens/health_details_screen.dart';
+import '../features/health/presentation/screens/health_sync_screen.dart';
+import '../features/notifications/presentation/screens/notification_settings_screen.dart';
 
 /// Provider for the app router
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -107,9 +111,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const SettingsScreen(),
       ),
       GoRoute(
+        path: RouteConstants.editProfile,
+        name: 'editProfile',
+        builder: (context, state) => const EditProfileEnhancedScreen(),
+      ),
+      GoRoute(
         path: RouteConstants.apiKeySetup,
         name: 'apiKeySetup',
         builder: (context, state) => const ApiKeySetupScreen(),
+      ),
+      GoRoute(
+        path: RouteConstants.dataManagement,
+        name: 'dataManagement',
+        builder: (context, state) => const DataManagementScreen(),
       ),
 
       // AI Features
@@ -147,6 +161,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: RouteConstants.healthDetails,
         name: 'healthDetails',
         builder: (context, state) => const HealthDetailsScreen(),
+      ),
+      GoRoute(
+        path: RouteConstants.healthSync,
+        name: 'healthSync',
+        builder: (context, state) => const HealthSyncScreen(),
+      ),
+
+      // Notifications Routes
+      GoRoute(
+        path: RouteConstants.notifications,
+        name: 'notifications',
+        builder: (context, state) => const NotificationSettingsScreen(),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

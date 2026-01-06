@@ -92,9 +92,9 @@ class SettingsScreen extends ConsumerWidget {
               _buildSettingsTile(
                 context,
                 'Data Management',
-                'Download or delete your data',
+                'Export or delete your data',
                 Icons.storage_outlined,
-                () {},
+                () => context.push(RouteConstants.dataManagement),
               ),
             ],
           ),

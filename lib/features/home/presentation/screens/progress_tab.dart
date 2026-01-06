@@ -6,30 +6,54 @@ import '../../../progress/presentation/screens/weight_tracking_screen.dart';
 import '../../../progress/presentation/screens/measurements_screen.dart';
 import '../../../progress/presentation/screens/progress_photos_screen.dart';
 import '../../../progress/presentation/screens/goals_screen.dart';
+import '../../../progress/presentation/screens/progress_dashboard_screen.dart';
+import '../../../progress/presentation/providers/progress_providers.dart';
+import '../../../habits/data/repositories/habit_repository.dart';
+import '../../../workouts/data/repositories/workout_repository.dart';
 
 class ProgressTab extends ConsumerWidget {
   const ProgressTab({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Watch progress data
+    final latestWeightAsync = ref.watch(latestWeightProvider);
+    final activeGoalsAsync = ref.watch(activeGoalsProvider);
+    final latestMeasurementsAsync = ref.watch(latestMeasurementsProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Progress'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.calendar_today),
-            onPressed: () {},
+            icon: const Icon(Icons.insights),
+            tooltip: 'View Dashboard',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const ProgressDashboardScreen(),
+                ),
+              );
+            },
           ),
           IconButton(
             icon: const Icon(Icons.share),
-            onPressed: () {},
+            onPressed: () {
+              // TODO: Implement share progress
+            },
           ),
         ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _buildOverviewCard(context),
+          _buildOverviewCard(
+            context,
+            ref,
+            latestWeightAsync,
+            activeGoalsAsync,
+            latestMeasurementsAsync,
+          ),
           const SizedBox(height: 24),
           // Quick Access Card for Weight Tracking
           _buildQuickAccessCard(
@@ -140,7 +164,13 @@ class ProgressTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildOverviewCard(BuildContext context) {
+  Widget _buildOverviewCard(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue latestWeight,
+    AsyncValue activeGoals,
+    AsyncValue latestMeasurements,
+  ) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -150,24 +180,131 @@ class ProgressTab extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'This Week',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Your Progress',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(20),
                 ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.analytics,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      'Summary',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           Row(
             children: [
+              // Latest Weight
               Expanded(
-                child: _buildOverviewStat(context, '245', 'Minutes', Icons.timer),
+                child: latestWeight.when(
+                  data: (weight) {
+                    if (weight != null) {
+                      return _buildOverviewStat(
+                        context,
+                        weight.weight.toStringAsFixed(1),
+                        'kg',
+                        Icons.monitor_weight,
+                      );
+                    }
+                    return _buildOverviewStat(
+                      context,
+                      '--',
+                      'Weight',
+                      Icons.monitor_weight,
+                    );
+                  },
+                  loading: () => _buildOverviewStat(
+                    context,
+                    '...',
+                    'Loading',
+                    Icons.monitor_weight,
+                  ),
+                  error: (_, __) => _buildOverviewStat(
+                    context,
+                    '--',
+                    'Weight',
+                    Icons.monitor_weight,
+                  ),
+                ),
               ),
+              // Active Goals
               Expanded(
-                child: _buildOverviewStat(context, '1,850', 'Calories', Icons.local_fire_department),
+                child: activeGoals.when(
+                  data: (goals) {
+                    final count = goals.where((g) => g.status.name == 'active').length;
+                    return _buildOverviewStat(
+                      context,
+                      '$count',
+                      count == 1 ? 'Goal' : 'Goals',
+                      Icons.flag,
+                    );
+                  },
+                  loading: () => _buildOverviewStat(
+                    context,
+                    '...',
+                    'Goals',
+                    Icons.flag,
+                  ),
+                  error: (_, __) => _buildOverviewStat(
+                    context,
+                    '0',
+                    'Goals',
+                    Icons.flag,
+                  ),
+                ),
               ),
+              // Measurements Count
               Expanded(
-                child: _buildOverviewStat(context, '12', 'Workouts', Icons.fitness_center),
+                child: latestMeasurements.when(
+                  data: (measurements) {
+                    final count = measurements?.measurements.length ?? 0;
+                    return _buildOverviewStat(
+                      context,
+                      '$count',
+                      'Metrics',
+                      Icons.straighten,
+                    );
+                  },
+                  loading: () => _buildOverviewStat(
+                    context,
+                    '...',
+                    'Metrics',
+                    Icons.straighten,
+                  ),
+                  error: (_, __) => _buildOverviewStat(
+                    context,
+                    '0',
+                    'Metrics',
+                    Icons.straighten,
+                  ),
+                ),
               ),
             ],
           ),

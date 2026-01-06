@@ -34,6 +34,7 @@ class RouteConstants {
   static const String notifications = '/settings/notifications';
   static const String healthSync = '/settings/health-sync';
   static const String privacy = '/settings/privacy';
+  static const String dataManagement = '/settings/data-management';
   static const String about = '/settings/about';
   static const String help = '/settings/help';
   static const String termsOfService = '/settings/terms';

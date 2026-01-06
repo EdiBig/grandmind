@@ -3,14 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/route_constants.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../authentication/presentation/providers/auth_provider.dart';
+import '../../../home/presentation/providers/dashboard_provider.dart';
+import '../providers/profile_providers.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(authStateProvider).value;
+    final userAsync = ref.watch(currentUserProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -22,47 +23,72 @@ class ProfileScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _buildProfileHeader(context, user?.email ?? 'User'),
-          const SizedBox(height: 32),
-          _buildStatsRow(context),
-          const SizedBox(height: 32),
-          _buildSection(context, 'Personal Information', [
-            _buildInfoTile(context, 'Email', user?.email ?? 'Not set',
-                Icons.email_outlined),
-            _buildInfoTile(context, 'Phone', '+1 234 567 8900', Icons.phone_outlined),
-            _buildInfoTile(context, 'Date of Birth', 'Jan 1, 1990', Icons.cake_outlined),
-            _buildInfoTile(context, 'Gender', 'Not set', Icons.person_outline),
-          ]),
-          const SizedBox(height: 24),
-          _buildSection(context, 'Fitness Information', [
-            _buildInfoTile(context, 'Height', '5\'10"', Icons.height),
-            _buildInfoTile(context, 'Weight', '165 lbs', Icons.monitor_weight_outlined),
-            _buildInfoTile(context, 'Fitness Level', 'Intermediate', Icons.fitness_center),
-            _buildInfoTile(context, 'Goal', 'Build Muscle', Icons.flag_outlined),
-          ]),
-          const SizedBox(height: 32),
-          ElevatedButton.icon(
-            onPressed: () => context.push(RouteConstants.editProfile),
-            icon: const Icon(Icons.edit),
-            label: const Text('Edit Profile'),
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+      body: userAsync.when(
+        data: (user) {
+          final displayName = user?.displayName?.trim().isNotEmpty == true
+              ? user!.displayName!
+              : user?.email ?? 'User';
+          final phone = user?.phoneNumber ?? 'Not set';
+          final dob = user?.dateOfBirth != null
+              ? _formatDate(user!.dateOfBirth!)
+              : 'Not set';
+          final gender = user?.gender ?? 'Not set';
+          final height = user?.height != null
+              ? '${user!.height!.toStringAsFixed(0)} cm'
+              : 'Not set';
+          final weight = user?.weight != null
+              ? '${user!.weight!.toStringAsFixed(1)} kg'
+              : 'Not set';
+          final fitnessLevel = user?.fitnessLevel ?? 'Not set';
+          final goal = user?.goal ?? 'Not set';
+
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              _buildProfileHeader(context, displayName, user?.email),
+              const SizedBox(height: 32),
+              _buildStatsRow(context, ref),
+              const SizedBox(height: 32),
+              _buildSection(context, 'Personal Information', [
+                _buildInfoTile(
+                    context, 'Email', user?.email ?? 'Not set', Icons.email_outlined),
+                _buildInfoTile(context, 'Phone', phone, Icons.phone_outlined),
+                _buildInfoTile(context, 'Date of Birth', dob, Icons.cake_outlined),
+                _buildInfoTile(context, 'Gender', gender, Icons.person_outline),
+              ]),
+              const SizedBox(height: 24),
+              _buildSection(context, 'Fitness Information', [
+                _buildInfoTile(context, 'Height', height, Icons.height),
+                _buildInfoTile(
+                    context, 'Weight', weight, Icons.monitor_weight_outlined),
+                _buildInfoTile(
+                    context, 'Fitness Level', fitnessLevel, Icons.fitness_center),
+                _buildInfoTile(context, 'Goal', goal, Icons.flag_outlined),
+              ]),
+              const SizedBox(height: 32),
+              ElevatedButton.icon(
+                onPressed: () => context.push(RouteConstants.editProfile),
+                icon: const Icon(Icons.edit),
+                label: const Text('Edit Profile'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                ),
               ),
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-            ),
-          ),
-        ],
+            ],
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, __) => const Center(child: Text('Failed to load profile')),
       ),
     );
   }
 
-  Widget _buildProfileHeader(BuildContext context, String email) {
+  Widget _buildProfileHeader(BuildContext context, String name, String? email) {
     return Column(
       children: [
         Stack(
@@ -71,7 +97,6 @@ class ProfileScreen extends ConsumerWidget {
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                gradient: AppColors.primaryGradient,
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 4),
                 boxShadow: [
@@ -82,10 +107,32 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                 ],
               ),
-              child: const Icon(
-                Icons.person,
-                size: 60,
-                color: Colors.white,
+              child: ClipOval(
+                child: user?.photoUrl != null
+                    ? Image.network(
+                        user!.photoUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          decoration: BoxDecoration(
+                            gradient: AppColors.primaryGradient,
+                          ),
+                          child: const Icon(
+                            Icons.person,
+                            size: 60,
+                            color: Colors.white,
+                          ),
+                        ),
+                      )
+                    : Container(
+                        decoration: BoxDecoration(
+                          gradient: AppColors.primaryGradient,
+                        ),
+                        child: const Icon(
+                          Icons.person,
+                          size: 60,
+                          color: Colors.white,
+                        ),
+                      ),
               ),
             ),
             Positioned(
@@ -108,14 +155,14 @@ class ProfileScreen extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         Text(
-          email.split('@')[0].toUpperCase(),
+          name.toUpperCase(),
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
         ),
         const SizedBox(height: 4),
         Text(
-          email,
+          email ?? '',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Colors.grey,
               ),
@@ -124,19 +171,50 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatsRow(BuildContext context) {
+  Widget _buildStatsRow(BuildContext context, WidgetRef ref) {
+    final workoutsAsync = ref.watch(totalWorkoutsProvider);
+    final streakAsync = ref.watch(currentStreakProvider);
+    final achievementsAsync = ref.watch(achievementsCountProvider);
+
     return Row(
       children: [
         Expanded(
-          child: _buildStatCard(context, '48', 'Workouts', AppColors.primary),
+          child: workoutsAsync.when(
+            data: (count) => _buildStatCard(
+              context,
+              count.toString(),
+              count == 1 ? 'Workout' : 'Workouts',
+              AppColors.primary,
+            ),
+            loading: () => _buildStatCard(context, '...', 'Workouts', AppColors.primary),
+            error: (_, __) => _buildStatCard(context, '0', 'Workouts', AppColors.primary),
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _buildStatCard(context, '12', 'Day Streak', AppColors.secondary),
+          child: streakAsync.when(
+            data: (streak) => _buildStatCard(
+              context,
+              streak.toString(),
+              'Day Streak',
+              AppColors.secondary,
+            ),
+            loading: () => _buildStatCard(context, '...', 'Day Streak', AppColors.secondary),
+            error: (_, __) => _buildStatCard(context, '0', 'Day Streak', AppColors.secondary),
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _buildStatCard(context, '5', 'Achievements', AppColors.accent),
+          child: achievementsAsync.when(
+            data: (count) => _buildStatCard(
+              context,
+              count.toString(),
+              count == 1 ? 'Achievement' : 'Achievements',
+              AppColors.accent,
+            ),
+            loading: () => _buildStatCard(context, '...', 'Achievements', AppColors.accent),
+            error: (_, __) => _buildStatCard(context, '0', 'Achievements', AppColors.accent),
+          ),
         ),
       ],
     );
@@ -222,5 +300,11 @@ class ProfileScreen extends ConsumerWidget {
       trailing: const Icon(Icons.chevron_right),
       onTap: () {},
     );
+  }
+
+  String _formatDate(DateTime date) {
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '${date.year}-$month-$day';
   }
 }
