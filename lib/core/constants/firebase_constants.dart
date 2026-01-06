@@ -13,8 +13,8 @@ class FirebaseConstants {
   static const String healthMetricsCollection = 'healthMetrics';
 
   // Progress Tracking Collections
-  static const String progressWeightCollection = 'progress_weight';
-  static const String progressMeasurementsCollection = 'progress_measurements';
+  static const String progressWeightCollection = 'weight_entries';
+  static const String progressMeasurementsCollection = 'measurement_entries';
   static const String progressPhotosCollection = 'progress_photos';
   static const String progressGoalsCollection = 'progress_goals';
 
