@@ -1,10 +1,12 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_gradients.dart';
 import '../../../home/presentation/providers/dashboard_provider.dart';
 import '../../../user/data/services/firestore_service.dart';
 import '../../data/services/profile_photo_service.dart';
@@ -19,6 +21,18 @@ class EditProfileEnhancedScreen extends ConsumerStatefulWidget {
 
 class _EditProfileEnhancedScreenState
     extends ConsumerState<EditProfileEnhancedScreen> {
+  static const int _maxPhotoBytes = 10 * 1024 * 1024;
+  static const double _cmPerInch = 2.54;
+  static const double _lbsPerKg = 2.2046226218;
+  static const double _minHeightCm = 50;
+  static const double _maxHeightCm = 250;
+  static const double _minHeightIn = 20;
+  static const double _maxHeightIn = 100;
+  static const double _minWeightKg = 20;
+  static const double _maxWeightKg = 300;
+  static const double _minWeightLbs = 44;
+  static const double _maxWeightLbs = 660;
+
   final _formKey = GlobalKey<FormState>();
   final _displayNameController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -34,6 +48,7 @@ class _EditProfileEnhancedScreenState
   String? _coachTone;
   String? _unitPreference;
   File? _selectedImage;
+  Uint8List? _selectedImageBytes;
   String? _currentPhotoUrl;
   bool _initialized = false;
   bool _isSaving = false;
@@ -67,6 +82,7 @@ class _EditProfileEnhancedScreenState
   @override
   Widget build(BuildContext context) {
     final userAsync = ref.watch(currentUserProvider);
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
@@ -96,22 +112,33 @@ class _EditProfileEnhancedScreenState
       ),
       body: userAsync.when(
         data: (user) {
-          if (!_initialized && user != null) {
-            _displayNameController.text = user.displayName ?? '';
-            _phoneController.text = user.phoneNumber ?? '';
-            _heightController.text =
-                user.height != null ? user.height!.toStringAsFixed(0) : '';
-            _weightController.text =
-                user.weight != null ? user.weight!.toStringAsFixed(1) : '';
-            _dateOfBirth = user.dateOfBirth;
-            _gender = user.gender;
-            _fitnessLevel = user.fitnessLevel;
-            _goal = user.goal;
-            _currentPhotoUrl = user.photoUrl;
-            _coachTone = user.onboarding?['coachTone'] as String? ?? 'Friendly';
-            _unitPreference = user.preferences?['units'] as String? ?? 'Metric';
-            _initialized = true;
-          }
+      if (!_initialized && user != null) {
+        _displayNameController.text = user.displayName ?? '';
+        _phoneController.text = user.phoneNumber ?? '';
+        _dateOfBirth = user.dateOfBirth;
+        _gender = _normalizeDropdownValue(user.gender, _genderOptions);
+        _fitnessLevel =
+            _normalizeDropdownValue(user.fitnessLevel, _fitnessOptions);
+        _goal = _normalizeDropdownValue(user.goal, _goalOptions);
+        _currentPhotoUrl = user.photoUrl;
+        _coachTone = _normalizeDropdownValue(
+          user.onboarding?['coachTone'] as String?,
+          _coachToneOptions,
+        ) ??
+            'Friendly';
+        _unitPreference = _normalizeDropdownValue(
+              user.preferences?['units'] as String?,
+              _unitOptions,
+            ) ??
+            'Metric';
+        _setMeasurementControllers(
+          heightCm: user.height,
+          weightKg: user.weight,
+          unitPreference: _unitPreference!,
+        );
+        _initialized = true;
+        _runProfileMigration(user.id);
+      }
 
           return Form(
             key: _formKey,
@@ -176,6 +203,8 @@ class _EditProfileEnhancedScreenState
                   inputFormatters: [
                     FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,1}')),
                   ],
+                  validator: _validateHeight,
+                  helperText: _heightHelperText(),
                 ),
                 const SizedBox(height: 12),
                 _buildTextField(
@@ -186,6 +215,8 @@ class _EditProfileEnhancedScreenState
                   inputFormatters: [
                     FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,1}')),
                   ],
+                  validator: _validateWeight,
+                  helperText: _weightHelperText(),
                 ),
                 const SizedBox(height: 12),
                 _buildDropdownField(
@@ -222,7 +253,7 @@ class _EditProfileEnhancedScreenState
                   icon: Icons.straighten,
                   value: _unitPreference,
                   options: _unitOptions,
-                  onChanged: (value) => setState(() => _unitPreference = value),
+                  onChanged: _onUnitPreferenceChanged,
                   hint: 'Metric (kg, cm) or Imperial (lbs, inches)',
                 ),
                 const SizedBox(height: 32),
@@ -233,7 +264,7 @@ class _EditProfileEnhancedScreenState
                   icon: const Icon(Icons.save),
                   label: Text(_isSaving ? 'Saving...' : 'Save Changes'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: colorScheme.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
@@ -252,6 +283,8 @@ class _EditProfileEnhancedScreenState
   }
 
   Widget _buildProfilePhotoSection(BuildContext context) {
+    final gradients = Theme.of(context).extension<AppGradients>()!;
+    final colorScheme = Theme.of(context).colorScheme;
     return Center(
       child: Stack(
         children: [
@@ -260,37 +293,39 @@ class _EditProfileEnhancedScreenState
             height: 140,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: AppColors.primary, width: 3),
+              border: Border.all(color: colorScheme.primary, width: 3),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withOpacity(0.3),
+                  color: colorScheme.primary.withOpacity(0.3),
                   blurRadius: 10,
                   offset: const Offset(0, 5),
                 ),
               ],
             ),
             child: ClipOval(
-              child: _selectedImage != null
-                  ? Image.file(_selectedImage!, fit: BoxFit.cover)
-                  : _currentPhotoUrl != null
-                      ? Image.network(_currentPhotoUrl!, fit: BoxFit.cover)
-                      : Container(
-                          decoration: BoxDecoration(
-                            gradient: AppColors.primaryGradient,
-                          ),
-                          child: const Icon(
-                            Icons.person,
-                            size: 70,
-                            color: Colors.white,
-                          ),
-                        ),
+              child: _selectedImageBytes != null
+                  ? Image.memory(_selectedImageBytes!, fit: BoxFit.cover)
+                  : _selectedImage != null
+                      ? Image.file(_selectedImage!, fit: BoxFit.cover)
+                      : _currentPhotoUrl != null
+                          ? Image.network(_currentPhotoUrl!, fit: BoxFit.cover)
+                          : Container(
+                              decoration: BoxDecoration(
+                                gradient: gradients.primary,
+                              ),
+                              child: const Icon(
+                                Icons.person,
+                                size: 70,
+                                color: Colors.white,
+                              ),
+                            ),
             ),
           ),
           Positioned(
             right: 0,
             bottom: 0,
             child: Material(
-              color: AppColors.primary,
+              color: colorScheme.primary,
               shape: const CircleBorder(),
               child: InkWell(
                 onTap: _isUploadingPhoto ? null : _showPhotoOptions,
@@ -343,7 +378,9 @@ class _EditProfileEnhancedScreenState
                 _pickImage(ImageSource.gallery);
               },
             ),
-            if (_currentPhotoUrl != null || _selectedImage != null)
+            if (_currentPhotoUrl != null ||
+                _selectedImage != null ||
+                _selectedImageBytes != null)
               ListTile(
                 leading: const Icon(Icons.delete, color: Colors.red),
                 title: const Text('Remove Photo', style: TextStyle(color: Colors.red)),
@@ -351,6 +388,7 @@ class _EditProfileEnhancedScreenState
                   Navigator.pop(context);
                   setState(() {
                     _selectedImage = null;
+                    _selectedImageBytes = null;
                     _currentPhotoUrl = null;
                   });
                 },
@@ -371,9 +409,41 @@ class _EditProfileEnhancedScreenState
       );
 
       if (pickedFile != null) {
-        setState(() {
-          _selectedImage = File(pickedFile.path);
-        });
+        if (kIsWeb) {
+          final bytes = await pickedFile.readAsBytes();
+          if (bytes.length > _maxPhotoBytes) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content:
+                      Text('Photo is too large. Please choose a smaller image.'),
+                ),
+              );
+            }
+            return;
+          }
+          setState(() {
+            _selectedImageBytes = bytes;
+            _selectedImage = null;
+          });
+        } else {
+          final file = File(pickedFile.path);
+          final fileSize = await file.length();
+          if (fileSize > _maxPhotoBytes) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content:
+                      Text('Photo is too large. Please choose a smaller image.'),
+                ),
+              );
+            }
+            return;
+          }
+          setState(() {
+            _selectedImage = file;
+          });
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -385,11 +455,12 @@ class _EditProfileEnhancedScreenState
   }
 
   Widget _buildSectionTitle(BuildContext context, String title) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Text(
       title,
       style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
-            color: AppColors.primary,
+            color: colorScheme.primary,
           ),
     );
   }
@@ -401,7 +472,9 @@ class _EditProfileEnhancedScreenState
     TextInputType? keyboardType,
     List<TextInputFormatter>? inputFormatters,
     String? Function(String?)? validator,
+    String? helperText,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
@@ -409,13 +482,15 @@ class _EditProfileEnhancedScreenState
       validator: validator,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: AppColors.primary),
+        helperText: helperText,
+        helperMaxLines: 2,
+        prefixIcon: Icon(icon, color: colorScheme.primary),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderSide: BorderSide(color: colorScheme.primary, width: 2),
         ),
       ),
     );
@@ -449,8 +524,9 @@ class _EditProfileEnhancedScreenState
     required ValueChanged<String?> onChanged,
     String? hint,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return DropdownButtonFormField<String>(
-      value: value,
+      value: _normalizeDropdownValue(value, options),
       items: options
           .map((option) => DropdownMenuItem(value: option, child: Text(option)))
           .toList(),
@@ -458,13 +534,13 @@ class _EditProfileEnhancedScreenState
         labelText: label,
         helperText: hint,
         helperMaxLines: 2,
-        prefixIcon: Icon(icon, color: AppColors.primary),
+        prefixIcon: Icon(icon, color: colorScheme.primary),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderSide: BorderSide(color: colorScheme.primary, width: 2),
         ),
       ),
       onChanged: onChanged,
@@ -472,6 +548,7 @@ class _EditProfileEnhancedScreenState
   }
 
   Widget _buildDateField(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final value = _dateOfBirth == null ? 'Not set' : _formatDate(_dateOfBirth!);
 
     return InkWell(
@@ -491,7 +568,7 @@ class _EditProfileEnhancedScreenState
       child: InputDecorator(
         decoration: InputDecoration(
           labelText: 'Date of Birth',
-          prefixIcon: const Icon(Icons.cake_outlined, color: AppColors.primary),
+          prefixIcon: Icon(Icons.cake_outlined, color: colorScheme.primary),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -499,6 +576,102 @@ class _EditProfileEnhancedScreenState
         child: Text(value),
       ),
     );
+  }
+
+  void _setMeasurementControllers({
+    required double? heightCm,
+    required double? weightKg,
+    required String unitPreference,
+  }) {
+    if (heightCm != null) {
+      final heightValue =
+          unitPreference == 'Imperial' ? _cmToInches(heightCm) : heightCm;
+      _heightController.text =
+          _formatHeight(heightValue, unitPreference: unitPreference);
+    } else {
+      _heightController.text = '';
+    }
+
+    if (weightKg != null) {
+      final weightValue =
+          unitPreference == 'Imperial' ? _kgToLbs(weightKg) : weightKg;
+      _weightController.text =
+          _formatWeight(weightValue, unitPreference: unitPreference);
+    } else {
+      _weightController.text = '';
+    }
+  }
+
+  void _onUnitPreferenceChanged(String? value) {
+    if (value == null) return;
+    final previous = _unitPreference ?? 'Metric';
+    if (previous == value) return;
+
+    final height = _parseDoubleOrNull(_heightController.text);
+    final weight = _parseDoubleOrNull(_weightController.text);
+
+    setState(() {
+      _unitPreference = value;
+      if (height != null) {
+        final converted = previous == 'Metric'
+            ? _cmToInches(height)
+            : _inchesToCm(height);
+        _heightController.text =
+            _formatHeight(converted, unitPreference: value);
+      }
+      if (weight != null) {
+        final converted =
+            previous == 'Metric' ? _kgToLbs(weight) : _lbsToKg(weight);
+        _weightController.text =
+            _formatWeight(converted, unitPreference: value);
+      }
+    });
+  }
+
+  String? _validateHeight(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    final parsed = double.tryParse(value);
+    if (parsed == null) return 'Enter a valid height';
+    if ((_unitPreference ?? 'Metric') == 'Imperial') {
+      if (parsed < _minHeightIn || parsed > _maxHeightIn) {
+        return 'Height should be ${_minHeightIn.toStringAsFixed(0)}-${_maxHeightIn.toStringAsFixed(0)} in';
+      }
+      return null;
+    }
+    if (parsed < _minHeightCm || parsed > _maxHeightCm) {
+      return 'Height should be ${_minHeightCm.toStringAsFixed(0)}-${_maxHeightCm.toStringAsFixed(0)} cm';
+    }
+    return null;
+  }
+
+  String? _validateWeight(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    final parsed = double.tryParse(value);
+    if (parsed == null) return 'Enter a valid weight';
+    if ((_unitPreference ?? 'Metric') == 'Imperial') {
+      if (parsed < _minWeightLbs || parsed > _maxWeightLbs) {
+        return 'Weight should be ${_minWeightLbs.toStringAsFixed(0)}-${_maxWeightLbs.toStringAsFixed(0)} lbs';
+      }
+      return null;
+    }
+    if (parsed < _minWeightKg || parsed > _maxWeightKg) {
+      return 'Weight should be ${_minWeightKg.toStringAsFixed(0)}-${_maxWeightKg.toStringAsFixed(0)} kg';
+    }
+    return null;
+  }
+
+  String _heightHelperText() {
+    if ((_unitPreference ?? 'Metric') == 'Imperial') {
+      return 'Typical range: ${_minHeightIn.toStringAsFixed(0)}-${_maxHeightIn.toStringAsFixed(0)} in';
+    }
+    return 'Typical range: ${_minHeightCm.toStringAsFixed(0)}-${_maxHeightCm.toStringAsFixed(0)} cm';
+  }
+
+  String _weightHelperText() {
+    if ((_unitPreference ?? 'Metric') == 'Imperial') {
+      return 'Typical range: ${_minWeightLbs.toStringAsFixed(0)}-${_maxWeightLbs.toStringAsFixed(0)} lbs';
+    }
+    return 'Typical range: ${_minWeightKg.toStringAsFixed(0)}-${_maxWeightKg.toStringAsFixed(0)} kg';
   }
 
   Future<void> _saveProfile(BuildContext context) async {
@@ -513,12 +686,19 @@ class _EditProfileEnhancedScreenState
       String? photoUrl = _currentPhotoUrl;
 
       // Upload new photo if selected
-      if (_selectedImage != null) {
+      if (_selectedImageBytes != null || _selectedImage != null) {
         setState(() => _isUploadingPhoto = true);
-        photoUrl = await _profilePhotoService.uploadProfilePhoto(
-          userId: userId,
-          imageFile: _selectedImage!,
-        );
+        if (_selectedImageBytes != null) {
+          photoUrl = await _profilePhotoService.uploadProfilePhotoBytes(
+            userId: userId,
+            bytes: _selectedImageBytes!,
+          );
+        } else {
+          photoUrl = await _profilePhotoService.uploadProfilePhoto(
+            userId: userId,
+            imageFile: _selectedImage!,
+          );
+        }
         setState(() => _isUploadingPhoto = false);
 
         // Delete old photo if exists
@@ -527,6 +707,20 @@ class _EditProfileEnhancedScreenState
         }
       }
 
+      final unitPreference = _unitPreference ?? 'Metric';
+      final heightInput = _parseDoubleOrNull(_heightController.text);
+      final weightInput = _parseDoubleOrNull(_weightController.text);
+      final heightCm = heightInput == null
+          ? null
+          : (unitPreference == 'Imperial'
+              ? _inchesToCm(heightInput)
+              : heightInput);
+      final weightKg = weightInput == null
+          ? null
+          : (unitPreference == 'Imperial'
+              ? _lbsToKg(weightInput)
+              : weightInput);
+
       final data = <String, dynamic>{
         'displayName': _displayNameController.text.trim(),
         'phoneNumber': _phoneController.text.trim().isEmpty
@@ -534,16 +728,17 @@ class _EditProfileEnhancedScreenState
             : _phoneController.text.trim(),
         'dateOfBirth': _dateOfBirth,
         'gender': _gender,
-        'height': _parseDoubleOrNull(_heightController.text),
-        'weight': _parseDoubleOrNull(_weightController.text),
+        'height': heightCm,
+        'weight': weightKg,
         'fitnessLevel': _fitnessLevel,
         'goal': _goal,
         'photoUrl': photoUrl,
+        'photoURL': photoUrl,
         'onboarding': {
           'coachTone': _coachTone,
         },
         'preferences': {
-          'units': _unitPreference,
+          'units': unitPreference,
         },
       };
 
@@ -557,6 +752,7 @@ class _EditProfileEnhancedScreenState
         if (photoUrl != null) {
           await authUser.updatePhotoURL(photoUrl);
         }
+        await authUser.reload();
       }
 
       // Invalidate provider to refresh
@@ -595,9 +791,43 @@ class _EditProfileEnhancedScreenState
     return double.tryParse(value);
   }
 
+  String _formatHeight(double value, {required String unitPreference}) {
+    final decimals = unitPreference == 'Imperial' ? 1 : 0;
+    return value.toStringAsFixed(decimals);
+  }
+
+  String _formatWeight(double value, {required String unitPreference}) {
+    final decimals = unitPreference == 'Imperial' ? 1 : 1;
+    return value.toStringAsFixed(decimals);
+  }
+
   String _formatDate(DateTime date) {
     final month = date.month.toString().padLeft(2, '0');
     final day = date.day.toString().padLeft(2, '0');
     return '${date.year}-$month-$day';
+  }
+
+  double _cmToInches(double cm) => cm / _cmPerInch;
+
+  double _inchesToCm(double inches) => inches * _cmPerInch;
+
+  double _kgToLbs(double kg) => kg * _lbsPerKg;
+
+  double _lbsToKg(double lbs) => lbs / _lbsPerKg;
+
+  String? _normalizeDropdownValue(String? value, List<String> options) {
+    if (value == null) return null;
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return null;
+    return options.contains(trimmed) ? trimmed : null;
+  }
+
+  Future<void> _runProfileMigration(String userId) async {
+    try {
+      final firestoreService = ref.read(firestoreServiceProvider);
+      await firestoreService.sanitizeUserProfile(userId);
+    } catch (_) {
+      // Best-effort cleanup; ignore failures.
+    }
   }
 }

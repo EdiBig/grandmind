@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_gradients.dart';
 import '../../domain/models/measurement_entry.dart';
 import '../providers/progress_providers.dart';
 import '../widgets/measurement_input_dialog.dart';
@@ -166,7 +166,7 @@ class _MeasurementsScreenState extends ConsumerState<MeasurementsScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
+        gradient: Theme.of(context).extension<AppGradients>()!.primary,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -367,12 +367,12 @@ class _MeasurementsScreenState extends ConsumerState<MeasurementsScreen> {
         leading: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(
             Icons.straighten,
-            color: AppColors.primary,
+            color: Theme.of(context).colorScheme.primary,
             size: 24,
           ),
         ),

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../domain/models/notification_preference.dart';
 import '../providers/notification_providers.dart';
 import 'create_reminder_screen.dart';
@@ -46,7 +45,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
         },
         icon: const Icon(Icons.add),
         label: const Text('Add Reminder'),
-        backgroundColor: AppColors.primary,
+        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
     );
   }
@@ -81,7 +80,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
                   _getTypeLabel(entry.key),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimaryLight,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                 ),
               ),
@@ -113,7 +112,11 @@ class NotificationSettingsScreen extends ConsumerWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.bolt, color: AppColors.primary, size: 20),
+                Icon(
+                  Icons.bolt,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 20,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'Quick Actions',
@@ -172,12 +175,13 @@ class NotificationSettingsScreen extends ConsumerWidget {
     required String label,
     required VoidCallback onTap,
   }) {
+    final primary = Theme.of(context).colorScheme.primary;
     return ActionChip(
       avatar: Icon(icon, size: 18),
       label: Text(label),
       onPressed: onTap,
-      backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-      labelStyle: TextStyle(color: AppColors.primary),
+      backgroundColor: primary.withOpacity(0.1),
+      labelStyle: TextStyle(color: primary),
     );
   }
 
@@ -187,25 +191,26 @@ class NotificationSettingsScreen extends ConsumerWidget {
     NotificationPreference preference,
     NotificationOperations operations,
   ) {
+    final primary = Theme.of(context).colorScheme.primary;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final onSurfaceVariant = Theme.of(context).colorScheme.onSurfaceVariant;
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: preference.enabled
-              ? AppColors.primary.withValues(alpha: 0.2)
+              ? primary.withOpacity(0.2)
               : Colors.grey.shade200,
           child: Icon(
             _getTypeIcon(preference.type),
-            color: preference.enabled ? AppColors.primary : Colors.grey,
+            color: preference.enabled ? primary : Colors.grey,
           ),
         ),
         title: Text(
           preference.title,
           style: TextStyle(
             fontWeight: FontWeight.w600,
-            color: preference.enabled
-                ? AppColors.textPrimaryLight
-                : AppColors.textSecondaryLight,
+            color: preference.enabled ? onSurface : onSurfaceVariant,
           ),
         ),
         subtitle: Column(
@@ -222,7 +227,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
                 preference.message,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       fontStyle: FontStyle.italic,
-                      color: AppColors.textSecondaryLight,
+                      color: onSurfaceVariant,
                     ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -250,7 +255,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
                   );
                 }
               },
-              activeColor: AppColors.primary,
+              activeColor: primary,
             ),
             IconButton(
               icon: const Icon(Icons.more_vert),
@@ -309,7 +314,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
               icon: const Icon(Icons.add),
               label: const Text('Create Your First Reminder'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Colors.white,
                 padding:
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 16),

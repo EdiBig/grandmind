@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../domain/models/workout.dart';
 import '../../domain/models/workout_log.dart';
 import '../../domain/models/exercise.dart';
@@ -135,15 +134,15 @@ class _WorkoutLoggingScreenState extends ConsumerState<WorkoutLoggingScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.primary.withOpacity(0.12),
-            AppColors.primaryLight.withOpacity(0.08),
+            Theme.of(context).colorScheme.primary.withOpacity(0.12),
+            Theme.of(context).colorScheme.secondary.withOpacity(0.08),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppColors.primary.withOpacity(0.2),
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
           width: 1.5,
         ),
       ),
@@ -155,7 +154,7 @@ class _WorkoutLoggingScreenState extends ConsumerState<WorkoutLoggingScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.primary,
+                  color: Theme.of(context).colorScheme.primary,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
@@ -170,7 +169,7 @@ class _WorkoutLoggingScreenState extends ConsumerState<WorkoutLoggingScreen> {
                   widget.workout!.name,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimaryLight,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                 ),
               ),
@@ -199,22 +198,26 @@ class _WorkoutLoggingScreenState extends ConsumerState<WorkoutLoggingScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: AppColors.primary.withOpacity(0.2),
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
           width: 1,
         ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: AppColors.primary),
+          Icon(
+            icon,
+            size: 16,
+            color: Theme.of(context).colorScheme.primary,
+          ),
           const SizedBox(width: 6),
           Text(
             label,
             style: TextStyle(
-              color: AppColors.textPrimaryLight,
+              color: Theme.of(context).colorScheme.onSurface,
               fontWeight: FontWeight.w600,
               fontSize: 13,
             ),
@@ -232,7 +235,7 @@ class _WorkoutLoggingScreenState extends ConsumerState<WorkoutLoggingScreen> {
           'Duration',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: AppColors.textPrimaryLight,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
         ),
         const SizedBox(height: 12),
@@ -241,15 +244,15 @@ class _WorkoutLoggingScreenState extends ConsumerState<WorkoutLoggingScreen> {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                AppColors.primary.withOpacity(0.08),
-                AppColors.primary.withOpacity(0.12),
+                Theme.of(context).colorScheme.primary.withOpacity(0.08),
+                Theme.of(context).colorScheme.primary.withOpacity(0.12),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: AppColors.primary.withOpacity(0.2),
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
               width: 1.5,
             ),
           ),
@@ -257,11 +260,11 @@ class _WorkoutLoggingScreenState extends ConsumerState<WorkoutLoggingScreen> {
             children: [
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(0.2),
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -274,7 +277,7 @@ class _WorkoutLoggingScreenState extends ConsumerState<WorkoutLoggingScreen> {
                     }
                   },
                   icon: const Icon(Icons.remove_circle),
-                  color: AppColors.primary,
+                  color: Theme.of(context).colorScheme.primary,
                   iconSize: 32,
                 ),
               ),
@@ -286,13 +289,13 @@ class _WorkoutLoggingScreenState extends ConsumerState<WorkoutLoggingScreen> {
                         '$_durationMinutes',
                         style: Theme.of(context).textTheme.displaySmall?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: AppColors.primary,
+                              color: Theme.of(context).colorScheme.primary,
                             ),
                       ),
                       Text(
                         'minutes',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppColors.textSecondaryLight,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                               fontWeight: FontWeight.w500,
                             ),
                       ),
@@ -302,11 +305,11 @@ class _WorkoutLoggingScreenState extends ConsumerState<WorkoutLoggingScreen> {
               ),
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(0.2),
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -317,7 +320,7 @@ class _WorkoutLoggingScreenState extends ConsumerState<WorkoutLoggingScreen> {
                     setState(() => _durationMinutes += 5);
                   },
                   icon: const Icon(Icons.add_circle),
-                  color: AppColors.primary,
+                  color: Theme.of(context).colorScheme.primary,
                   iconSize: 32,
                 ),
               ),
@@ -336,7 +339,7 @@ class _WorkoutLoggingScreenState extends ConsumerState<WorkoutLoggingScreen> {
           'Calories Burned (optional)',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: AppColors.textPrimaryLight,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
         ),
         const SizedBox(height: 12),
@@ -345,15 +348,15 @@ class _WorkoutLoggingScreenState extends ConsumerState<WorkoutLoggingScreen> {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                AppColors.secondary.withOpacity(0.08),
-                AppColors.secondary.withOpacity(0.12),
+                Theme.of(context).colorScheme.secondary.withOpacity(0.08),
+                Theme.of(context).colorScheme.secondary.withOpacity(0.12),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: AppColors.secondary.withOpacity(0.2),
+              color: Theme.of(context).colorScheme.secondary.withOpacity(0.2),
               width: 1.5,
             ),
           ),
@@ -361,11 +364,11 @@ class _WorkoutLoggingScreenState extends ConsumerState<WorkoutLoggingScreen> {
             children: [
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.secondary.withOpacity(0.2),
+                      color: Theme.of(context).colorScheme.secondary.withOpacity(0.2),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -378,7 +381,7 @@ class _WorkoutLoggingScreenState extends ConsumerState<WorkoutLoggingScreen> {
                     }
                   },
                   icon: const Icon(Icons.remove_circle),
-                  color: AppColors.secondary,
+                  color: Theme.of(context).colorScheme.secondary,
                   iconSize: 32,
                 ),
               ),
@@ -390,13 +393,13 @@ class _WorkoutLoggingScreenState extends ConsumerState<WorkoutLoggingScreen> {
                         _caloriesBurned != null ? '$_caloriesBurned' : '--',
                         style: Theme.of(context).textTheme.displaySmall?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: AppColors.secondary,
+                              color: Theme.of(context).colorScheme.secondary,
                             ),
                       ),
                       Text(
                         'calories',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppColors.textSecondaryLight,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                               fontWeight: FontWeight.w500,
                             ),
                       ),
@@ -406,11 +409,11 @@ class _WorkoutLoggingScreenState extends ConsumerState<WorkoutLoggingScreen> {
               ),
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.secondary.withOpacity(0.2),
+                      color: Theme.of(context).colorScheme.secondary.withOpacity(0.2),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -421,7 +424,7 @@ class _WorkoutLoggingScreenState extends ConsumerState<WorkoutLoggingScreen> {
                     setState(() => _caloriesBurned = (_caloriesBurned ?? 0) + 10);
                   },
                   icon: const Icon(Icons.add_circle),
-                  color: AppColors.secondary,
+                  color: Theme.of(context).colorScheme.secondary,
                   iconSize: 32,
                 ),
               ),
@@ -440,7 +443,7 @@ class _WorkoutLoggingScreenState extends ConsumerState<WorkoutLoggingScreen> {
           'Notes (optional)',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: AppColors.textPrimaryLight,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
         ),
         const SizedBox(height: 12),
@@ -448,35 +451,36 @@ class _WorkoutLoggingScreenState extends ConsumerState<WorkoutLoggingScreen> {
           controller: _notesController,
           decoration: InputDecoration(
             hintText: 'How did the workout feel?',
-            hintStyle: TextStyle(color: AppColors.textSecondaryLight),
+            hintStyle:
+                TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide(
-                color: AppColors.primary.withOpacity(0.2),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
                 width: 1.5,
               ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide(
-                color: AppColors.primary.withOpacity(0.2),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
                 width: 1.5,
               ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(
-                color: AppColors.primary,
+              borderSide: BorderSide(
+                color: Theme.of(context).colorScheme.primary,
                 width: 2,
               ),
             ),
             filled: true,
-            fillColor: AppColors.primary.withOpacity(0.05),
+            fillColor: Theme.of(context).colorScheme.primary.withOpacity(0.05),
             contentPadding: const EdgeInsets.all(16),
           ),
           maxLines: 4,
           style: TextStyle(
-            color: AppColors.textPrimaryLight,
+            color: Theme.of(context).colorScheme.onSurface,
             fontSize: 15,
           ),
           onChanged: (value) => _notes = value.isEmpty ? null : value,
@@ -491,7 +495,7 @@ class _WorkoutLoggingScreenState extends ConsumerState<WorkoutLoggingScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -500,9 +504,10 @@ class _WorkoutLoggingScreenState extends ConsumerState<WorkoutLoggingScreen> {
       child: ElevatedButton(
         onPressed: _isLogging ? null : _logWorkout,
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
+          backgroundColor: Theme.of(context).colorScheme.primary,
           foregroundColor: Colors.white,
-          disabledBackgroundColor: AppColors.primary.withOpacity(0.6),
+          disabledBackgroundColor:
+              Theme.of(context).colorScheme.primary.withOpacity(0.6),
           padding: const EdgeInsets.symmetric(vertical: 18),
           minimumSize: const Size(double.infinity, 56),
           shape: RoundedRectangleBorder(

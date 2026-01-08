@@ -25,9 +25,20 @@ class RouteConstants {
   static const String createHabit = '/habits/create';
   static const String editHabit = '/habits/:id/edit';
   static const String progress = '/progress';
+  static const String progressInsights = '/progress/insights';
+  static const String progressDashboard = '/progress/dashboard';
+  static const String achievements = '/progress/achievements';
   static const String plan = '/plan';
   static const String profile = '/profile';
   static const String settings = '/settings';
+  static const String nutrition = '/nutrition';
+  static const String logMeal = '/nutrition/log-meal';
+  static const String foodSearch = '/nutrition/food-search';
+  static const String createCustomFood = '/nutrition/create-custom-food';
+  static const String nutritionGoals = '/nutrition/goals';
+  static const String nutritionHistory = '/nutrition/history';
+  static const String mealDetails = '/nutrition/meals/:id';
+  static const String barcodeScanner = '/nutrition/barcode-scanner';
 
   // Settings Sub-routes
   static const String editProfile = '/settings/edit-profile';

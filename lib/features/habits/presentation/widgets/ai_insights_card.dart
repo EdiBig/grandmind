@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../data/services/habit_insights_service.dart';
 import '../providers/habit_providers.dart';
 
@@ -20,21 +19,22 @@ class AIInsightsCard extends ConsumerWidget {
   }
 
   Widget _buildLoadingCard(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.primary.withOpacity(0.1),
-            AppColors.primary.withOpacity(0.05),
+            primary.withOpacity(0.1),
+            primary.withOpacity(0.05),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppColors.primary.withOpacity(0.2),
+          color: primary.withOpacity(0.2),
         ),
       ),
       child: Column(
@@ -45,22 +45,22 @@ class AIInsightsCard extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.2),
+                  color: primary.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.psychology,
-                  color: AppColors.primary,
+                  color: primary,
                   size: 20,
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
+              Text(
                 'AI Insights',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
+                  color: primary,
                 ),
               ),
             ],
@@ -128,20 +128,21 @@ class AIInsightsCard extends ConsumerWidget {
     WidgetRef ref,
     HabitInsights insights,
   ) {
+    final primary = Theme.of(context).colorScheme.primary;
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.primary.withOpacity(0.15),
-            AppColors.primary.withOpacity(0.05),
+            primary.withOpacity(0.15),
+            primary.withOpacity(0.05),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppColors.primary.withOpacity(0.3),
+          color: primary.withOpacity(0.3),
         ),
       ),
       child: Column(
@@ -155,30 +156,30 @@ class AIInsightsCard extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.2),
+                    color: primary.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.psychology,
-                    color: AppColors.primary,
+                    color: primary,
                     size: 20,
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'AI Insights',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
+                      color: primary,
                     ),
                   ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.refresh, size: 20),
                   onPressed: () => ref.invalidate(habitInsightsProvider),
-                  color: AppColors.primary,
+                  color: primary,
                   tooltip: 'Refresh insights',
                 ),
               ],
@@ -213,7 +214,7 @@ class AIInsightsCard extends ConsumerWidget {
                       width: 6,
                       height: 6,
                       decoration: BoxDecoration(
-                        color: AppColors.primary,
+                        color: Theme.of(context).colorScheme.primary,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -246,8 +247,8 @@ class AIInsightsCard extends ConsumerWidget {
                 icon: const Icon(Icons.arrow_forward, size: 18),
                 label: const Text('View Full Analysis'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  side: const BorderSide(color: AppColors.primary),
+                  foregroundColor: Theme.of(context).colorScheme.primary,
+                  side: BorderSide(color: Theme.of(context).colorScheme.primary),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),

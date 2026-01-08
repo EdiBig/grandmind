@@ -14,6 +14,21 @@ class FirestoreService {
   static const String _workoutsCollection = 'workouts';
   static const String _habitsCollection = 'habits';
   static const String _progressCollection = 'progress';
+  static const List<String> _genderOptions = [
+    'Male',
+    'Female',
+    'Non-binary',
+    'Prefer not to say',
+  ];
+  static const List<String> _fitnessOptions = ['Beginner', 'Intermediate', 'Advanced'];
+  static const List<String> _goalOptions = [
+    'Lose Weight',
+    'Build Muscle',
+    'Improve Endurance',
+    'Stay Healthy',
+  ];
+  static const List<String> _coachToneOptions = ['Friendly', 'Strict', 'Clinical'];
+  static const List<String> _unitOptions = ['Metric', 'Imperial'];
 
   // User Methods
   Future<void> createUser(UserModel user) async {
@@ -43,6 +58,59 @@ class FirestoreService {
           .doc(userId)
           .set(createData, SetOptions(merge: true));
     }
+  }
+
+  Future<void> sanitizeUserProfile(String userId) async {
+    final doc = await _firestore.collection(_usersCollection).doc(userId).get();
+    final data = doc.data();
+    if (!doc.exists || data == null) return;
+
+    final updates = <String, dynamic>{};
+    final gender = _normalizeOptionValue(data['gender'], _genderOptions);
+    if (gender != data['gender']) {
+      updates['gender'] = gender;
+    }
+
+    final fitnessLevel = _normalizeOptionValue(data['fitnessLevel'], _fitnessOptions);
+    if (fitnessLevel != data['fitnessLevel']) {
+      updates['fitnessLevel'] = fitnessLevel;
+    }
+
+    final goal = _normalizeOptionValue(data['goal'], _goalOptions);
+    if (goal != data['goal']) {
+      updates['goal'] = goal;
+    }
+
+    final onboarding = data['onboarding'];
+    final currentCoachTone =
+        onboarding is Map<String, dynamic> ? onboarding['coachTone'] : null;
+    final coachTone = _normalizeOptionValue(currentCoachTone, _coachToneOptions);
+    if (coachTone != currentCoachTone) {
+      updates['onboarding.coachTone'] = coachTone;
+    }
+
+    final preferences = data['preferences'];
+    final currentUnits =
+        preferences is Map<String, dynamic> ? preferences['units'] : null;
+    final units = _normalizeOptionValue(currentUnits, _unitOptions);
+    if (units != currentUnits) {
+      updates['preferences.units'] = units ?? 'Metric';
+    }
+
+    if (updates.isEmpty) return;
+    await updateUser(userId, updates);
+  }
+
+  String? _normalizeOptionValue(dynamic value, List<String> options) {
+    if (value == null || value is! String) return null;
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return null;
+    if (options.contains(trimmed)) return trimmed;
+    final lower = trimmed.toLowerCase();
+    for (final option in options) {
+      if (option.toLowerCase() == lower) return option;
+    }
+    return null;
   }
 
   Stream<UserModel?> getUserStream(String userId) {

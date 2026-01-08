@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/route_constants.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_gradients.dart';
 import '../../../home/presentation/providers/dashboard_provider.dart';
 import '../providers/profile_providers.dart';
 
@@ -28,16 +29,23 @@ class ProfileScreen extends ConsumerWidget {
           final displayName = user?.displayName?.trim().isNotEmpty == true
               ? user!.displayName!
               : user?.email ?? 'User';
+          final authPhotoUrl = FirebaseAuth.instance.currentUser?.photoURL;
+          final userPhotoUrl =
+              user?.photoUrl?.trim().isNotEmpty == true ? user!.photoUrl : null;
+          final resolvedPhotoUrl =
+              userPhotoUrl ?? (authPhotoUrl?.trim().isNotEmpty == true ? authPhotoUrl : null);
+          final unitPreference =
+              user?.preferences?['units'] as String? ?? 'Metric';
           final phone = user?.phoneNumber ?? 'Not set';
           final dob = user?.dateOfBirth != null
               ? _formatDate(user!.dateOfBirth!)
               : 'Not set';
           final gender = user?.gender ?? 'Not set';
           final height = user?.height != null
-              ? '${user!.height!.toStringAsFixed(0)} cm'
+              ? _formatHeight(user!.height!, unitPreference)
               : 'Not set';
           final weight = user?.weight != null
-              ? '${user!.weight!.toStringAsFixed(1)} kg'
+              ? _formatWeight(user!.weight!, unitPreference)
               : 'Not set';
           final fitnessLevel = user?.fitnessLevel ?? 'Not set';
           final goal = user?.goal ?? 'Not set';
@@ -45,7 +53,12 @@ class ProfileScreen extends ConsumerWidget {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              _buildProfileHeader(context, displayName, user?.email),
+              _buildProfileHeader(
+                context,
+                displayName,
+                user?.email,
+                resolvedPhotoUrl,
+              ),
               const SizedBox(height: 32),
               _buildStatsRow(context, ref),
               const SizedBox(height: 32),
@@ -75,7 +88,7 @@ class ProfileScreen extends ConsumerWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Colors.white,
                 ),
               ),
@@ -88,7 +101,8 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildProfileHeader(BuildContext context, String name, String? email) {
+  Widget _buildProfileHeader(BuildContext context, String name, String? email, String? photoUrl) {
+    final gradients = Theme.of(context).extension<AppGradients>()!;
     return Column(
       children: [
         Stack(
@@ -101,20 +115,22 @@ class ProfileScreen extends ConsumerWidget {
                 border: Border.all(color: Colors.white, width: 4),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.3),
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
                     blurRadius: 10,
                     offset: const Offset(0, 5),
                   ),
                 ],
               ),
               child: ClipOval(
-                child: user?.photoUrl != null
+                child: photoUrl != null
                     ? Image.network(
-                        user!.photoUrl!,
+                        photoUrl,
+                        key: ValueKey(photoUrl),
                         fit: BoxFit.cover,
+                        gaplessPlayback: true,
                         errorBuilder: (context, error, stackTrace) => Container(
                           decoration: BoxDecoration(
-                            gradient: AppColors.primaryGradient,
+                            gradient: gradients.primary,
                           ),
                           child: const Icon(
                             Icons.person,
@@ -125,7 +141,7 @@ class ProfileScreen extends ConsumerWidget {
                       )
                     : Container(
                         decoration: BoxDecoration(
-                          gradient: AppColors.primaryGradient,
+                          gradient: gradients.primary,
                         ),
                         child: const Icon(
                           Icons.person,
@@ -140,8 +156,8 @@ class ProfileScreen extends ConsumerWidget {
               bottom: 0,
               child: Container(
                 padding: const EdgeInsets.all(8),
-                decoration: const BoxDecoration(
-                  color: AppColors.primary,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -172,6 +188,9 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   Widget _buildStatsRow(BuildContext context, WidgetRef ref) {
+    final primary = Theme.of(context).colorScheme.primary;
+    final secondary = Theme.of(context).colorScheme.secondary;
+    final tertiary = Theme.of(context).colorScheme.tertiary;
     final workoutsAsync = ref.watch(totalWorkoutsProvider);
     final streakAsync = ref.watch(currentStreakProvider);
     final achievementsAsync = ref.watch(achievementsCountProvider);
@@ -184,10 +203,10 @@ class ProfileScreen extends ConsumerWidget {
               context,
               count.toString(),
               count == 1 ? 'Workout' : 'Workouts',
-              AppColors.primary,
+              primary,
             ),
-            loading: () => _buildStatCard(context, '...', 'Workouts', AppColors.primary),
-            error: (_, __) => _buildStatCard(context, '0', 'Workouts', AppColors.primary),
+            loading: () => _buildStatCard(context, '...', 'Workouts', primary),
+            error: (_, __) => _buildStatCard(context, '0', 'Workouts', primary),
           ),
         ),
         const SizedBox(width: 12),
@@ -197,10 +216,10 @@ class ProfileScreen extends ConsumerWidget {
               context,
               streak.toString(),
               'Day Streak',
-              AppColors.secondary,
+              secondary,
             ),
-            loading: () => _buildStatCard(context, '...', 'Day Streak', AppColors.secondary),
-            error: (_, __) => _buildStatCard(context, '0', 'Day Streak', AppColors.secondary),
+            loading: () => _buildStatCard(context, '...', 'Day Streak', secondary),
+            error: (_, __) => _buildStatCard(context, '0', 'Day Streak', secondary),
           ),
         ),
         const SizedBox(width: 12),
@@ -210,10 +229,10 @@ class ProfileScreen extends ConsumerWidget {
               context,
               count.toString(),
               count == 1 ? 'Achievement' : 'Achievements',
-              AppColors.accent,
+              tertiary,
             ),
-            loading: () => _buildStatCard(context, '...', 'Achievements', AppColors.accent),
-            error: (_, __) => _buildStatCard(context, '0', 'Achievements', AppColors.accent),
+            loading: () => _buildStatCard(context, '...', 'Achievements', tertiary),
+            error: (_, __) => _buildStatCard(context, '0', 'Achievements', tertiary),
           ),
         ),
       ],
@@ -283,14 +302,15 @@ class ProfileScreen extends ConsumerWidget {
     String value,
     IconData icon,
   ) {
+    final primary = Theme.of(context).colorScheme.primary;
     return ListTile(
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.1),
+          color: primary.withOpacity(0.1),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icon, color: AppColors.primary),
+        child: Icon(icon, color: primary),
       ),
       title: Text(title),
       subtitle: Text(
@@ -306,5 +326,21 @@ class ProfileScreen extends ConsumerWidget {
     final month = date.month.toString().padLeft(2, '0');
     final day = date.day.toString().padLeft(2, '0');
     return '${date.year}-$month-$day';
+  }
+
+  String _formatHeight(double heightCm, String unitPreference) {
+    if (unitPreference == 'Imperial') {
+      final inches = heightCm / 2.54;
+      return '${inches.toStringAsFixed(1)} in';
+    }
+    return '${heightCm.toStringAsFixed(0)} cm';
+  }
+
+  String _formatWeight(double weightKg, String unitPreference) {
+    if (unitPreference == 'Imperial') {
+      final lbs = weightKg * 2.2046226218;
+      return '${lbs.toStringAsFixed(1)} lbs';
+    }
+    return '${weightKg.toStringAsFixed(1)} kg';
   }
 }

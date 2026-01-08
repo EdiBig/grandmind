@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/route_constants.dart';
+import '../../../../core/theme/app_gradients.dart';
 import '../../data/services/health_service.dart';
 import '../providers/health_providers.dart';
 
@@ -14,21 +14,19 @@ class HealthDashboardCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final healthSummaryAsync = ref.watch(todayHealthSummaryProvider);
     final permissionsAsync = ref.watch(healthPermissionsProvider);
+    final primary = Theme.of(context).colorScheme.primary;
+    final gradients = Theme.of(context).extension<AppGradients>()!;
 
     return GestureDetector(
       onTap: () => context.push(RouteConstants.healthDetails),
       child: Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        gradient: gradients.primary,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
+            color: primary.withOpacity(0.3),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -251,7 +249,7 @@ class HealthDashboardCard extends ConsumerWidget {
           label: const Text('Enable Health Sync'),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.white,
-            foregroundColor: AppColors.primary,
+            foregroundColor: Theme.of(context).colorScheme.primary,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           ),
         ),

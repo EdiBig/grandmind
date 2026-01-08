@@ -1,7 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../domain/models/weight_entry.dart';
 
 /// Widget that displays a line chart of weight entries over time
@@ -62,6 +61,7 @@ class _WeightChartWidgetState extends State<WeightChartWidget> {
   }
 
   LineChartData _buildLineChartData() {
+    final colorScheme = Theme.of(context).colorScheme;
     final spots = _getSpots();
     final minWeight = _getMinWeight();
     final maxWeight = _getMaxWeight();
@@ -147,7 +147,7 @@ class _WeightChartWidgetState extends State<WeightChartWidget> {
         LineChartBarData(
           spots: spots,
           isCurved: true,
-          color: AppColors.primary,
+          color: colorScheme.primary,
           barWidth: 3,
           isStrokeCapRound: true,
           dotData: FlDotData(
@@ -155,7 +155,7 @@ class _WeightChartWidgetState extends State<WeightChartWidget> {
             getDotPainter: (spot, percent, barData, index) {
               return FlDotCirclePainter(
                 radius: touchedIndex == index ? 6 : 4,
-                color: AppColors.primary,
+                color: colorScheme.primary,
                 strokeWidth: touchedIndex == index ? 2 : 0,
                 strokeColor: Colors.white,
               );
@@ -165,8 +165,8 @@ class _WeightChartWidgetState extends State<WeightChartWidget> {
             show: true,
             gradient: LinearGradient(
               colors: [
-                AppColors.primary.withOpacity(0.3),
-                AppColors.primary.withOpacity(0.0),
+                colorScheme.primary.withOpacity(0.3),
+                colorScheme.primary.withOpacity(0.0),
               ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
@@ -186,7 +186,7 @@ class _WeightChartWidgetState extends State<WeightChartWidget> {
           });
         },
         touchTooltipData: LineTouchTooltipData(
-          getTooltipColor: (touchedSpot) => AppColors.primary,
+          getTooltipColor: (touchedSpot) => colorScheme.primary,
           tooltipRoundedRadius: 8,
           getTooltipItems: (List<LineBarSpot> touchedSpots) {
             return touchedSpots.map((spot) {
@@ -295,6 +295,7 @@ class _WeightChartWidgetState extends State<WeightChartWidget> {
   }
 
   Widget _buildSingleEntryState() {
+    final colorScheme = Theme.of(context).colorScheme;
     final entry = widget.entries.first;
     final displayWeight = widget.useKg
         ? entry.weight
@@ -325,7 +326,7 @@ class _WeightChartWidgetState extends State<WeightChartWidget> {
           Text(
             '${displayWeight.toStringAsFixed(1)} $unit',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: AppColors.primary,
+                  color: colorScheme.primary,
                   fontWeight: FontWeight.bold,
                 ),
           ),

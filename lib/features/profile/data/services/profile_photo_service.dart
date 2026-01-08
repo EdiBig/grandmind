@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
@@ -14,7 +15,7 @@ class ProfilePhotoService {
   }) async {
     try {
       // Compress image
-      final compressedImage = await _compressImage(imageFile);
+      final compressedImage = await _compressImageFile(imageFile);
 
       // Upload to Firebase Storage
       final timestamp = DateTime.now().millisecondsSinceEpoch;
@@ -28,6 +29,27 @@ class ProfilePhotoService {
       await compressedImage.delete();
 
       return downloadUrl;
+    } catch (e) {
+      throw Exception('Failed to upload profile photo: $e');
+    }
+  }
+
+  /// Upload profile photo from raw bytes (web support)
+  Future<String> uploadProfilePhotoBytes({
+    required String userId,
+    required Uint8List bytes,
+  }) async {
+    try {
+      final compressedBytes = _compressImageBytes(bytes);
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final path = 'profile_photos/$userId/profile_$timestamp.jpg';
+      final ref = _storage.ref().child(path);
+
+      await ref.putData(
+        compressedBytes,
+        SettableMetadata(contentType: 'image/jpeg'),
+      );
+      return await ref.getDownloadURL();
     } catch (e) {
       throw Exception('Failed to upload profile photo: $e');
     }
@@ -47,46 +69,11 @@ class ProfilePhotoService {
 
   /// Compress image to reduce file size
   /// Max dimensions: 512x512px, Quality: 90%
-  Future<File> _compressImage(File imageFile, {int quality = 90}) async {
+  Future<File> _compressImageFile(File imageFile, {int quality = 90}) async {
     try {
       // Read image
       final imageBytes = await imageFile.readAsBytes();
-      final image = img.decodeImage(imageBytes);
-
-      if (image == null) {
-        throw Exception('Failed to decode image');
-      }
-
-      // Resize to square (512x512) - crop to center
-      final size = 512;
-      img.Image resized;
-
-      if (image.width > image.height) {
-        // Landscape - crop width
-        final cropWidth = image.height;
-        final cropX = (image.width - cropWidth) ~/ 2;
-        final cropped = img.copyCrop(image,
-          x: cropX,
-          y: 0,
-          width: cropWidth,
-          height: image.height
-        );
-        resized = img.copyResize(cropped, width: size, height: size);
-      } else {
-        // Portrait or square - crop height
-        final cropHeight = image.width;
-        final cropY = (image.height - cropHeight) ~/ 2;
-        final cropped = img.copyCrop(image,
-          x: 0,
-          y: cropY,
-          width: image.width,
-          height: cropHeight
-        );
-        resized = img.copyResize(cropped, width: size, height: size);
-      }
-
-      // Encode as JPEG with quality
-      final compressedBytes = img.encodeJpg(resized, quality: quality);
+      final compressedBytes = _compressImageBytes(imageBytes, quality: quality);
 
       // Save to temp file
       final tempDir = await getTemporaryDirectory();
@@ -99,5 +86,45 @@ class ProfilePhotoService {
     } catch (e) {
       throw Exception('Failed to compress image: $e');
     }
+  }
+
+  Uint8List _compressImageBytes(Uint8List imageBytes, {int quality = 90}) {
+    final image = img.decodeImage(imageBytes);
+
+    if (image == null) {
+      throw Exception('Failed to decode image');
+    }
+
+    // Resize to square (512x512) - crop to center
+    final size = 512;
+    img.Image resized;
+
+    if (image.width > image.height) {
+      // Landscape - crop width
+      final cropWidth = image.height;
+      final cropX = (image.width - cropWidth) ~/ 2;
+      final cropped = img.copyCrop(
+        image,
+        x: cropX,
+        y: 0,
+        width: cropWidth,
+        height: image.height,
+      );
+      resized = img.copyResize(cropped, width: size, height: size);
+    } else {
+      // Portrait or square - crop height
+      final cropHeight = image.width;
+      final cropY = (image.height - cropHeight) ~/ 2;
+      final cropped = img.copyCrop(
+        image,
+        x: 0,
+        y: cropY,
+        width: image.width,
+        height: cropHeight,
+      );
+      resized = img.copyResize(cropped, width: size, height: size);
+    }
+
+    return Uint8List.fromList(img.encodeJpg(resized, quality: quality));
   }
 }

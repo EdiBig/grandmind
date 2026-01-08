@@ -14,18 +14,34 @@ import '../features/onboarding/presentation/screens/limitations_screen.dart';
 import '../features/onboarding/presentation/screens/coach_tone_screen.dart';
 import '../features/home/presentation/screens/home_screen.dart';
 import '../features/home/presentation/screens/log_activity_screen.dart';
+import '../features/home/presentation/screens/achievements_screen.dart';
 import '../features/profile/presentation/screens/profile_screen.dart';
 import '../features/profile/presentation/screens/edit_profile_enhanced_screen.dart';
 import '../features/settings/presentation/screens/settings_screen.dart';
 import '../features/settings/presentation/screens/api_key_setup_screen.dart';
 import '../features/settings/presentation/screens/data_management_screen.dart';
+import '../features/settings/presentation/screens/privacy_screen.dart';
+import '../features/settings/presentation/screens/help_center_screen.dart';
+import '../features/settings/presentation/screens/about_screen.dart';
+import '../features/settings/presentation/screens/terms_screen.dart';
+import '../features/settings/presentation/screens/privacy_policy_screen.dart';
 import '../features/ai/presentation/screens/ai_coach_screen.dart';
 import '../features/habits/presentation/screens/create_habit_screen.dart';
 import '../features/habits/presentation/screens/habit_insights_screen.dart';
 import '../features/habits/data/services/habit_insights_service.dart';
 import '../features/health/presentation/screens/health_details_screen.dart';
 import '../features/health/presentation/screens/health_sync_screen.dart';
+import '../features/progress/presentation/screens/progress_insights_screen.dart';
+import '../features/progress/presentation/screens/progress_dashboard_screen.dart';
 import '../features/notifications/presentation/screens/notification_settings_screen.dart';
+import '../features/nutrition/presentation/screens/log_meal_screen.dart';
+import '../features/nutrition/presentation/screens/food_search_screen.dart';
+import '../features/nutrition/presentation/screens/create_custom_food_screen.dart';
+import '../features/nutrition/presentation/screens/nutrition_goals_screen.dart';
+import '../features/nutrition/presentation/screens/nutrition_history_screen.dart';
+import '../features/nutrition/presentation/screens/meal_details_screen.dart';
+import '../features/nutrition/presentation/screens/nutrition_insights_screen.dart';
+import '../features/nutrition/presentation/screens/barcode_scanner_screen.dart';
 
 /// Provider for the app router
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -116,6 +132,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const EditProfileEnhancedScreen(),
       ),
       GoRoute(
+        path: RouteConstants.notifications,
+        name: 'notifications',
+        builder: (context, state) => const NotificationSettingsScreen(),
+      ),
+      GoRoute(
+        path: RouteConstants.healthSync,
+        name: 'healthSync',
+        builder: (context, state) => const HealthSyncScreen(),
+      ),
+      GoRoute(
         path: RouteConstants.apiKeySetup,
         name: 'apiKeySetup',
         builder: (context, state) => const ApiKeySetupScreen(),
@@ -124,6 +150,31 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: RouteConstants.dataManagement,
         name: 'dataManagement',
         builder: (context, state) => const DataManagementScreen(),
+      ),
+      GoRoute(
+        path: RouteConstants.privacy,
+        name: 'privacy',
+        builder: (context, state) => const PrivacyScreen(),
+      ),
+      GoRoute(
+        path: RouteConstants.help,
+        name: 'help',
+        builder: (context, state) => const HelpCenterScreen(),
+      ),
+      GoRoute(
+        path: RouteConstants.about,
+        name: 'about',
+        builder: (context, state) => const AboutScreen(),
+      ),
+      GoRoute(
+        path: RouteConstants.termsOfService,
+        name: 'termsOfService',
+        builder: (context, state) => const TermsScreen(),
+      ),
+      GoRoute(
+        path: RouteConstants.privacyPolicy,
+        name: 'privacyPolicy',
+        builder: (context, state) => const PrivacyPolicyScreen(),
       ),
 
       // AI Features
@@ -162,18 +213,78 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'healthDetails',
         builder: (context, state) => const HealthDetailsScreen(),
       ),
+      // Progress Routes
       GoRoute(
-        path: RouteConstants.healthSync,
-        name: 'healthSync',
-        builder: (context, state) => const HealthSyncScreen(),
+        path: RouteConstants.progressInsights,
+        name: 'progressInsights',
+        builder: (context, state) => const ProgressInsightsScreen(),
+      ),
+      GoRoute(
+        path: RouteConstants.progressDashboard,
+        name: 'progressDashboard',
+        builder: (context, state) => const ProgressDashboardScreen(),
+      ),
+      GoRoute(
+        path: RouteConstants.achievements,
+        name: 'achievements',
+        builder: (context, state) => const AchievementsScreen(),
+      ),
+
+      // Nutrition Routes
+      GoRoute(
+        path: RouteConstants.logMeal,
+        name: 'logMeal',
+        builder: (context, state) {
+          final args = state.extra as LogMealArgs?;
+          return LogMealScreen(
+            mealId: args?.mealId,
+            initialMealType: args?.initialMealType,
+          );
+        },
+      ),
+      GoRoute(
+        path: RouteConstants.foodSearch,
+        name: 'foodSearch',
+        builder: (context, state) {
+          final isSelection = state.extra as bool? ?? false;
+          return FoodSearchScreen(isSelection: isSelection);
+        },
+      ),
+      GoRoute(
+        path: RouteConstants.createCustomFood,
+        name: 'createCustomFood',
+        builder: (context, state) => const CreateCustomFoodScreen(),
+      ),
+      GoRoute(
+        path: RouteConstants.nutritionGoals,
+        name: 'nutritionGoals',
+        builder: (context, state) => const NutritionGoalsScreen(),
+      ),
+      GoRoute(
+        path: RouteConstants.nutritionHistory,
+        name: 'nutritionHistory',
+        builder: (context, state) => const NutritionHistoryScreen(),
+      ),
+      GoRoute(
+        path: RouteConstants.mealDetails,
+        name: 'mealDetails',
+        builder: (context, state) {
+          final mealId = state.pathParameters['id'] ?? '';
+          return MealDetailsScreen(mealId: mealId);
+        },
+      ),
+      GoRoute(
+        path: RouteConstants.aiInsights,
+        name: 'aiInsights',
+        builder: (context, state) => const NutritionInsightsScreen(),
+      ),
+      GoRoute(
+        path: RouteConstants.barcodeScanner,
+        name: 'barcodeScanner',
+        builder: (context, state) => const BarcodeScannerScreen(),
       ),
 
       // Notifications Routes
-      GoRoute(
-        path: RouteConstants.notifications,
-        name: 'notifications',
-        builder: (context, state) => const NotificationSettingsScreen(),
-      ),
     ],
     errorBuilder: (context, state) => Scaffold(
       body: Center(

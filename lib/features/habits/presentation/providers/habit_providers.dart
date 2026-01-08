@@ -32,6 +32,15 @@ final todayHabitLogsProvider = FutureProvider<List<HabitLog>>((ref) async {
   return repository.getUserHabitLogsForDate(userId, today);
 });
 
+/// Provider for recent habit logs
+final recentHabitLogsProvider = StreamProvider<List<HabitLog>>((ref) {
+  final userId = FirebaseAuth.instance.currentUser?.uid;
+  if (userId == null) return Stream.value([]);
+
+  final repository = ref.watch(habitRepositoryProvider);
+  return repository.getRecentHabitLogsStream(userId, limit: 10);
+});
+
 /// Provider for checking if a specific habit is completed today
 final habitCompletedTodayProvider = FutureProvider.family<HabitLog?, String>(
   (ref, habitId) async {

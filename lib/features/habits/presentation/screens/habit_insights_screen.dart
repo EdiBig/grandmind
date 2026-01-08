@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_gradients.dart';
 import '../../data/services/habit_insights_service.dart';
 
 class HabitInsightsScreen extends StatelessWidget {
@@ -29,7 +29,7 @@ class HabitInsightsScreen extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                gradient: AppColors.primaryGradient,
+                gradient: Theme.of(context).extension<AppGradients>()!.primary,
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -96,8 +96,8 @@ class HabitInsightsScreen extends StatelessWidget {
                             margin: const EdgeInsets.only(top: 6),
                             width: 8,
                             height: 8,
-                            decoration: const BoxDecoration(
-                              color: AppColors.primary,
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primary,
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -183,10 +183,26 @@ class HabitInsightsScreen extends StatelessWidget {
               title: 'Your Numbers',
               iconColor: Colors.blue,
               children: [
-                _buildStatRow('Active Habits', insights.statistics['activeHabits']?.toString() ?? '0'),
-                _buildStatRow('Logs Last 7 Days', insights.statistics['logsLast7Days']?.toString() ?? '0'),
-                _buildStatRow('Completion Rate', '${((insights.statistics['avgCompletionRate'] ?? 0.0) * 100).toStringAsFixed(1)}%'),
-                _buildStatRow('Longest Streak', '${insights.statistics['longestStreak'] ?? 0} days'),
+                _buildStatRow(
+                  context,
+                  'Active Habits',
+                  insights.statistics['activeHabits']?.toString() ?? '0',
+                ),
+                _buildStatRow(
+                  context,
+                  'Logs Last 7 Days',
+                  insights.statistics['logsLast7Days']?.toString() ?? '0',
+                ),
+                _buildStatRow(
+                  context,
+                  'Completion Rate',
+                  '${((insights.statistics['avgCompletionRate'] ?? 0.0) * 100).toStringAsFixed(1)}%',
+                ),
+                _buildStatRow(
+                  context,
+                  'Longest Streak',
+                  '${insights.statistics['longestStreak'] ?? 0} days',
+                ),
               ],
             ),
           ],
@@ -261,7 +277,7 @@ class HabitInsightsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatRow(String label, String value) {
+  Widget _buildStatRow(BuildContext context, String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -276,10 +292,10 @@ class HabitInsightsScreen extends StatelessWidget {
           ),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: AppColors.primary,
+              color: Theme.of(context).colorScheme.primary,
             ),
           ),
         ],

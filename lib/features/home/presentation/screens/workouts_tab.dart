@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../workouts/presentation/providers/workout_providers.dart';
 import '../../../workouts/domain/models/workout.dart';
 import '../../../workouts/presentation/screens/workout_detail_screen.dart';
 import '../../../workouts/presentation/screens/workout_logging_screen.dart';
+import '../../../workouts/presentation/screens/easy_pick_workouts_screen.dart';
 
 class WorkoutsTab extends ConsumerWidget {
   const WorkoutsTab({super.key});
@@ -93,21 +93,95 @@ class WorkoutsTab extends ConsumerWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const WorkoutLoggingScreen(),
-            ),
-          );
-        },
-        backgroundColor: AppColors.primary,
+        onPressed: () => _showAddWorkoutSheet(context),
+        backgroundColor: Theme.of(context).colorScheme.primary,
         child: const Icon(Icons.add),
       ),
     );
   }
 
+  void _showAddWorkoutSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Add Workout',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Choose how you want to add a workout.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: 20),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.edit,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              title: const Text('Manual Entry'),
+              subtitle: const Text('Log a custom workout from scratch'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const WorkoutLoggingScreen(),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 8),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.secondary.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.auto_awesome,
+                  color: Theme.of(context).colorScheme.secondary,
+                ),
+              ),
+              title: const Text('Easy Pick'),
+              subtitle: const Text('Browse curated workouts and add fast'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const EasyPickWorkoutsScreen(),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildWorkoutCard(BuildContext context, Workout workout) {
-    final color = _getCategoryColor(workout.category);
+    final color = _getCategoryColor(context, workout.category);
     final icon = _getCategoryIcon(workout.category);
 
     return GestureDetector(
@@ -219,9 +293,14 @@ class WorkoutsTab extends ConsumerWidget {
   }
 
   void _showFilterSheet(BuildContext context, WidgetRef ref) {
+    final primary = Theme.of(context).colorScheme.primary;
+    final secondary = Theme.of(context).colorScheme.secondary;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final outline = Theme.of(context).colorScheme.outlineVariant;
+    final surface = Theme.of(context).colorScheme.surface;
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -238,13 +317,13 @@ class WorkoutsTab extends ConsumerWidget {
                   'Filter Workouts',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimaryLight,
+                        color: onSurface,
                       ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close),
                   onPressed: () => Navigator.pop(context),
-                  color: AppColors.greyDark,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ],
             ),
@@ -253,7 +332,7 @@ class WorkoutsTab extends ConsumerWidget {
               'Category',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimaryLight,
+                    color: onSurface,
                   ),
             ),
             const SizedBox(height: 12),
@@ -267,16 +346,16 @@ class WorkoutsTab extends ConsumerWidget {
                   label: Text(
                     category.displayName,
                     style: TextStyle(
-                      color: isSelected ? Colors.white : AppColors.textPrimaryLight,
+                      color: isSelected ? Colors.white : onSurface,
                       fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                     ),
                   ),
                   selected: isSelected,
-                  selectedColor: AppColors.primary,
-                  backgroundColor: AppColors.greyLight.withOpacity(0.3),
+                  selectedColor: primary,
+                  backgroundColor: outline.withOpacity(0.3),
                   checkmarkColor: Colors.white,
                   side: BorderSide(
-                    color: isSelected ? AppColors.primary : AppColors.greyLight,
+                    color: isSelected ? primary : outline,
                     width: 1.5,
                   ),
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -298,7 +377,7 @@ class WorkoutsTab extends ConsumerWidget {
               'Difficulty',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimaryLight,
+                    color: onSurface,
                   ),
             ),
             const SizedBox(height: 12),
@@ -312,16 +391,16 @@ class WorkoutsTab extends ConsumerWidget {
                   label: Text(
                     difficulty.displayName,
                     style: TextStyle(
-                      color: isSelected ? Colors.white : AppColors.textPrimaryLight,
+                      color: isSelected ? Colors.white : onSurface,
                       fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                     ),
                   ),
                   selected: isSelected,
-                  selectedColor: AppColors.secondary,
-                  backgroundColor: AppColors.greyLight.withOpacity(0.3),
+                  selectedColor: secondary,
+                  backgroundColor: outline.withOpacity(0.3),
                   checkmarkColor: Colors.white,
                   side: BorderSide(
-                    color: isSelected ? AppColors.secondary : AppColors.greyLight,
+                    color: isSelected ? secondary : outline,
                     width: 1.5,
                   ),
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -348,8 +427,8 @@ class WorkoutsTab extends ConsumerWidget {
                   Navigator.pop(context);
                 },
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  side: const BorderSide(color: AppColors.primary, width: 2),
+                  foregroundColor: primary,
+                  side: BorderSide(color: primary, width: 2),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -371,14 +450,14 @@ class WorkoutsTab extends ConsumerWidget {
     );
   }
 
-  Color _getCategoryColor(WorkoutCategory category) {
+  Color _getCategoryColor(BuildContext context, WorkoutCategory category) {
     switch (category) {
       case WorkoutCategory.strength:
-        return AppColors.primary;
+        return Theme.of(context).colorScheme.primary;
       case WorkoutCategory.cardio:
-        return AppColors.secondary;
+        return Theme.of(context).colorScheme.secondary;
       case WorkoutCategory.yoga:
-        return AppColors.accent;
+        return Theme.of(context).colorScheme.tertiary;
       case WorkoutCategory.hiit:
         return Colors.orange;
       case WorkoutCategory.flexibility:
@@ -410,25 +489,26 @@ class WorkoutsTab extends ConsumerWidget {
   }
 
   Widget _buildInfoChip(BuildContext context, IconData icon, String label) {
+    final primary = Theme.of(context).colorScheme.primary;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.1),
+        color: primary.withOpacity(0.1),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppColors.primary.withOpacity(0.3),
+          color: primary.withOpacity(0.3),
           width: 1,
         ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: AppColors.primary),
+          Icon(icon, size: 16, color: primary),
           const SizedBox(width: 4),
           Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.primary,
+                  color: primary,
                   fontWeight: FontWeight.w600,
                 ),
           ),

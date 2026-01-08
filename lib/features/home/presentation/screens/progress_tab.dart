@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/theme/app_colors.dart';
+import 'package:go_router/go_router.dart';
 import '../../../progress/presentation/widgets/weight_input_dialog.dart';
 import '../../../progress/presentation/screens/weight_tracking_screen.dart';
 import '../../../progress/presentation/screens/measurements_screen.dart';
@@ -8,8 +8,13 @@ import '../../../progress/presentation/screens/progress_photos_screen.dart';
 import '../../../progress/presentation/screens/goals_screen.dart';
 import '../../../progress/presentation/screens/progress_dashboard_screen.dart';
 import '../../../progress/presentation/providers/progress_providers.dart';
-import '../../../habits/data/repositories/habit_repository.dart';
-import '../../../workouts/data/repositories/workout_repository.dart';
+import '../../../progress/domain/models/progress_goal.dart';
+import '../../../habits/presentation/providers/habit_providers.dart';
+import '../../../workouts/presentation/providers/workout_providers.dart';
+import '../../../profile/presentation/providers/profile_providers.dart';
+import '../../../profile/data/services/user_stats_service.dart';
+import '../../../../core/constants/route_constants.dart';
+import '../widgets/achievement_list.dart';
 
 class ProgressTab extends ConsumerWidget {
   const ProgressTab({super.key});
@@ -20,6 +25,10 @@ class ProgressTab extends ConsumerWidget {
     final latestWeightAsync = ref.watch(latestWeightProvider);
     final activeGoalsAsync = ref.watch(activeGoalsProvider);
     final latestMeasurementsAsync = ref.watch(latestMeasurementsProvider);
+    final workoutStatsAsync = ref.watch(workoutStatsProvider);
+    final habitStatsAsync = ref.watch(habitStatsProvider);
+    final userStatsAsync = ref.watch(userStatsProvider);
+    final allGoalsAsync = ref.watch(allGoalsProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -61,7 +70,7 @@ class ProgressTab extends ConsumerWidget {
             'Weight Tracking',
             'Track your weight progress',
             Icons.monitor_weight,
-            AppColors.primary,
+            Theme.of(context).colorScheme.primary,
             () {
               Navigator.of(context).push(
                 MaterialPageRoute(
@@ -77,7 +86,7 @@ class ProgressTab extends ConsumerWidget {
             'Body Measurements',
             'Track your body measurements',
             Icons.straighten,
-            AppColors.secondary,
+            Theme.of(context).colorScheme.secondary,
             () {
               Navigator.of(context).push(
                 MaterialPageRoute(
@@ -93,7 +102,7 @@ class ProgressTab extends ConsumerWidget {
             'Progress Photos',
             'Track your visual transformation',
             Icons.photo_camera,
-            AppColors.accent,
+            Theme.of(context).colorScheme.tertiary,
             () {
               Navigator.of(context).push(
                 MaterialPageRoute(
@@ -119,41 +128,36 @@ class ProgressTab extends ConsumerWidget {
             },
           ),
           const SizedBox(height: 12),
-          _buildMetricCard(
+          _buildMetricsSection(
             context,
-            'Weekly Activity',
-            '5 of 7 days active',
-            0.71,
-            Icons.fitness_center,
-            AppColors.primary,
+            workoutStatsAsync,
+            habitStatsAsync,
+            userStatsAsync,
           ),
           const SizedBox(height: 12),
-          _buildMetricCard(
-            context,
-            'Habits Streak',
-            '12 days in a row',
-            0.85,
-            Icons.local_fire_department,
-            AppColors.secondary,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Achievements',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              TextButton(
+                onPressed: () => context.push(RouteConstants.achievements),
+                child: const Text('View All'),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
-          _buildMetricCard(
+          _buildAchievementsList(
             context,
-            'Total Workouts',
-            '48 this month',
-            0.92,
-            Icons.show_chart,
-            AppColors.accent,
+            workoutStatsAsync,
+            habitStatsAsync,
+            userStatsAsync,
+            allGoalsAsync,
           ),
-          const SizedBox(height: 24),
-          Text(
-            'Achievements',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-          const SizedBox(height: 12),
-          _buildAchievementsList(context),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -174,7 +178,14 @@ class ProgressTab extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
+        gradient: LinearGradient(
+          colors: [
+            Theme.of(context).colorScheme.primary,
+            Theme.of(context).colorScheme.secondary.withOpacity(0.9),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -258,7 +269,7 @@ class ProgressTab extends ConsumerWidget {
               Expanded(
                 child: activeGoals.when(
                   data: (goals) {
-                    final count = goals.where((g) => g.status.name == 'active').length;
+                    final count = goals.where((g) => g.status == GoalStatus.active).length;
                     return _buildOverviewStat(
                       context,
                       '$count',
@@ -461,103 +472,170 @@ class ProgressTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildAchievementsList(BuildContext context) {
+  Widget _buildMetricsSection(
+    BuildContext context,
+    AsyncValue<Map<String, dynamic>> workoutStatsAsync,
+    AsyncValue<Map<String, dynamic>> habitStatsAsync,
+    AsyncValue<UserStats> userStatsAsync,
+  ) {
+    if (workoutStatsAsync.isLoading ||
+        habitStatsAsync.isLoading ||
+        userStatsAsync.isLoading) {
+      return Column(
+        children: [
+          _buildMetricCard(
+            context,
+            'Weekly Activity',
+            'Loading...',
+            0,
+            Icons.fitness_center,
+            Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(height: 12),
+          _buildMetricCard(
+            context,
+            'Habits Streak',
+            'Loading...',
+            0,
+            Icons.local_fire_department,
+            Theme.of(context).colorScheme.secondary,
+          ),
+          const SizedBox(height: 12),
+          _buildMetricCard(
+            context,
+            'Total Workouts',
+            'Loading...',
+            0,
+            Icons.show_chart,
+            Theme.of(context).colorScheme.tertiary,
+          ),
+        ],
+      );
+    }
+
+    if (workoutStatsAsync.hasError ||
+        habitStatsAsync.hasError ||
+        userStatsAsync.hasError) {
+      return Column(
+        children: [
+          _buildMetricCard(
+            context,
+            'Weekly Activity',
+            'Unavailable',
+            0,
+            Icons.fitness_center,
+            Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(height: 12),
+          _buildMetricCard(
+            context,
+            'Habits Streak',
+            'Unavailable',
+            0,
+            Icons.local_fire_department,
+            Theme.of(context).colorScheme.secondary,
+          ),
+          const SizedBox(height: 12),
+          _buildMetricCard(
+            context,
+            'Total Workouts',
+            'Unavailable',
+            0,
+            Icons.show_chart,
+            Theme.of(context).colorScheme.tertiary,
+          ),
+        ],
+      );
+    }
+
+    final workoutStats = workoutStatsAsync.asData?.value ?? {};
+    final habitStats = habitStatsAsync.asData?.value ?? {};
+    final userStats = userStatsAsync.asData?.value ?? UserStats.empty();
+
+    final workoutsThisWeek = workoutStats['workoutsThisWeek'] as int? ?? 0;
+    final workoutsThisMonth = workoutStats['workoutsThisMonth'] as int? ?? 0;
+    final totalWorkouts = workoutStats['totalWorkouts'] as int? ?? 0;
+    final currentStreak = userStats.currentStreak;
+    final habitCompletionRate =
+        (habitStats['completionRate'] as num?)?.toDouble() ?? 0.0;
+
+    final weeklyProgress = (workoutsThisWeek / 7).clamp(0.0, 1.0);
+    final streakProgress = (currentStreak / 7).clamp(0.0, 1.0);
+    final totalWorkoutsProgress = (totalWorkouts / 50).clamp(0.0, 1.0);
+
     return Column(
       children: [
-        _buildAchievementItem(
+        _buildMetricCard(
           context,
-          'Early Bird',
-          'Complete 5 morning workouts',
-          Icons.wb_sunny,
-          AppColors.primary,
-          true,
+          'Weekly Activity',
+          '$workoutsThisWeek of 7 days active',
+          weeklyProgress,
+          Icons.fitness_center,
+          Theme.of(context).colorScheme.primary,
         ),
-        const SizedBox(height: 8),
-        _buildAchievementItem(
+        const SizedBox(height: 12),
+        _buildMetricCard(
           context,
-          'Consistency King',
-          'Maintain a 7-day streak',
-          Icons.trending_up,
-          AppColors.secondary,
-          true,
+          'Habits Streak',
+          '$currentStreak days • ${habitCompletionRate.toStringAsFixed(0)}% today',
+          streakProgress,
+          Icons.local_fire_department,
+          Theme.of(context).colorScheme.secondary,
         ),
-        const SizedBox(height: 8),
-        _buildAchievementItem(
+        const SizedBox(height: 12),
+        _buildMetricCard(
           context,
-          'Habit Master',
-          'Complete all habits for a week',
-          Icons.stars,
-          AppColors.accent,
-          false,
-        ),
-        const SizedBox(height: 8),
-        _buildAchievementItem(
-          context,
-          'Iron Will',
-          'Complete 100 workouts',
-          Icons.military_tech,
-          Colors.grey,
-          false,
+          'Total Workouts',
+          '$workoutsThisMonth this month',
+          totalWorkoutsProgress,
+          Icons.show_chart,
+          Theme.of(context).colorScheme.tertiary,
         ),
       ],
     );
   }
 
-  Widget _buildAchievementItem(
+  Widget _buildAchievementsList(
     BuildContext context,
-    String title,
-    String description,
-    IconData icon,
-    Color color,
-    bool unlocked,
+    AsyncValue<Map<String, dynamic>> workoutStatsAsync,
+    AsyncValue<Map<String, dynamic>> habitStatsAsync,
+    AsyncValue<UserStats> userStatsAsync,
+    AsyncValue<List<ProgressGoal>> allGoalsAsync,
   ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: unlocked ? color.withOpacity(0.1) : Colors.grey[100],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: unlocked ? color.withOpacity(0.3) : Colors.grey.withOpacity(0.2),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: unlocked ? color : Colors.grey,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: Colors.white, size: 28),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: unlocked ? null : Colors.grey,
-                      ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  description,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey,
-                      ),
-                ),
-              ],
-            ),
-          ),
-          if (unlocked)
-            const Icon(Icons.check_circle, color: Colors.green, size: 28)
-          else
-            Icon(Icons.lock_outline, color: Colors.grey[400], size: 28),
-        ],
-      ),
+    if (workoutStatsAsync.isLoading ||
+        habitStatsAsync.isLoading ||
+        userStatsAsync.isLoading ||
+        allGoalsAsync.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (workoutStatsAsync.hasError ||
+        habitStatsAsync.hasError ||
+        userStatsAsync.hasError ||
+        allGoalsAsync.hasError) {
+      return Text(
+        'Achievements unavailable',
+        style: Theme.of(context).textTheme.bodyMedium,
+      );
+    }
+
+    final workoutStats = workoutStatsAsync.asData?.value ?? {};
+    final habitStats = habitStatsAsync.asData?.value ?? {};
+    final userStats = userStatsAsync.asData?.value ?? UserStats.empty();
+    final goals = allGoalsAsync.asData?.value ?? [];
+
+    final achievements = buildAchievementData(
+      context: context,
+      workoutStats: workoutStats,
+      habitStats: habitStats,
+      userStats: userStats,
+      goals: goals,
+    );
+
+    return AchievementsList(
+      achievements: achievements,
+      maxItems: 4,
     );
   }
+
 }

@@ -1,5 +1,6 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:logger/logger.dart';
 
 /// Configuration class for AI features
@@ -22,6 +23,7 @@ class AIConfig {
   static const String apiVersion = '2023-06-01';
   static const String defaultModel = 'claude-3-haiku-20240307';  // Working model for your API key
   static const String fastModel = 'claude-3-haiku-20240307';
+  static const String proxyPath = 'claudeProxy';
 
   // Response Configuration
   static const double defaultTemperature = 0.7;
@@ -123,6 +125,10 @@ class AIConfig {
   static Future<bool> isConfigured() async {
     final key = await getApiKey();
     return key != null && key.isNotEmpty;
+  }
+
+  static String getProxyUrl() {
+    return 'https://claudeproxy-fy7x3gndyq-uc.a.run.app';
   }
 }
 

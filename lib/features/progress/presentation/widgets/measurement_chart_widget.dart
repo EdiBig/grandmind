@@ -1,7 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../domain/models/measurement_entry.dart';
 
 /// Widget that displays a line chart of measurement entries over time
@@ -69,6 +68,7 @@ class _MeasurementChartWidgetState extends State<MeasurementChartWidget> {
   }
 
   LineChartData _buildLineChartData(List<MeasurementEntry> validEntries) {
+    final colorScheme = Theme.of(context).colorScheme;
     final spots = _getSpots(validEntries);
     final minValue = _getMinValue(validEntries);
     final maxValue = _getMaxValue(validEntries);
@@ -154,7 +154,7 @@ class _MeasurementChartWidgetState extends State<MeasurementChartWidget> {
         LineChartBarData(
           spots: spots,
           isCurved: true,
-          color: AppColors.secondary,
+          color: colorScheme.secondary,
           barWidth: 3,
           isStrokeCapRound: true,
           dotData: FlDotData(
@@ -162,7 +162,7 @@ class _MeasurementChartWidgetState extends State<MeasurementChartWidget> {
             getDotPainter: (spot, percent, barData, index) {
               return FlDotCirclePainter(
                 radius: touchedIndex == index ? 6 : 4,
-                color: AppColors.secondary,
+                color: colorScheme.secondary,
                 strokeWidth: touchedIndex == index ? 2 : 0,
                 strokeColor: Colors.white,
               );
@@ -172,8 +172,8 @@ class _MeasurementChartWidgetState extends State<MeasurementChartWidget> {
             show: true,
             gradient: LinearGradient(
               colors: [
-                AppColors.secondary.withOpacity(0.3),
-                AppColors.secondary.withOpacity(0.0),
+                colorScheme.secondary.withOpacity(0.3),
+                colorScheme.secondary.withOpacity(0.0),
               ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
@@ -193,7 +193,7 @@ class _MeasurementChartWidgetState extends State<MeasurementChartWidget> {
           });
         },
         touchTooltipData: LineTouchTooltipData(
-          getTooltipColor: (touchedSpot) => AppColors.secondary,
+          getTooltipColor: (touchedSpot) => colorScheme.secondary,
           tooltipRoundedRadius: 8,
           getTooltipItems: (List<LineBarSpot> touchedSpots) {
             return touchedSpots.map((spot) {
@@ -311,6 +311,7 @@ class _MeasurementChartWidgetState extends State<MeasurementChartWidget> {
   }
 
   Widget _buildSingleEntryState(MeasurementEntry entry) {
+    final colorScheme = Theme.of(context).colorScheme;
     final value = entry.getMeasurement(widget.measurementType);
     if (value == null) return _buildEmptyState();
 
@@ -341,7 +342,7 @@ class _MeasurementChartWidgetState extends State<MeasurementChartWidget> {
           Text(
             '${displayValue.toStringAsFixed(1)} $unit',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: AppColors.secondary,
+                  color: colorScheme.secondary,
                   fontWeight: FontWeight.bold,
                 ),
           ),

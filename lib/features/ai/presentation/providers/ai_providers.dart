@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:kinesa/features/ai/data/services/claude_api_service.dart';
 import 'package:kinesa/features/ai/data/services/prompt_builder_service.dart';
@@ -9,11 +8,8 @@ import 'package:kinesa/features/ai/domain/usecases/send_coach_message_usecase.da
 import 'package:kinesa/features/ai/domain/usecases/get_workout_recommendation_usecase.dart';
 import 'package:kinesa/features/ai/domain/usecases/get_form_check_usecase.dart';
 import 'package:kinesa/features/ai/presentation/providers/ai_coach_provider.dart';
-
-/// Provider for SharedPreferences
-final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
-  throw UnimplementedError('sharedPreferencesProvider must be overridden in main.dart');
-});
+import 'package:kinesa/core/providers/shared_preferences_provider.dart';
+import 'package:kinesa/features/settings/presentation/providers/app_settings_provider.dart';
 
 /// Provider for Firestore
 final firestoreProvider = Provider<FirebaseFirestore>((ref) {
@@ -22,7 +18,25 @@ final firestoreProvider = Provider<FirebaseFirestore>((ref) {
 
 /// Provider for Dio (HTTP client)
 final dioProvider = Provider<Dio>((ref) {
-  return Dio();
+  final dio = Dio();
+  dio.interceptors.add(
+    InterceptorsWrapper(
+      onRequest: (options, handler) {
+        final isOffline = ref.read(appSettingsProvider).offlineMode;
+        if (isOffline) {
+          return handler.reject(
+            DioException(
+              requestOptions: options,
+              type: DioExceptionType.connectionError,
+              error: 'Offline mode enabled',
+            ),
+          );
+        }
+        return handler.next(options);
+      },
+    ),
+  );
+  return dio;
 });
 
 /// Provider for AI Cache Repository

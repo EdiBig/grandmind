@@ -1,3 +1,5 @@
+import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +8,7 @@ import 'package:timezone/data/latest.dart' as tz;
 import 'app.dart';
 import 'firebase_options.dart';
 import 'core/config/ai_config.dart';
+import 'core/providers/shared_preferences_provider.dart';
 import 'features/notifications/data/services/notification_service.dart';
 import 'features/ai/presentation/providers/ai_providers.dart';
 import 'features/ai/presentation/providers/ai_coach_provider.dart';
@@ -26,6 +29,15 @@ void main() async {
       // Re-throw other errors
       rethrow;
     }
+  }
+
+  if (!kIsWeb) {
+    await FirebaseAppCheck.instance.activate(
+      androidProvider:
+          kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
+      appleProvider:
+          kDebugMode ? AppleProvider.debug : AppleProvider.appAttest,
+    );
   }
 
   // Initialize timezone database

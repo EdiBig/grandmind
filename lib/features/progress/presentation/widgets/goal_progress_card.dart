@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../domain/models/progress_goal.dart';
 
 /// Card widget displaying goal progress with visual indicator
@@ -16,6 +15,7 @@ class GoalProgressCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final progress = goal.progressPercentage / 100;
     final isCompleted = goal.status == GoalStatus.completed;
     final isOverdue = goal.isOverdue;
@@ -23,9 +23,9 @@ class GoalProgressCard extends StatelessWidget {
     Color getStatusColor() {
       if (isCompleted) return Colors.green;
       if (isOverdue) return Colors.red;
-      if (progress >= 0.75) return Colors.blue;
-      if (progress >= 0.5) return AppColors.primary;
-      return AppColors.secondary;
+      if (progress >= 0.75) return colorScheme.tertiary;
+      if (progress >= 0.5) return colorScheme.primary;
+      return colorScheme.secondary;
     }
 
     IconData getGoalIcon() {

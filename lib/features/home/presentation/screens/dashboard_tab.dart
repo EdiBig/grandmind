@@ -3,10 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/route_constants.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../domain/models/dashboard_stats.dart';
 import '../providers/dashboard_provider.dart';
+import '../../../habits/presentation/providers/habit_providers.dart';
 import '../../../health/presentation/widgets/health_dashboard_card.dart';
+import '../../../progress/presentation/widgets/progress_summary_card.dart';
+import '../../../progress/presentation/providers/progress_providers.dart';
+import '../../../progress/domain/models/progress_goal.dart';
+import '../../../progress/presentation/screens/goals_screen.dart';
 
 class DashboardTab extends ConsumerWidget {
   const DashboardTab({super.key});
@@ -37,6 +41,9 @@ class DashboardTab extends ConsumerWidget {
             // Health Dashboard Card
             const HealthDashboardCard(),
             const SizedBox(height: 24),
+            // Progress Summary Card
+            const ProgressSummaryCard(),
+            const SizedBox(height: 24),
             _buildQuickStats(context, ref),
             const SizedBox(height: 24),
             _buildMotivationalTip(context, ref),
@@ -53,7 +60,7 @@ class DashboardTab extends ConsumerWidget {
         onPressed: () => context.push(RouteConstants.logActivity),
         icon: const Icon(Icons.add),
         label: const Text('Log Activity'),
-        backgroundColor: AppColors.primary,
+        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
     );
   }
@@ -68,14 +75,23 @@ class DashboardTab extends ConsumerWidget {
         final welcomeMessage = MotivationalMessages.getWelcomeMessage(coachTone, userName);
         final subtitleMessage = MotivationalMessages.getSubtitleMessage(coachTone);
 
+        final primary = Theme.of(context).colorScheme.primary;
+        final secondary = Theme.of(context).colorScheme.secondary;
         return Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            gradient: AppColors.primaryGradient,
+            gradient: LinearGradient(
+              colors: [
+                primary,
+                secondary.withOpacity(0.9),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withOpacity(0.3),
+                color: primary.withOpacity(0.3),
                 blurRadius: 10,
                 offset: const Offset(0, 5),
               ),
@@ -105,7 +121,14 @@ class DashboardTab extends ConsumerWidget {
       loading: () => Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          gradient: AppColors.primaryGradient,
+          gradient: LinearGradient(
+            colors: [
+              Theme.of(context).colorScheme.primary,
+              Theme.of(context).colorScheme.secondary.withOpacity(0.9),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
@@ -131,7 +154,14 @@ class DashboardTab extends ConsumerWidget {
       error: (_, __) => Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          gradient: AppColors.primaryGradient,
+          gradient: LinearGradient(
+            colors: [
+              Theme.of(context).colorScheme.primary,
+              Theme.of(context).colorScheme.secondary.withOpacity(0.9),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
@@ -152,6 +182,8 @@ class DashboardTab extends ConsumerWidget {
 
   Widget _buildQuickStats(BuildContext context, WidgetRef ref) {
     final statsAsync = ref.watch(dashboardStatsProvider);
+    final activeGoalsAsync = ref.watch(activeGoalsProvider);
+    final allGoalsAsync = ref.watch(allGoalsProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -164,83 +196,158 @@ class DashboardTab extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         statsAsync.when(
-          data: (stats) => Row(
+          data: (stats) => Column(
             children: [
-              Expanded(
-                child: _buildStatCard(
-                  context,
-                  'Workouts',
-                  '${stats.workoutsThisWeek}',
-                  'This week',
-                  Icons.fitness_center,
-                  AppColors.primary,
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      'Workouts',
+                      '${stats.workoutsThisWeek}',
+                      'This week',
+                      Icons.fitness_center,
+                      Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      'Habits',
+                      '${stats.habitCompletionRate.toStringAsFixed(0)}%',
+                      'Completion',
+                      Icons.track_changes,
+                      Theme.of(context).colorScheme.secondary,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  context,
-                  'Habits',
-                  '${stats.habitCompletionRate.toStringAsFixed(0)}%',
-                  'Completion',
-                  Icons.track_changes,
-                  AppColors.secondary,
-                ),
-              ),
+              const SizedBox(height: 12),
+              _buildGoalStatCard(context, activeGoalsAsync, allGoalsAsync),
             ],
           ),
-          loading: () => Row(
+          loading: () => Column(
             children: [
-              Expanded(
-                child: _buildStatCard(
-                  context,
-                  'Workouts',
-                  '...',
-                  'This week',
-                  Icons.fitness_center,
-                  AppColors.primary,
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      'Workouts',
+                      '...',
+                      'This week',
+                      Icons.fitness_center,
+                      Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      'Habits',
+                      '...',
+                      'Completion',
+                      Icons.track_changes,
+                      Theme.of(context).colorScheme.secondary,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  context,
-                  'Habits',
-                  '...',
-                  'Completion',
-                  Icons.track_changes,
-                  AppColors.secondary,
-                ),
-              ),
+              const SizedBox(height: 12),
+              _buildGoalStatCard(context, activeGoalsAsync, allGoalsAsync),
             ],
           ),
-          error: (_, __) => Row(
+          error: (_, __) => Column(
             children: [
-              Expanded(
-                child: _buildStatCard(
-                  context,
-                  'Workouts',
-                  '0',
-                  'This week',
-                  Icons.fitness_center,
-                  AppColors.primary,
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      'Workouts',
+                      '0',
+                      'This week',
+                      Icons.fitness_center,
+                      Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      'Habits',
+                      '0%',
+                      'Completion',
+                      Icons.track_changes,
+                      Theme.of(context).colorScheme.secondary,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  context,
-                  'Habits',
-                  '0%',
-                  'Completion',
-                  Icons.track_changes,
-                  AppColors.secondary,
-                ),
-              ),
+              const SizedBox(height: 12),
+              _buildGoalStatCard(context, activeGoalsAsync, allGoalsAsync),
             ],
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildGoalStatCard(
+    BuildContext context,
+    AsyncValue<List<ProgressGoal>> activeGoalsAsync,
+    AsyncValue<List<ProgressGoal>> allGoalsAsync,
+  ) {
+    final color = Theme.of(context).colorScheme.tertiary;
+
+    if (activeGoalsAsync.isLoading || allGoalsAsync.isLoading) {
+      return _buildStatCard(
+        context,
+        'Goals',
+        '...',
+        'Active goals',
+        Icons.flag,
+        color,
+      );
+    }
+
+    if (activeGoalsAsync.hasError || allGoalsAsync.hasError) {
+      return _buildStatCard(
+        context,
+        'Goals',
+        '0',
+        'Active goals',
+        Icons.flag,
+        color,
+      );
+    }
+
+    final activeGoals = activeGoalsAsync.asData?.value ?? [];
+    final allGoals = allGoalsAsync.asData?.value ?? [];
+    final completedGoals =
+        allGoals.where((goal) => goal.status == GoalStatus.completed).length;
+    final totalGoals = allGoals.length;
+
+    return InkWell(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => const GoalsScreen(),
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: _buildStatCard(
+        context,
+        'Goals',
+        '${activeGoals.length}',
+        totalGoals > 0
+            ? '$completedGoals of $totalGoals completed'
+            : 'Active goals',
+        Icons.flag,
+        color,
+      ),
     );
   }
 
@@ -306,20 +413,22 @@ class DashboardTab extends ConsumerWidget {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    AppColors.accent.withOpacity(0.1),
-                    AppColors.secondary.withOpacity(0.1),
+                    Theme.of(context).colorScheme.tertiary.withOpacity(0.1),
+                    Theme.of(context).colorScheme.secondary.withOpacity(0.1),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.accent.withOpacity(0.3)),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.tertiary.withOpacity(0.3),
+                ),
               ),
               child: Row(
                 children: [
                   Icon(
                     Icons.emoji_events,
-                    color: AppColors.accent,
+                    color: Theme.of(context).colorScheme.tertiary,
                     size: 32,
                   ),
                   const SizedBox(width: 16),
@@ -331,7 +440,7 @@ class DashboardTab extends ConsumerWidget {
                           'Daily Motivation',
                           style: Theme.of(context).textTheme.titleSmall?.copyWith(
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.accent,
+                                color: Theme.of(context).colorScheme.tertiary,
                               ),
                         ),
                         const SizedBox(height: 4),
@@ -357,6 +466,8 @@ class DashboardTab extends ConsumerWidget {
 
   Widget _buildTodaySection(BuildContext context, WidgetRef ref) {
     final planAsync = ref.watch(todayPlanProvider);
+    final habits = ref.read(userHabitsProvider).value ?? [];
+    final habitById = {for (final habit in habits) habit.id: habit};
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -392,10 +503,15 @@ class DashboardTab extends ConsumerWidget {
             return Column(
               children: planItems.map((item) {
                 final icon = _getPlanItemIcon(item.type);
-                final color = _getPlanItemColor(item.type);
+                final color = _getPlanItemColor(context, item.type);
                 final time = item.scheduledTime != null
                     ? DateFormat('h:mm a').format(item.scheduledTime!)
                     : '';
+                final habit = item.type == PlanItemType.habit
+                    ? habitById[item.id]
+                    : null;
+                final canCompleteGoal =
+                    item.type == PlanItemType.other && !item.isCompleted;
 
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8),
@@ -407,6 +523,21 @@ class DashboardTab extends ConsumerWidget {
                     icon,
                     color,
                     item.isCompleted,
+                    onToggle: habit == null
+                        ? (canCompleteGoal
+                            ? () async {
+                                final operations = ref.read(
+                                  progressOperationsProvider.notifier,
+                                );
+                                await operations.completeGoal(item.id);
+                              }
+                            : null)
+                        : () async {
+                            final operations =
+                                ref.read(habitOperationsProvider.notifier);
+                            await operations.toggleHabitCompletion(habit);
+                            ref.invalidate(todayHabitLogsProvider);
+                          },
                   ),
                 );
               }).toList(),
@@ -444,14 +575,14 @@ class DashboardTab extends ConsumerWidget {
     }
   }
 
-  Color _getPlanItemColor(PlanItemType type) {
+  Color _getPlanItemColor(BuildContext context, PlanItemType type) {
     switch (type) {
       case PlanItemType.workout:
-        return AppColors.primary;
+        return Theme.of(context).colorScheme.primary;
       case PlanItemType.meditation:
-        return AppColors.secondary;
+        return Theme.of(context).colorScheme.secondary;
       case PlanItemType.walk:
-        return AppColors.accent;
+        return Theme.of(context).colorScheme.tertiary;
       case PlanItemType.habit:
         return Colors.green;
       case PlanItemType.meal:
@@ -469,64 +600,84 @@ class DashboardTab extends ConsumerWidget {
     IconData icon,
     Color color,
     bool completed,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withOpacity(0.2)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: color, size: 24),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    {VoidCallback? onToggle}) {
+    return Material(
+      color: Colors.transparent,
+      child: Ink(
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.withOpacity(0.2)),
+        ),
+        child: InkWell(
+          onTap: onToggle,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
               children: [
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        decoration:
-                            completed ? TextDecoration.lineThrough : null,
-                      ),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, color: color, size: 24),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey,
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              decoration:
+                                  completed ? TextDecoration.lineThrough : null,
+                            ),
                       ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Colors.grey,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      time,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Colors.grey,
+                          ),
+                    ),
+                    const SizedBox(height: 4),
+                    IconButton(
+                      icon: completed
+                          ? const Icon(
+                              Icons.check_circle,
+                              color: Colors.green,
+                              size: 20,
+                            )
+                          : Icon(
+                              Icons.circle_outlined,
+                              color: Colors.grey,
+                              size: 20,
+                            ),
+                      onPressed: onToggle,
+                      tooltip: onToggle == null ? null : 'Mark complete',
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                time,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey,
-                    ),
-              ),
-              const SizedBox(height: 4),
-              if (completed)
-                const Icon(Icons.check_circle, color: Colors.green, size: 20)
-              else
-                Icon(Icons.circle_outlined, color: Colors.grey, size: 20),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -579,7 +730,7 @@ class DashboardTab extends ConsumerWidget {
             return Column(
               children: activities.take(3).map((activity) {
                 final icon = _getActivityIcon(activity.type);
-                final color = _getActivityColor(activity.type);
+                final color = _getActivityColor(context, activity.type);
                 final timeAgo = _formatTimeAgo(activity.timestamp);
 
                 return Padding(
@@ -631,14 +782,14 @@ class DashboardTab extends ConsumerWidget {
     }
   }
 
-  Color _getActivityColor(ActivityType type) {
+  Color _getActivityColor(BuildContext context, ActivityType type) {
     switch (type) {
       case ActivityType.workout:
-        return AppColors.primary;
+        return Theme.of(context).colorScheme.primary;
       case ActivityType.sleep:
-        return AppColors.secondary;
+        return Theme.of(context).colorScheme.secondary;
       case ActivityType.steps:
-        return AppColors.accent;
+        return Theme.of(context).colorScheme.tertiary;
       case ActivityType.habit:
         return Colors.green;
       case ActivityType.weight:

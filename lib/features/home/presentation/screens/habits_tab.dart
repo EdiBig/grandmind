@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../habits/domain/models/habit.dart';
 import '../../../habits/presentation/providers/habit_providers.dart';
 import '../../../habits/presentation/widgets/habit_icon_helper.dart';
@@ -54,7 +53,7 @@ class HabitsTab extends ConsumerWidget {
         onPressed: () {
           context.push('/habits/create');
         },
-        backgroundColor: AppColors.primary,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         child: const Icon(Icons.add),
       ),
     );
@@ -177,7 +176,14 @@ class HabitsTab extends ConsumerWidget {
         return Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            gradient: AppColors.primaryGradient,
+            gradient: LinearGradient(
+              colors: [
+                Theme.of(context).colorScheme.primary,
+                Theme.of(context).colorScheme.secondary.withOpacity(0.9),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
@@ -230,7 +236,14 @@ class HabitsTab extends ConsumerWidget {
       loading: () => Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          gradient: AppColors.primaryGradient,
+          gradient: LinearGradient(
+            colors: [
+              Theme.of(context).colorScheme.primary,
+              Theme.of(context).colorScheme.secondary.withOpacity(0.9),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
           borderRadius: BorderRadius.circular(16),
         ),
         child: const Center(

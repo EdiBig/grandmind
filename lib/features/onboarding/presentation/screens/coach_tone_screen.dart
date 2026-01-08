@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/route_constants.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../domain/onboarding_data.dart';
 import '../providers/onboarding_provider.dart';
 
@@ -12,6 +11,7 @@ class CoachToneScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final onboardingState = ref.watch(onboardingProvider);
+    final colorScheme = Theme.of(context).colorScheme;
 
     ref.listen<OnboardingState>(onboardingProvider, (previous, next) {
       if (next.status == OnboardingStatus.completed) {
@@ -78,21 +78,21 @@ class CoachToneScreen extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.green[50],
+                        color: colorScheme.secondaryContainer,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.green[200]!),
+                        border: Border.all(color: colorScheme.secondary),
                       ),
                       child: Row(
                         children: [
                           Icon(Icons.check_circle_outline,
-                              color: Colors.green[700]),
+                              color: colorScheme.onSecondaryContainer),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
                               'You can change this anytime in settings',
                               style: TextStyle(
                                 fontSize: 13,
-                                color: Colors.green[900],
+                                color: colorScheme.onSecondaryContainer,
                               ),
                             ),
                           ),
@@ -107,7 +107,7 @@ class CoachToneScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: colorScheme.surface,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.grey.withOpacity(0.1),
@@ -132,9 +132,9 @@ class CoachToneScreen extends ConsumerWidget {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor: Colors.grey[300],
+                    disabledBackgroundColor: colorScheme.surfaceVariant,
                   ),
                   child: onboardingState.status == OnboardingStatus.saving
                       ? const SizedBox(
@@ -187,16 +187,21 @@ class _CoachToneCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.white,
+          color: isSelected
+              ? colorScheme.primary.withOpacity(0.1)
+              : colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? AppColors.primary : Colors.grey[300]!,
+            color: isSelected
+                ? colorScheme.primary
+                : colorScheme.outlineVariant,
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -219,23 +224,25 @@ class _CoachToneCard extends StatelessWidget {
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
-                          color: isSelected ? AppColors.primary : Colors.black,
+                          color: isSelected
+                              ? colorScheme.primary
+                              : colorScheme.onSurface,
                         ),
                       ),
                       Text(
                         tone.description,
                         style: TextStyle(
                           fontSize: 13,
-                          color: Colors.grey[600],
+                          color: colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
                   ),
                 ),
                 if (isSelected)
-                  const Icon(
+                  Icon(
                     Icons.check_circle,
-                    color: AppColors.primary,
+                    color: Theme.of(context).colorScheme.primary,
                     size: 28,
                   ),
               ],
@@ -245,8 +252,8 @@ class _CoachToneCard extends StatelessWidget {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? Colors.white
-                    : Colors.grey[100],
+                    ? colorScheme.surface
+                    : colorScheme.surfaceVariant,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -254,7 +261,7 @@ class _CoachToneCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontStyle: FontStyle.italic,
-                  color: Colors.grey[700],
+                  color: colorScheme.onSurfaceVariant,
                 ),
               ),
             ),

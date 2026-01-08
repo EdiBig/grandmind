@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_gradients.dart';
 import '../../domain/models/progress_goal.dart';
 import '../../domain/models/weight_entry.dart';
 import '../../domain/models/measurement_entry.dart';
 import '../providers/progress_providers.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../core/constants/route_constants.dart';
 import '../widgets/weight_chart_widget.dart';
 import '../widgets/measurement_chart_widget.dart';
 import '../widgets/goal_progress_card.dart';
@@ -223,7 +225,7 @@ class _ProgressDashboardScreenState
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
+        gradient: Theme.of(context).extension<AppGradients>()!.primary,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -464,17 +466,18 @@ class _ProgressDashboardScreenState
     String value,
     IconData icon,
   ) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.secondary.withOpacity(0.1),
+        color: colorScheme.secondary.withOpacity(0.12),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.secondary.withOpacity(0.3)),
+        border: Border.all(color: colorScheme.secondary.withOpacity(0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: AppColors.secondary),
+          Icon(icon, size: 16, color: colorScheme.secondary),
           const SizedBox(width: 6),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -491,7 +494,7 @@ class _ProgressDashboardScreenState
                 value,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: AppColors.secondary,
+                      color: colorScheme.secondary,
                     ),
               ),
             ],
@@ -502,19 +505,14 @@ class _ProgressDashboardScreenState
   }
 
   Widget _buildInsightsSection(BuildContext context) {
+    final gradients = Theme.of(context).extension<AppGradients>()!;
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Colors.purple.shade50,
-            Colors.blue.shade50,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        gradient: gradients.secondary,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.purple.withOpacity(0.2)),
+        border: Border.all(color: colorScheme.secondary.withOpacity(0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -524,7 +522,7 @@ class _ProgressDashboardScreenState
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.purple,
+                  color: colorScheme.secondary,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
@@ -544,7 +542,7 @@ class _ProgressDashboardScreenState
           ),
           const SizedBox(height: 16),
           Text(
-            'Track your habits alongside progress to discover what works best for you. Insights coming soon!',
+            'Discover correlations between your habits and progress. See which habits help you achieve your goals!',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Colors.grey[700],
                 ),
@@ -552,12 +550,12 @@ class _ProgressDashboardScreenState
           const SizedBox(height: 12),
           ElevatedButton.icon(
             onPressed: () {
-              // TODO: Navigate to insights screen
+              context.push(RouteConstants.progressInsights);
             },
-            icon: const Icon(Icons.auto_awesome),
-            label: const Text('Coming Soon'),
+            icon: const Icon(Icons.insights),
+            label: const Text('View Insights'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.purple,
+              backgroundColor: colorScheme.secondary,
               foregroundColor: Colors.white,
             ),
           ),

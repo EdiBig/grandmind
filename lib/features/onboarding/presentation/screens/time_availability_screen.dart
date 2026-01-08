@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/route_constants.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_gradients.dart';
 import '../../domain/onboarding_data.dart';
 import '../providers/onboarding_provider.dart';
 
@@ -12,6 +12,7 @@ class TimeAvailabilityScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final onboardingState = ref.watch(onboardingProvider);
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
@@ -65,20 +66,23 @@ class TimeAvailabilityScreen extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.blue[50],
+                        color: colorScheme.secondaryContainer,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.blue[200]!),
+                        border: Border.all(color: colorScheme.secondary),
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.lightbulb_outline, color: Colors.blue[700]),
+                          Icon(
+                            Icons.lightbulb_outline,
+                            color: colorScheme.onSecondaryContainer,
+                          ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
                               'Consistency beats intensity. Start with what feels sustainable.',
                               style: TextStyle(
                                 fontSize: 13,
-                                color: Colors.blue[900],
+                                color: colorScheme.onSecondaryContainer,
                               ),
                             ),
                           ),
@@ -93,7 +97,7 @@ class TimeAvailabilityScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: colorScheme.surface,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.grey.withOpacity(0.1),
@@ -108,14 +112,14 @@ class TimeAvailabilityScreen extends ConsumerWidget {
                   onPressed: onboardingState.weeklyWorkouts != null
                       ? () => context.push(RouteConstants.onboardingLimitations)
                       : null,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor: Colors.grey[300],
+                    disabledBackgroundColor: colorScheme.surfaceVariant,
                   ),
                   child: const Text(
                     'Continue',
@@ -147,16 +151,21 @@ class _FrequencyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.white,
+          color: isSelected
+              ? colorScheme.primary.withOpacity(0.1)
+              : colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? AppColors.primary : Colors.grey[300]!,
+            color: isSelected
+                ? colorScheme.primary
+                : colorScheme.outlineVariant,
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -164,12 +173,12 @@ class _FrequencyCard extends StatelessWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                gradient: isSelected
-                    ? AppColors.primaryGradient
-                    : LinearGradient(
-                        colors: [Colors.grey[300]!, Colors.grey[400]!],
-                      ),
+                decoration: BoxDecoration(
+                  gradient: isSelected
+                      ? Theme.of(context).extension<AppGradients>()!.primary
+                      : LinearGradient(
+                          colors: [Colors.grey[300]!, Colors.grey[400]!],
+                        ),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(
@@ -185,14 +194,16 @@ class _FrequencyCard extends StatelessWidget {
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  color: isSelected ? AppColors.primary : Colors.black,
+                  color: isSelected
+                      ? colorScheme.primary
+                      : colorScheme.onSurface,
                 ),
               ),
             ),
             if (isSelected)
-              const Icon(
+              Icon(
                 Icons.check_circle,
-                color: AppColors.primary,
+                color: Theme.of(context).colorScheme.primary,
                 size: 28,
               ),
           ],

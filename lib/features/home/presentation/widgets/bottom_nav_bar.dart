@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../screens/home_screen.dart';
 
 class BottomNavBar extends ConsumerWidget {
@@ -16,7 +15,7 @@ class BottomNavBar extends ConsumerWidget {
         ref.read(selectedIndexProvider.notifier).state = index;
       },
       backgroundColor: Theme.of(context).colorScheme.surface,
-      indicatorColor: AppColors.primary.withOpacity(0.2),
+      indicatorColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
       destinations: const [
         NavigationDestination(
           icon: Icon(Icons.home_outlined),
@@ -37,6 +36,11 @@ class BottomNavBar extends ConsumerWidget {
           icon: Icon(Icons.analytics_outlined),
           selectedIcon: Icon(Icons.analytics),
           label: 'Progress',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.restaurant_menu_outlined),
+          selectedIcon: Icon(Icons.restaurant_menu),
+          label: 'Nutrition',
         ),
       ],
     );

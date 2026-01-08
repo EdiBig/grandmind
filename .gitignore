@@ -33,6 +33,10 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Local Firebase and build caches
+.firebase/
+/android/build/
+
 # Symbolication related
 app.*.symbols
 
@@ -43,6 +47,9 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Firebase Functions
+functions/node_modules/
 
 # Firebase configuration (contains API keys)
 google-services.json
@@ -55,6 +62,8 @@ lib/firebase_options.dart
 *.env
 **/secrets.dart
 **/*_secrets.dart
+android/key.properties
+**/*.jks
 
 # API keys
 **/api_key.dart

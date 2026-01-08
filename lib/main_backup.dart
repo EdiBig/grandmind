@@ -6,6 +6,7 @@ import 'package:timezone/data/latest.dart' as tz;
 import 'app.dart';
 import 'firebase_options.dart';
 import 'core/config/ai_config.dart';
+import 'core/providers/shared_preferences_provider.dart';
 import 'features/notifications/data/services/notification_service.dart';
 import 'features/ai/presentation/providers/ai_providers.dart';
 import 'features/ai/presentation/providers/ai_coach_provider.dart';

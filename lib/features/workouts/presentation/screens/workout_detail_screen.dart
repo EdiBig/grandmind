@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../domain/models/workout.dart';
 import '../../domain/models/exercise.dart';
 import '../providers/workout_providers.dart';
@@ -55,7 +54,7 @@ class WorkoutDetailScreen extends ConsumerWidget {
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
@@ -95,7 +94,7 @@ class WorkoutDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildHeader(BuildContext context, Workout workout) {
-    final color = _getCategoryColor(workout.category);
+    final color = _getCategoryColor(context, workout.category);
 
     return Container(
       height: 200,
@@ -213,15 +212,15 @@ class WorkoutDetailScreen extends ConsumerWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.primary.withOpacity(0.08),
-            AppColors.primary.withOpacity(0.12),
+            Theme.of(context).colorScheme.primary.withOpacity(0.08),
+            Theme.of(context).colorScheme.primary.withOpacity(0.12),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppColors.primary.withOpacity(0.2),
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
           width: 1.5,
         ),
       ),
@@ -230,17 +229,21 @@ class WorkoutDetailScreen extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.15),
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, size: 24, color: AppColors.primary),
+            child: Icon(
+              icon,
+              size: 24,
+              color: Theme.of(context).colorScheme.primary,
+            ),
           ),
           const SizedBox(height: 12),
           Text(
             value,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimaryLight,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
             textAlign: TextAlign.center,
           ),
@@ -248,7 +251,7 @@ class WorkoutDetailScreen extends ConsumerWidget {
           Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondaryLight,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w500,
                 ),
           ),
@@ -293,15 +296,15 @@ class WorkoutDetailScreen extends ConsumerWidget {
   ) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppColors.primary.withOpacity(0.15),
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.08),
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -317,8 +320,8 @@ class WorkoutDetailScreen extends ConsumerWidget {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    AppColors.primary,
-                    AppColors.primaryLight,
+                    Theme.of(context).colorScheme.primary,
+                    Theme.of(context).colorScheme.secondary,
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -326,7 +329,7 @@ class WorkoutDetailScreen extends ConsumerWidget {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.3),
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -352,14 +355,14 @@ class WorkoutDetailScreen extends ConsumerWidget {
                     exercise.name,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimaryLight,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     exercise.description,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondaryLight,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           height: 1.4,
                         ),
                     maxLines: 2,
@@ -402,20 +405,21 @@ class WorkoutDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildMetricChip(BuildContext context, String text) {
+    final primary = Theme.of(context).colorScheme.primary;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.1),
+        color: primary.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: AppColors.primary.withOpacity(0.3),
+          color: primary.withOpacity(0.3),
           width: 1,
         ),
       ),
       child: Text(
         text,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppColors.primary,
+              color: primary,
               fontWeight: FontWeight.w600,
               fontSize: 12,
             ),
@@ -423,14 +427,14 @@ class WorkoutDetailScreen extends ConsumerWidget {
     );
   }
 
-  Color _getCategoryColor(WorkoutCategory category) {
+  Color _getCategoryColor(BuildContext context, WorkoutCategory category) {
     switch (category) {
       case WorkoutCategory.strength:
-        return AppColors.primary;
+        return Theme.of(context).colorScheme.primary;
       case WorkoutCategory.cardio:
-        return AppColors.secondary;
+        return Theme.of(context).colorScheme.secondary;
       case WorkoutCategory.yoga:
-        return AppColors.accent;
+        return Theme.of(context).colorScheme.tertiary;
       case WorkoutCategory.hiit:
         return Colors.orange;
       case WorkoutCategory.flexibility:

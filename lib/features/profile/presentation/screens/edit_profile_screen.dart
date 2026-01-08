@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../home/presentation/providers/dashboard_provider.dart';
 import '../../../user/data/services/firestore_service.dart';
 
@@ -43,6 +42,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final userAsync = ref.watch(currentUserProvider);
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
@@ -67,10 +67,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             _weightController.text =
                 user.weight != null ? user.weight!.toStringAsFixed(1) : '';
             _dateOfBirth = user.dateOfBirth;
-            _gender = user.gender;
-            _fitnessLevel = user.fitnessLevel;
-            _goal = user.goal;
+            _gender = _normalizeDropdownValue(user.gender, _genderOptions);
+            _fitnessLevel = _normalizeDropdownValue(user.fitnessLevel, _fitnessOptions);
+            _goal = _normalizeDropdownValue(user.goal, _goalOptions);
             _initialized = true;
+            _runProfileMigration(user.id);
           }
 
           return Form(
@@ -147,7 +148,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 ElevatedButton(
                   onPressed: _isSaving ? null : () => _saveProfile(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: colorScheme.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
@@ -218,7 +219,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     required ValueChanged<String?> onChanged,
   }) {
     return DropdownButtonFormField<String>(
-      value: value,
+      value: _normalizeDropdownValue(value, options),
       items: options
           .map((option) => DropdownMenuItem(value: option, child: Text(option)))
           .toList(),
@@ -310,9 +311,25 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     return double.tryParse(value);
   }
 
+  String? _normalizeDropdownValue(String? value, List<String> options) {
+    if (value == null) return null;
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return null;
+    return options.contains(trimmed) ? trimmed : null;
+  }
+
   String _formatDate(DateTime date) {
     final month = date.month.toString().padLeft(2, '0');
     final day = date.day.toString().padLeft(2, '0');
     return '${date.year}-$month-$day';
+  }
+
+  Future<void> _runProfileMigration(String userId) async {
+    try {
+      final firestoreService = ref.read(firestoreServiceProvider);
+      await firestoreService.sanitizeUserProfile(userId);
+    } catch (_) {
+      // Best-effort cleanup; ignore failures.
+    }
   }
 }

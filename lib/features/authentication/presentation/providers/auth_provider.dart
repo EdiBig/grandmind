@@ -58,6 +58,16 @@ class AuthController extends StateNotifier<AuthState> {
     }
   }
 
+  Future<void> signInWithApple() async {
+    state = const AuthState.loading();
+    try {
+      await _authRepository.signInWithApple();
+      state = const AuthState.authenticated();
+    } catch (e) {
+      state = AuthState.error(e.toString());
+    }
+  }
+
   Future<void> signOut() async {
     state = const AuthState.loading();
     try {

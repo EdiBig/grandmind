@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../domain/models/notification_preference.dart';
 import '../providers/notification_providers.dart';
 
@@ -55,6 +54,7 @@ class _CreateReminderScreenState extends ConsumerState<CreateReminderScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
     final isEditing = widget.editingPreference != null;
 
     return Scaffold(
@@ -129,7 +129,7 @@ class _CreateReminderScreenState extends ConsumerState<CreateReminderScreen> {
               child: ElevatedButton(
                 onPressed: _isLoading ? null : _saveReminder,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: primary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -161,6 +161,8 @@ class _CreateReminderScreenState extends ConsumerState<CreateReminderScreen> {
   }
 
   Widget _buildTypeSelector() {
+    final primary = Theme.of(context).colorScheme.primary;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -181,7 +183,7 @@ class _CreateReminderScreenState extends ConsumerState<CreateReminderScreen> {
               avatar: Icon(
                 _getTypeIcon(type),
                 size: 18,
-                color: isSelected ? Colors.white : AppColors.primary,
+                color: isSelected ? Colors.white : primary,
               ),
               selected: isSelected,
               onSelected: (selected) {
@@ -190,9 +192,9 @@ class _CreateReminderScreenState extends ConsumerState<CreateReminderScreen> {
                   _updateDefaultsForType(type);
                 });
               },
-              selectedColor: AppColors.primary,
+              selectedColor: primary,
               labelStyle: TextStyle(
-                color: isSelected ? Colors.white : AppColors.textPrimaryLight,
+                color: isSelected ? Colors.white : onSurface,
               ),
             );
           }).toList(),
@@ -205,8 +207,12 @@ class _CreateReminderScreenState extends ConsumerState<CreateReminderScreen> {
     return Card(
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: AppColors.primary.withValues(alpha: 0.2),
-          child: Icon(Icons.schedule, color: AppColors.primary),
+          backgroundColor:
+              Theme.of(context).colorScheme.primary.withOpacity(0.2),
+          child: Icon(
+            Icons.schedule,
+            color: Theme.of(context).colorScheme.primary,
+          ),
         ),
         title: const Text('Time'),
         subtitle: Text(_selectedTime.format(context)),
@@ -266,7 +272,7 @@ class _CreateReminderScreenState extends ConsumerState<CreateReminderScreen> {
                 height: 45,
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? AppColors.primary
+                      ? Theme.of(context).colorScheme.primary
                       : Colors.grey.shade200,
                   shape: BoxShape.circle,
                 ),
@@ -274,7 +280,9 @@ class _CreateReminderScreenState extends ConsumerState<CreateReminderScreen> {
                   child: Text(
                     day.$2,
                     style: TextStyle(
-                      color: isSelected ? Colors.white : AppColors.textPrimaryLight,
+                      color: isSelected
+                          ? Colors.white
+                          : Theme.of(context).colorScheme.onSurface,
                       fontWeight: FontWeight.w600,
                       fontSize: 12,
                     ),
@@ -314,7 +322,7 @@ class _CreateReminderScreenState extends ConsumerState<CreateReminderScreen> {
             _enabled = value;
           });
         },
-        activeColor: AppColors.primary,
+        activeColor: Theme.of(context).colorScheme.primary,
       ),
     );
   }

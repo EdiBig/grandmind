@@ -13,6 +13,7 @@ class UserModel {
   final String? fitnessLevel;
   final String? goal;
   final Map<String, dynamic>? onboarding;
+  final Map<String, dynamic>? preferences;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -29,6 +30,7 @@ class UserModel {
     this.fitnessLevel,
     this.goal,
     this.onboarding,
+    this.preferences,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -38,7 +40,7 @@ class UserModel {
       id: id,
       email: data['email'] ?? '',
       displayName: data['displayName'],
-      photoUrl: data['photoUrl'],
+      photoUrl: data['photoUrl'] ?? data['photoURL'],
       phoneNumber: data['phoneNumber'],
       dateOfBirth: data['dateOfBirth'] != null
           ? (data['dateOfBirth'] as Timestamp).toDate()
@@ -49,9 +51,20 @@ class UserModel {
       fitnessLevel: data['fitnessLevel'],
       goal: data['goal'],
       onboarding: data['onboarding'] as Map<String, dynamic>?,
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
-      updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+      preferences: data['preferences'] as Map<String, dynamic>?,
+      createdAt: _parseTimestampOrNow(data['createdAt']),
+      updatedAt: _parseTimestampOrNow(data['updatedAt']),
     );
+  }
+
+  static DateTime _parseTimestampOrNow(dynamic value) {
+    if (value is Timestamp) {
+      return value.toDate();
+    }
+    if (value is DateTime) {
+      return value;
+    }
+    return DateTime.now();
   }
 
   Map<String, dynamic> toFirestore() {
@@ -67,6 +80,7 @@ class UserModel {
       'fitnessLevel': fitnessLevel,
       'goal': goal,
       'onboarding': onboarding,
+      'preferences': preferences,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
     };
@@ -85,6 +99,7 @@ class UserModel {
     String? fitnessLevel,
     String? goal,
     Map<String, dynamic>? onboarding,
+    Map<String, dynamic>? preferences,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -101,6 +116,7 @@ class UserModel {
       fitnessLevel: fitnessLevel ?? this.fitnessLevel,
       goal: goal ?? this.goal,
       onboarding: onboarding ?? this.onboarding,
+      preferences: preferences ?? this.preferences,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

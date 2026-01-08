@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/route_constants.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_gradients.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -20,11 +20,11 @@ class WelcomeScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  gradient: AppColors.primaryGradient,
+                  gradient: Theme.of(context).extension<AppGradients>()!.primary,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(0.3),
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
@@ -48,7 +48,7 @@ class WelcomeScreen extends StatelessWidget {
               Text(
                 AppConstants.appTagline,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppColors.primary,
+                      color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.w500,
                     ),
                 textAlign: TextAlign.center,
@@ -57,12 +57,13 @@ class WelcomeScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
+                  color: Theme.of(context).colorScheme.surfaceVariant,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
                   children: [
                     _buildFeature(
+                      context,
                       icon: Icons.track_changes,
                       title: 'Holistic Tracking',
                       description:
@@ -70,6 +71,7 @@ class WelcomeScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     _buildFeature(
+                      context,
                       icon: Icons.insights,
                       title: 'Smart Insights',
                       description:
@@ -77,6 +79,7 @@ class WelcomeScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     _buildFeature(
+                      context,
                       icon: Icons.favorite,
                       title: 'Compassionate Coaching',
                       description:
@@ -103,7 +106,7 @@ class WelcomeScreen extends StatelessWidget {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: Colors.white,
                   ),
                   child: const Text(
@@ -123,7 +126,8 @@ class WelcomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFeature({
+  Widget _buildFeature(
+    BuildContext context, {
     required IconData icon,
     required String title,
     required String description,
@@ -133,7 +137,7 @@ class WelcomeScreen extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            gradient: AppColors.primaryGradient,
+            gradient: Theme.of(context).extension<AppGradients>()!.primary,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, color: Colors.white, size: 24),

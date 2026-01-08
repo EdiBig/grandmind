@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/route_constants.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_gradients.dart';
 import '../../../user/data/services/firestore_service.dart';
 import '../providers/auth_provider.dart';
 
@@ -73,10 +73,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final gradients = Theme.of(context).extension<AppGradients>()!;
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppColors.primaryGradient,
+        decoration: BoxDecoration(
+          gradient: gradients.primary,
         ),
         child: Center(
           child: Column(
@@ -87,7 +89,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                 width: 120,
                 height: 120,
                 decoration: BoxDecoration(
-                  color: AppColors.white,
+                  color: colorScheme.surface,
                   borderRadius: BorderRadius.circular(AppConstants.radiusXLarge),
                   boxShadow: [
                     BoxShadow(
@@ -97,17 +99,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                     ),
                   ],
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.self_improvement,
                   size: 64,
-                  color: AppColors.primary,
+                  color: colorScheme.primary,
                 ),
               ),
               const SizedBox(height: 24),
               Text(
                 AppConstants.appName,
                 style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                      color: AppColors.white,
+                      color: colorScheme.onPrimary,
                       fontWeight: FontWeight.bold,
                     ),
               ),
@@ -115,12 +117,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
               Text(
                 AppConstants.appTagline,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: AppColors.white.withOpacity(0.9),
+                      color: colorScheme.onPrimary.withOpacity(0.9),
                     ),
               ),
               const SizedBox(height: 48),
-              const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.white),
+              CircularProgressIndicator(
+                valueColor:
+                    AlwaysStoppedAnimation<Color>(colorScheme.onPrimary),
               ),
             ],
           ),

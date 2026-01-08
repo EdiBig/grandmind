@@ -1,9 +1,1 @@
-{
-  "firestore": {
-    "rules": "firestore.rules",
-    "indexes": "firestore.indexes.json"
-  },
-  "storage": {
-    "rules": "storage.rules"
-  }
-}
+{"firestore":{"rules":"firestore.rules","indexes":"firestore.indexes.json"},"storage":{"rules":"storage.rules"},"hosting":{"public":"build/web","ignore":["firebase.json","**/.*","**/node_modules/**"],"rewrites":[{"source":"**","destination":"/index.html"}]},"functions":{"source":"functions"},"flutter":{"platforms":{"android":{"default":{"projectId":"grandmind-kinesa","appId":"1:891051622598:android:68c9f9d42b3f233c10d7c7","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"grandmind-kinesa","configurations":{"ios":"1:891051622598:ios:60a2b9b0d18a7fd310d7c7"}}}}}}

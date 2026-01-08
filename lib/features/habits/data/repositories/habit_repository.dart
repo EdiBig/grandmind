@@ -325,6 +325,25 @@ class HabitRepository {
     });
   }
 
+  /// Stream recent habit logs for a user (ordered by date ascending)
+  Stream<List<HabitLog>> getRecentHabitLogsStream(
+    String userId, {
+    int limit = 10,
+  }) {
+    Query query = _firestore
+        .collection(_habitLogsCollection)
+        .where('userId', isEqualTo: userId)
+        .orderBy('date', descending: false)
+        .limitToLast(limit);
+
+    return query.snapshots().map((snapshot) => snapshot.docs
+        .map((doc) => HabitLog.fromJson({
+              ...doc.data() as Map<String, dynamic>,
+              'id': doc.id,
+            }))
+        .toList());
+  }
+
   // ========== Statistics ==========
 
   /// Get habit statistics for a user

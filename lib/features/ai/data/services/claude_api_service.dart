@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 import 'package:kinesa/core/config/ai_config.dart';
 import 'package:kinesa/features/ai/data/repositories/ai_cache_repository.dart';
@@ -161,6 +162,11 @@ class ClaudeAPIService {
 
   /// Initialize the service with API key
   Future<void> initialize() async {
+    if (kIsWeb) {
+      _logger.i('ClaudeAPIService initialized for web proxy');
+      return;
+    }
+
     _apiKey = await AIConfig.getApiKey();
 
     if (_apiKey == null) {
@@ -247,10 +253,15 @@ class ClaudeAPIService {
       _logger.d('Max tokens: ${requestBody['max_tokens']}');
 
       // Make API request
-      final response = await _dio.post(
-        '/messages',
-        data: requestBody,
-      );
+      final response = kIsWeb
+          ? await _dio.post(
+              AIConfig.getProxyUrl(),
+              data: requestBody,
+            )
+          : await _dio.post(
+              '/messages',
+              data: requestBody,
+            );
 
       // Parse response
       final responseData = response.data as Map<String, dynamic>;
@@ -319,6 +330,10 @@ class ClaudeAPIService {
     int? maxTokens,
   }) async* {
     try {
+      if (kIsWeb) {
+        throw ClaudeAPIException('Streaming is not available on web.');
+      }
+
       // Ensure initialized
       if (_apiKey == null) {
         await initialize();

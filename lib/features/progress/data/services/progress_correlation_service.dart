@@ -91,8 +91,8 @@ class ProgressCorrelationService {
 
       // Calculate completion rate
       final totalDays = endDate.difference(startDate).inDays + 1;
-      final completedDays = habitLogsForHabit.where((log) => log.completed).length;
-      final completionRate = (completedDays / totalDays * 100).clamp(0, 100);
+      final completedDays = habitLogsForHabit.length; // Each log represents a completion
+      final completionRate = (completedDays / totalDays * 100).clamp(0.0, 100.0).toDouble();
 
       // Group habit completion by week and correlate with weight changes
       final weeklyData = _groupHabitLogsByWeek(habitLogsForHabit, startDate, endDate);
@@ -130,12 +130,12 @@ class ProgressCorrelationService {
 
       correlations.add(HabitCorrelation(
         habit: habit,
-        completionRate: completionRate,
-        correlationStrength: normalizedCorrelation,
+        completionRate: completionRate.toDouble(),
+        correlationStrength: normalizedCorrelation.toDouble(),
         insight: _generateHabitInsight(
           habit: habit,
-          completionRate: completionRate,
-          correlationStrength: normalizedCorrelation,
+          completionRate: completionRate.toDouble(),
+          correlationStrength: normalizedCorrelation.toDouble(),
           weightChange: totalWeightChange,
         ),
       ));
@@ -170,8 +170,9 @@ class ProgressCorrelationService {
     final Map<int, double> weeklyCompletionRates = {};
     for (final week in weeklyLogs.keys) {
       final logsInWeek = weeklyLogs[week]!;
-      final completedCount = logsInWeek.where((log) => log.completed).length;
-      weeklyCompletionRates[week] = completedCount / logsInWeek.length;
+      final completedCount = logsInWeek.length; // Each log represents a completion
+      // Assuming 7 days per week for completion rate calculation
+      weeklyCompletionRates[week] = completedCount / 7;
     }
 
     return weeklyCompletionRates;

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../domain/models/progress_goal.dart';
 import '../../domain/models/measurement_entry.dart';
 import '../providers/progress_providers.dart';
@@ -61,6 +60,7 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Create Goal'),
@@ -84,8 +84,19 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
                 spacing: 8,
                 children: GoalType.values.map((type) {
                   final isSelected = _selectedType == type;
+                  final labelColor = isSelected
+                      ? colorScheme.onPrimaryContainer
+                      : colorScheme.onSurfaceVariant;
+                  final borderColor =
+                      isSelected ? colorScheme.primary : colorScheme.outlineVariant;
                   return ChoiceChip(
-                    label: Text(type.displayName),
+                    label: Text(
+                      type.displayName,
+                      style: TextStyle(
+                        color: labelColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     selected: isSelected,
                     onSelected: (selected) {
                       if (selected) {
@@ -96,7 +107,10 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
                         _loadCurrentValues();
                       }
                     },
-                    selectedColor: AppColors.primary.withOpacity(0.2),
+                    selectedColor: colorScheme.primaryContainer,
+                    backgroundColor: colorScheme.surface,
+                    showCheckmark: false,
+                    side: BorderSide(color: borderColor),
                   );
                 }).toList(),
               ),

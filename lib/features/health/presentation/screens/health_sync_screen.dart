@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../providers/health_providers.dart';
 
 class HealthSyncScreen extends ConsumerWidget {
@@ -35,12 +34,14 @@ class HealthSyncScreen extends ConsumerWidget {
   }
 
   Widget _buildStatusCard(BuildContext context, WidgetRef ref, bool hasPermissions) {
+    final surface = Theme.of(context).colorScheme.surface;
+    final outline = Theme.of(context).colorScheme.outlineVariant;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+        border: Border.all(color: outline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -93,7 +94,7 @@ class HealthSyncScreen extends ConsumerWidget {
               icon: const Icon(Icons.lock_open),
               label: const Text('Grant Access'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               ),
@@ -112,7 +113,7 @@ class HealthSyncScreen extends ConsumerWidget {
               icon: const Icon(Icons.sync),
               label: const Text('Sync Now'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               ),
@@ -123,16 +124,18 @@ class HealthSyncScreen extends ConsumerWidget {
   }
 
   Widget _buildLastSyncCard(BuildContext context, AsyncValue<DateTime?> lastSyncAsync) {
+    final surface = Theme.of(context).colorScheme.surface;
+    final outline = Theme.of(context).colorScheme.outlineVariant;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+        border: Border.all(color: outline),
       ),
       child: Row(
         children: [
-          const Icon(Icons.schedule, color: AppColors.primary),
+          Icon(Icons.schedule, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 12),
           Expanded(
             child: lastSyncAsync.when(
@@ -155,12 +158,14 @@ class HealthSyncScreen extends ConsumerWidget {
   }
 
   Widget _buildDataTypesCard(BuildContext context) {
+    final surface = Theme.of(context).colorScheme.surface;
+    final outline = Theme.of(context).colorScheme.outlineVariant;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+        border: Border.all(color: outline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -185,12 +190,14 @@ class HealthSyncScreen extends ConsumerWidget {
   }
 
   Widget _buildTroubleshootingCard(BuildContext context) {
+    final surface = Theme.of(context).colorScheme.surface;
+    final outline = Theme.of(context).colorScheme.outlineVariant;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+        border: Border.all(color: outline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -214,7 +221,7 @@ class HealthSyncScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.withOpacity(0.2)),
       ),

@@ -5,7 +5,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../domain/models/progress_photo.dart';
 import '../providers/progress_providers.dart';
 import 'photo_detail_screen.dart';
@@ -125,8 +124,8 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
           _selectedAngle = selected ? angle : null;
         });
       },
-      selectedColor: AppColors.primary.withOpacity(0.2),
-      checkmarkColor: AppColors.primary,
+      selectedColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+      checkmarkColor: Theme.of(context).colorScheme.primary,
     );
   }
 
@@ -302,7 +301,10 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
           children: [
             const SizedBox(height: 16),
             ListTile(
-              leading: const Icon(Icons.camera_alt, color: AppColors.primary),
+              leading: Icon(
+                Icons.camera_alt,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               title: const Text('Take Photo'),
               onTap: () {
                 Navigator.pop(context);
@@ -310,7 +312,10 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.photo_library, color: AppColors.primary),
+              leading: Icon(
+                Icons.photo_library,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               title: const Text('Choose from Gallery'),
               onTap: () {
                 Navigator.pop(context);

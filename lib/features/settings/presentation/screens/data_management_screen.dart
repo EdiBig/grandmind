@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/route_constants.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../profile/presentation/screens/delete_account_screen.dart';
 import '../../../profile/data/services/data_export_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -38,7 +37,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
                 icon: Icons.file_download_outlined,
                 title: 'Export as JSON',
                 description: 'Download all your data in JSON format',
-                color: AppColors.primary,
+                color: Theme.of(context).colorScheme.primary,
                 onTap: _isExporting ? null : () => _exportData('json'),
               ),
               const SizedBox(height: 12),
@@ -47,7 +46,7 @@ class _DataManagementScreenState extends ConsumerState<DataManagementScreen> {
                 icon: Icons.table_chart_outlined,
                 title: 'Export as CSV',
                 description: 'Download workouts and habits as CSV files',
-                color: AppColors.secondary,
+                color: Theme.of(context).colorScheme.secondary,
                 onTap: _isExporting ? null : () => _exportData('csv'),
               ),
             ],

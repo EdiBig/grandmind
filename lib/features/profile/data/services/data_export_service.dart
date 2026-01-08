@@ -23,9 +23,11 @@ class DataExportService {
   Future<String> _exportToJson(String userId) async {
     try {
       final userData = await _collectAllUserData(userId);
+      final normalizedData = _normalizeForJson(userData) as Map<String, dynamic>;
 
       // Convert to JSON
-      final jsonString = const JsonEncoder.withIndent('  ').convert(userData);
+      final jsonString =
+          const JsonEncoder.withIndent('  ').convert(normalizedData);
 
       // Save to file
       final directory = await getApplicationDocumentsDirectory();
@@ -144,29 +146,54 @@ class DataExportService {
     return data;
   }
 
+  dynamic _normalizeForJson(dynamic value) {
+    if (value is Timestamp) {
+      return value.toDate().toIso8601String();
+    }
+    if (value is DateTime) {
+      return value.toIso8601String();
+    }
+    if (value is GeoPoint) {
+      return {
+        'latitude': value.latitude,
+        'longitude': value.longitude,
+      };
+    }
+    if (value is DocumentReference) {
+      return value.path;
+    }
+    if (value is Map) {
+      return value.map(
+        (key, val) => MapEntry(key.toString(), _normalizeForJson(val)),
+      );
+    }
+    if (value is Iterable) {
+      return value.map(_normalizeForJson).toList();
+    }
+    return value;
+  }
+
   /// Export workouts to CSV
   Future<void> _exportWorkoutsToCsv(String userId, String folderPath) async {
     final snapshot = await _firestore
         .collection('workout_logs')
         .where('userId', isEqualTo: userId)
-        .orderBy('date', descending: true)
         .get();
 
     if (snapshot.docs.isEmpty) return;
 
     final rows = <List<dynamic>>[
-      ['Date', 'Type', 'Duration (min)', 'Calories', 'Notes'],
+      ['Date', 'Workout', 'Duration (min)', 'Calories', 'Notes'],
     ];
 
     for (final doc in snapshot.docs) {
       final data = doc.data();
-      final timestamp = data['date'] as Timestamp?;
-      final date = timestamp?.toDate().toString().split(' ').first ?? 'N/A';
+      final date = _formatDate(data['startedAt'] ?? data['date']);
 
       rows.add([
         date,
-        data['workoutType'] ?? 'N/A',
-        data['durationMinutes'] ?? 0,
+        data['workoutName'] ?? data['workoutType'] ?? 'N/A',
+        data['duration'] ?? data['durationMinutes'] ?? 0,
         data['caloriesBurned'] ?? 0,
         data['notes'] ?? '',
       ]);
@@ -192,13 +219,11 @@ class DataExportService {
 
       for (final doc in habitsSnapshot.docs) {
         final data = doc.data();
-        final timestamp = data['createdAt'] as Timestamp?;
-        final createdAt =
-            timestamp?.toDate().toString().split(' ').first ?? 'N/A';
+        final createdAt = _formatDate(data['createdAt']);
 
         rows.add([
           data['name'] ?? 'N/A',
-          data['frequencyType'] ?? 'N/A',
+          data['frequency'] ?? data['frequencyType'] ?? 'N/A',
           data['isActive'] ?? false,
           createdAt,
         ]);
@@ -213,23 +238,22 @@ class DataExportService {
     final logsSnapshot = await _firestore
         .collection('habit_logs')
         .where('userId', isEqualTo: userId)
-        .orderBy('date', descending: true)
         .get();
 
     if (logsSnapshot.docs.isNotEmpty) {
       final rows = <List<dynamic>>[
-        ['Date', 'Habit ID', 'Completed'],
+        ['Date', 'Habit ID', 'Count', 'Notes'],
       ];
 
       for (final doc in logsSnapshot.docs) {
         final data = doc.data();
-        final timestamp = data['date'] as Timestamp?;
-        final date = timestamp?.toDate().toString().split(' ').first ?? 'N/A';
+        final date = _formatDate(data['date']);
 
         rows.add([
           date,
           data['habitId'] ?? 'N/A',
-          data['completed'] ?? false,
+          data['count'] ?? 1,
+          data['notes'] ?? '',
         ]);
       }
 
@@ -244,7 +268,6 @@ class DataExportService {
     final snapshot = await _firestore
         .collection('weight_entries')
         .where('userId', isEqualTo: userId)
-        .orderBy('date', descending: true)
         .get();
 
     if (snapshot.docs.isEmpty) return;
@@ -255,8 +278,7 @@ class DataExportService {
 
     for (final doc in snapshot.docs) {
       final data = doc.data();
-      final timestamp = data['date'] as Timestamp?;
-      final date = timestamp?.toDate().toString().split(' ').first ?? 'N/A';
+      final date = _formatDate(data['date']);
 
       rows.add([
         date,
@@ -276,7 +298,6 @@ class DataExportService {
     final snapshot = await _firestore
         .collection('measurement_entries')
         .where('userId', isEqualTo: userId)
-        .orderBy('date', descending: true)
         .get();
 
     if (snapshot.docs.isEmpty) return;
@@ -287,8 +308,7 @@ class DataExportService {
 
     for (final doc in snapshot.docs) {
       final data = doc.data();
-      final timestamp = data['date'] as Timestamp?;
-      final date = timestamp?.toDate().toString().split(' ').first ?? 'N/A';
+      final date = _formatDate(data['date']);
       final measurements = data['measurements'] as Map<String, dynamic>? ?? {};
 
       rows.add([
@@ -306,5 +326,29 @@ class DataExportService {
     final csv = const ListToCsvConverter().convert(rows);
     final file = File('$folderPath/measurements.csv');
     await file.writeAsString(csv);
+  }
+
+  String _formatDate(dynamic rawDate) {
+    DateTime? parsed;
+    if (rawDate is Timestamp) {
+      parsed = rawDate.toDate();
+    } else if (rawDate is DateTime) {
+      parsed = rawDate;
+    } else if (rawDate is String) {
+      parsed = DateTime.tryParse(rawDate);
+    } else if (rawDate is int) {
+      parsed = DateTime.fromMillisecondsSinceEpoch(rawDate);
+    } else if (rawDate is Map) {
+      final seconds = rawDate['seconds'];
+      if (seconds is int) {
+        parsed = DateTime.fromMillisecondsSinceEpoch(seconds * 1000);
+      }
+    }
+
+    if (parsed == null) {
+      return 'N/A';
+    }
+
+    return parsed.toIso8601String().split('T').first;
   }
 }

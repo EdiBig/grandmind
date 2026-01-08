@@ -3,6 +3,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../user/data/models/user_model.dart';
 import '../../domain/models/dashboard_stats.dart';
+import '../../../habits/presentation/providers/habit_providers.dart';
+import '../../../workouts/presentation/providers/workout_providers.dart';
+import '../../../profile/presentation/providers/profile_providers.dart';
+import '../../../profile/data/services/user_stats_service.dart';
+import '../../../progress/presentation/providers/progress_providers.dart';
 
 /// Provider for current user data
 final currentUserProvider = StreamProvider<UserModel?>((ref) {
@@ -20,104 +25,221 @@ final currentUserProvider = StreamProvider<UserModel?>((ref) {
 });
 
 /// Provider for dashboard statistics
-final dashboardStatsProvider = StreamProvider<DashboardStats>((ref) {
+final dashboardStatsProvider = Provider<AsyncValue<DashboardStats>>((ref) {
   final userId = FirebaseAuth.instance.currentUser?.uid;
   if (userId == null) {
-    return Stream.value(const DashboardStats());
+    return const AsyncValue.data(DashboardStats());
   }
 
-  // For now, return mock data. We'll implement real data fetching later
-  return Stream.periodic(const Duration(seconds: 1), (_) {
-    return const DashboardStats(
-      workoutsThisWeek: 3,
-      workoutsThisMonth: 12,
-      totalWorkouts: 45,
-      habitsCompleted: 17,
-      totalHabits: 20,
-      habitCompletionRate: 85.0,
-      currentStreak: 7,
-      longestStreak: 21,
-      stepsToday: 8500,
-      hoursSlept: 7.5,
+  final workoutStatsAsync = ref.watch(workoutStatsProvider);
+  final habitStatsAsync = ref.watch(habitStatsProvider);
+  final userStatsAsync = ref.watch(userStatsProvider);
+  final recentWorkoutsAsync = ref.watch(recentWorkoutLogsProvider);
+  final recentHabitsAsync = ref.watch(recentHabitLogsProvider);
+
+  if (workoutStatsAsync.isLoading ||
+      habitStatsAsync.isLoading ||
+      userStatsAsync.isLoading ||
+      recentWorkoutsAsync.isLoading ||
+      recentHabitsAsync.isLoading) {
+    return const AsyncValue.loading();
+  }
+
+  if (workoutStatsAsync.hasError) {
+    return AsyncValue.error(
+      workoutStatsAsync.error!,
+      workoutStatsAsync.stackTrace!,
     );
-  }).take(1);
+  }
+  if (habitStatsAsync.hasError) {
+    return AsyncValue.error(
+      habitStatsAsync.error!,
+      habitStatsAsync.stackTrace!,
+    );
+  }
+  if (userStatsAsync.hasError) {
+    return AsyncValue.error(
+      userStatsAsync.error!,
+      userStatsAsync.stackTrace!,
+    );
+  }
+  if (recentWorkoutsAsync.hasError) {
+    return AsyncValue.error(
+      recentWorkoutsAsync.error!,
+      recentWorkoutsAsync.stackTrace!,
+    );
+  }
+  if (recentHabitsAsync.hasError) {
+    return AsyncValue.error(
+      recentHabitsAsync.error!,
+      recentHabitsAsync.stackTrace!,
+    );
+  }
+
+  final workoutStats = workoutStatsAsync.asData?.value ?? {};
+  final habitStats = habitStatsAsync.asData?.value ?? {};
+  final userStats = userStatsAsync.asData?.value ?? UserStats.empty();
+  final recentWorkouts = recentWorkoutsAsync.asData?.value ?? [];
+  final recentHabits = recentHabitsAsync.asData?.value ?? [];
+
+  final lastWorkoutDate =
+      recentWorkouts.isNotEmpty ? recentWorkouts.first.startedAt : null;
+  final lastHabitDate =
+      recentHabits.isNotEmpty ? recentHabits.last.completedAt : null;
+  DateTime? lastActivityDate = lastWorkoutDate;
+  if (lastHabitDate != null) {
+    if (lastActivityDate == null || lastHabitDate.isAfter(lastActivityDate)) {
+      lastActivityDate = lastHabitDate;
+    }
+  }
+
+  return AsyncValue.data(
+    DashboardStats(
+      workoutsThisWeek: workoutStats['workoutsThisWeek'] as int? ?? 0,
+      workoutsThisMonth: workoutStats['workoutsThisMonth'] as int? ?? 0,
+      totalWorkouts: workoutStats['totalWorkouts'] as int? ?? 0,
+      habitsCompleted: habitStats['completedToday'] as int? ?? 0,
+      totalHabits: habitStats['totalHabits'] as int? ?? 0,
+      habitCompletionRate:
+          (habitStats['completionRate'] as num?)?.toDouble() ?? 0.0,
+      currentStreak: userStats.currentStreak,
+      longestStreak: userStats.longestStreak,
+      stepsToday: 0,
+      hoursSlept: 0,
+      lastWorkoutDate: lastWorkoutDate,
+      lastActivityDate: lastActivityDate,
+    ),
+  );
 });
 
 /// Provider for recent activities
-final recentActivitiesProvider = StreamProvider<List<ActivityItem>>((ref) {
+final recentActivitiesProvider = Provider<AsyncValue<List<ActivityItem>>>((ref) {
   final userId = FirebaseAuth.instance.currentUser?.uid;
   if (userId == null) {
-    return Stream.value([]);
+    return const AsyncValue.data([]);
   }
 
-  // For now, return mock data. We'll implement real data fetching later
-  final now = DateTime.now();
-  return Stream.value([
-    ActivityItem(
-      id: '1',
-      title: 'Completed HIIT Workout',
-      description: '30 minutes high intensity',
-      timestamp: now.subtract(const Duration(hours: 24)),
+  final recentWorkoutsAsync = ref.watch(recentWorkoutLogsProvider);
+  final recentHabitsAsync = ref.watch(recentHabitLogsProvider);
+  final habitsAsync = ref.watch(userHabitsProvider);
+
+  if (recentWorkoutsAsync.isLoading ||
+      recentHabitsAsync.isLoading ||
+      habitsAsync.isLoading) {
+    return const AsyncValue.loading();
+  }
+
+  if (recentWorkoutsAsync.hasError) {
+    return AsyncValue.error(
+      recentWorkoutsAsync.error!,
+      recentWorkoutsAsync.stackTrace!,
+    );
+  }
+  if (recentHabitsAsync.hasError) {
+    return AsyncValue.error(
+      recentHabitsAsync.error!,
+      recentHabitsAsync.stackTrace!,
+    );
+  }
+  if (habitsAsync.hasError) {
+    return AsyncValue.error(
+      habitsAsync.error!,
+      habitsAsync.stackTrace!,
+    );
+  }
+
+  final habits = habitsAsync.asData?.value ?? [];
+  final habitById = {
+    for (final habit in habits) habit.id: habit,
+  };
+
+  final workoutItems = (recentWorkoutsAsync.asData?.value ?? []).map((log) {
+    return ActivityItem(
+      id: log.id,
+      title: log.workoutName,
+      description: '${log.duration} min workout',
+      timestamp: log.startedAt,
       type: ActivityType.workout,
-      value: '30',
+      value: '${log.duration}',
       unit: 'min',
-    ),
-    ActivityItem(
-      id: '2',
-      title: 'Logged 8 hours of sleep',
-      description: 'Great sleep quality',
-      timestamp: now.subtract(const Duration(hours: 36)),
-      type: ActivityType.sleep,
-      value: '8',
-      unit: 'hours',
-    ),
-    ActivityItem(
-      id: '3',
-      title: '10,000 steps milestone',
-      description: 'Daily goal achieved',
-      timestamp: now.subtract(const Duration(days: 2)),
-      type: ActivityType.steps,
-      value: '10000',
-      unit: 'steps',
-    ),
-  ]);
+    );
+  });
+
+  final habitItems = (recentHabitsAsync.asData?.value ?? []).map((log) {
+    final habitName = habitById[log.habitId]?.name ?? 'Habit';
+    return ActivityItem(
+      id: log.id,
+      title: habitName,
+      description: 'Habit completed',
+      timestamp: log.completedAt,
+      type: ActivityType.habit,
+    );
+  });
+
+  final activities = [...workoutItems, ...habitItems]
+    ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+
+  return AsyncValue.data(activities.take(5).toList());
 });
 
 /// Provider for today's plan
-final todayPlanProvider = StreamProvider<List<TodayPlanItem>>((ref) {
+final todayPlanProvider = Provider<AsyncValue<List<TodayPlanItem>>>((ref) {
   final userId = FirebaseAuth.instance.currentUser?.uid;
   if (userId == null) {
-    return Stream.value([]);
+    return const AsyncValue.data([]);
   }
 
-  // For now, return mock data. We'll implement real data fetching later
-  final now = DateTime.now();
-  return Stream.value([
-    TodayPlanItem(
-      id: '1',
-      title: 'Morning Workout',
-      description: 'Full Body Strength',
-      scheduledTime: DateTime(now.year, now.month, now.day, 7, 0),
-      isCompleted: false,
-      type: PlanItemType.workout,
-    ),
-    TodayPlanItem(
-      id: '2',
-      title: 'Meditation',
-      description: '15 minutes mindfulness',
-      scheduledTime: DateTime(now.year, now.month, now.day, 12, 0),
-      isCompleted: true,
-      type: PlanItemType.meditation,
-    ),
-    TodayPlanItem(
-      id: '3',
-      title: 'Evening Walk',
-      description: '30 minutes outdoor',
-      scheduledTime: DateTime(now.year, now.month, now.day, 18, 0),
-      isCompleted: false,
-      type: PlanItemType.walk,
-    ),
-  ]);
+  final habitsAsync = ref.watch(userHabitsProvider);
+  final todayLogsAsync = ref.watch(todayHabitLogsProvider);
+  final goalsAsync = ref.watch(activeGoalsProvider);
+
+  if (habitsAsync.isLoading ||
+      todayLogsAsync.isLoading ||
+      goalsAsync.isLoading) {
+    return const AsyncValue.loading();
+  }
+
+  if (habitsAsync.hasError) {
+    return AsyncValue.error(habitsAsync.error!, habitsAsync.stackTrace!);
+  }
+  if (todayLogsAsync.hasError) {
+    return AsyncValue.error(todayLogsAsync.error!, todayLogsAsync.stackTrace!);
+  }
+  if (goalsAsync.hasError) {
+    return AsyncValue.error(goalsAsync.error!, goalsAsync.stackTrace!);
+  }
+
+  final habits = habitsAsync.asData?.value ?? [];
+  final logs = todayLogsAsync.asData?.value ?? [];
+  final completedHabitIds = {for (final log in logs) log.habitId};
+
+  final habitItems = habits.map((habit) {
+    return TodayPlanItem(
+      id: habit.id,
+      title: habit.name,
+      description: habit.description,
+      isCompleted: completedHabitIds.contains(habit.id),
+      type: PlanItemType.habit,
+    );
+  });
+
+  final goals = goalsAsync.asData?.value ?? [];
+  final goalItems = goals.take(2).map((goal) {
+    return TodayPlanItem(
+      id: goal.id,
+      title: goal.title,
+      description:
+          'Progress ${goal.progressPercentage.toStringAsFixed(0)}%',
+      isCompleted: goal.isCompleted,
+      type: PlanItemType.other,
+    );
+  });
+
+  final items = [...habitItems, ...goalItems].toList();
+  items.sort((a, b) => a.isCompleted == b.isCompleted
+      ? a.title.compareTo(b.title)
+      : (a.isCompleted ? 1 : -1));
+  return AsyncValue.data(items);
 });
 
 /// Motivational messages based on coach tone

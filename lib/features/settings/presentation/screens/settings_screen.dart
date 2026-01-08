@@ -1,21 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/theme/theme_presets.dart';
 import '../../../../core/constants/route_constants.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
+import '../providers/app_settings_provider.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(appSettingsProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
       ),
       body: ListView(
         children: [
+          _buildSection(
+            context,
+            'Appearance',
+            [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildThemeModeCard(context, ref, settings.themeMode),
+              ),
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildThemePresetCard(
+                  context,
+                  ref,
+                  settings.themePresetId,
+                ),
+              ),
+            ],
+          ),
           _buildSection(
             context,
             'Account',
@@ -49,19 +70,13 @@ class SettingsScreen extends ConsumerWidget {
             [
               _buildSwitchTile(
                 context,
-                'Dark Mode',
-                'Enable dark theme',
-                Icons.dark_mode_outlined,
-                false,
-                (value) {},
-              ),
-              _buildSwitchTile(
-                context,
                 'Offline Mode',
                 'Work offline when possible',
                 Icons.cloud_off_outlined,
-                false,
-                (value) {},
+                settings.offlineMode,
+                (value) => ref
+                    .read(appSettingsProvider.notifier)
+                    .setOfflineMode(value),
               ),
             ],
           ),
@@ -167,6 +182,7 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildSection(BuildContext context, String title, List<Widget> children) {
+    final primary = Theme.of(context).colorScheme.primary;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -176,12 +192,124 @@ class SettingsScreen extends ConsumerWidget {
             title,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
+                  color: primary,
                 ),
           ),
         ),
         ...children,
       ],
+    );
+  }
+
+  Widget _buildThemeModeCard(
+    BuildContext context,
+    WidgetRef ref,
+    ThemeMode themeMode,
+  ) {
+    final outline = Theme.of(context).colorScheme.outlineVariant;
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: outline),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Theme Mode',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Choose how Kinesa adapts to light and dark environments.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.grey,
+                  ),
+            ),
+            const SizedBox(height: 16),
+            SegmentedButton<ThemeMode>(
+              segments: const [
+                ButtonSegment(
+                  value: ThemeMode.system,
+                  label: Text('System'),
+                  icon: Icon(Icons.auto_mode),
+                ),
+                ButtonSegment(
+                  value: ThemeMode.light,
+                  label: Text('Light'),
+                  icon: Icon(Icons.light_mode),
+                ),
+                ButtonSegment(
+                  value: ThemeMode.dark,
+                  label: Text('Dark'),
+                  icon: Icon(Icons.dark_mode),
+                ),
+              ],
+              selected: {themeMode},
+              onSelectionChanged: (value) {
+                ref
+                    .read(appSettingsProvider.notifier)
+                    .setThemeMode(value.first);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThemePresetCard(
+    BuildContext context,
+    WidgetRef ref,
+    String selectedPresetId,
+  ) {
+    final outline = Theme.of(context).colorScheme.outlineVariant;
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: outline),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Theme Preset',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Pick a color story that fits your mood.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.grey,
+                  ),
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: ThemePresets.all
+                  .map((preset) => _ThemePresetTile(
+                        preset: preset,
+                        isSelected: preset.id == selectedPresetId,
+                        onTap: () => ref
+                            .read(appSettingsProvider.notifier)
+                            .setThemePreset(preset),
+                      ))
+                  .toList(),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -192,14 +320,15 @@ class SettingsScreen extends ConsumerWidget {
     IconData icon,
     VoidCallback onTap,
   ) {
+    final primary = Theme.of(context).colorScheme.primary;
     return ListTile(
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.1),
+          color: primary.withOpacity(0.1),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icon, color: AppColors.primary),
+        child: Icon(icon, color: primary),
       ),
       title: Text(title),
       subtitle: Text(subtitle),
@@ -216,20 +345,21 @@ class SettingsScreen extends ConsumerWidget {
     bool value,
     ValueChanged<bool> onChanged,
   ) {
+    final primary = Theme.of(context).colorScheme.primary;
     return SwitchListTile(
       secondary: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.1),
+          color: primary.withOpacity(0.1),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icon, color: AppColors.primary),
+        child: Icon(icon, color: primary),
       ),
       title: Text(title),
       subtitle: Text(subtitle),
       value: value,
       onChanged: onChanged,
-      activeColor: AppColors.primary,
+      activeColor: primary,
     );
   }
 
@@ -258,6 +388,79 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ThemePresetTile extends StatelessWidget {
+  const _ThemePresetTile({
+    required this.preset,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final ThemePreset preset;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final outline = Theme.of(context).colorScheme.outlineVariant;
+    final borderColor =
+        isSelected ? preset.seedColor : outline;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Ink(
+        width: 140,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: borderColor, width: 2),
+          color: Theme.of(context).colorScheme.surface,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                _ColorDot(color: preset.seedColor),
+                const SizedBox(width: 6),
+                _ColorDot(color: preset.accentColor),
+                const Spacer(),
+                if (isSelected)
+                  Icon(Icons.check_circle, color: preset.seedColor, size: 18),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              preset.name,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ColorDot extends StatelessWidget {
+  const _ColorDot({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 14,
+      height: 14,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
       ),
     );
   }

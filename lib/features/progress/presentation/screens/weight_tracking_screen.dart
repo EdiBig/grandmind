@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_gradients.dart';
 import '../../domain/models/weight_entry.dart';
 import '../providers/progress_providers.dart';
 import '../widgets/weight_input_dialog.dart';
@@ -161,7 +161,7 @@ class _WeightTrackingScreenState extends ConsumerState<WeightTrackingScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
+        gradient: Theme.of(context).extension<AppGradients>()!.primary,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -284,9 +284,21 @@ class _WeightTrackingScreenState extends ConsumerState<WeightTrackingScreen> {
 
   Widget _buildRangeChip(String label, DateRange range) {
     final isSelected = _selectedRange == range;
+    final colorScheme = Theme.of(context).colorScheme;
+    final labelColor = isSelected
+        ? colorScheme.onPrimaryContainer
+        : colorScheme.onSurfaceVariant;
+    final borderColor =
+        isSelected ? colorScheme.primary : colorScheme.outlineVariant;
 
     return FilterChip(
-      label: Text(label),
+      label: Text(
+        label,
+        style: TextStyle(
+          color: labelColor,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
       selected: isSelected,
       onSelected: (selected) {
         if (selected) {
@@ -295,8 +307,10 @@ class _WeightTrackingScreenState extends ConsumerState<WeightTrackingScreen> {
           });
         }
       },
-      selectedColor: AppColors.primary.withOpacity(0.2),
-      checkmarkColor: AppColors.primary,
+      selectedColor: colorScheme.primaryContainer,
+      backgroundColor: colorScheme.surface,
+      showCheckmark: false,
+      side: BorderSide(color: borderColor),
     );
   }
 
@@ -326,12 +340,12 @@ class _WeightTrackingScreenState extends ConsumerState<WeightTrackingScreen> {
         leading: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(
             Icons.monitor_weight,
-            color: AppColors.primary,
+            color: Theme.of(context).colorScheme.primary,
             size: 24,
           ),
         ),

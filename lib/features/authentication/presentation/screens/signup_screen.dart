@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../../../../core/constants/route_constants.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/providers/auth_config_provider.dart';
 import '../providers/auth_provider.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
@@ -51,9 +53,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     await ref.read(authControllerProvider.notifier).signInWithGoogle();
   }
 
+  Future<void> _handleAppleSignIn() async {
+    await ref.read(authControllerProvider.notifier).signInWithApple();
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
+    final appleEnabledAsync = ref.watch(appleSignInEnabledProvider);
 
     ref.listen<AuthState>(authControllerProvider, (previous, next) {
       if (next.status == AuthStatus.authenticated) {
@@ -68,6 +75,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         );
       }
     });
+
+    final isAppleSignInSupported = !kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.iOS ||
+            defaultTargetPlatform == TargetPlatform.macOS);
+    final isAppleSignInEnabled = appleEnabledAsync.value ?? false;
 
     return Scaffold(
       appBar: AppBar(
@@ -214,7 +226,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                               TextSpan(
                                 text: 'Terms of Service',
                                 style: TextStyle(
-                                  color: AppColors.primary,
+                                  color: Theme.of(context).colorScheme.primary,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -222,7 +234,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                               TextSpan(
                                 text: 'Privacy Policy',
                                 style: TextStyle(
-                                  color: AppColors.primary,
+                                  color: Theme.of(context).colorScheme.primary,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -242,7 +254,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: Colors.white,
                   ),
                   child: authState.status == AuthStatus.loading
@@ -282,11 +294,18 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   onPressed: authState.status == AuthStatus.loading
                       ? null
                       : _handleGoogleSignIn,
-                  icon: Image.asset(
-                    'assets/images/google_logo.png',
-                    height: 24,
-                    errorBuilder: (context, error, stackTrace) =>
-                        const Icon(Icons.g_mobiledata, size: 24),
+                  icon: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/images/Kinesa_App_logo 2.png',
+                        fit: BoxFit.cover,
+                        alignment: Alignment.center,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(Icons.g_mobiledata, size: 20),
+                      ),
+                    ),
                   ),
                   label: const Text(
                     'Continue with Google',
@@ -300,6 +319,16 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     side: BorderSide(color: Colors.grey[300]!),
                   ),
                 ),
+                if (isAppleSignInSupported && isAppleSignInEnabled) ...[
+                  const SizedBox(height: 12),
+                  SignInWithAppleButton(
+                    onPressed: () {
+                      if (authState.status == AuthStatus.loading) return;
+                      _handleAppleSignIn();
+                    },
+                    style: SignInWithAppleButtonStyle.black,
+                  ),
+                ],
                 const SizedBox(height: 32),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,

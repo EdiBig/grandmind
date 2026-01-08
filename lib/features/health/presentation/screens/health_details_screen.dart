@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_gradients.dart';
 import '../providers/health_providers.dart';
 
 class HealthDetailsScreen extends ConsumerStatefulWidget {
@@ -87,18 +87,16 @@ class _HealthDetailsScreenState extends ConsumerState<HealthDetailsScreen>
   }
 
   Widget _buildWeeklyStatsCard(dynamic stats) {
+    final gradients = Theme.of(context).extension<AppGradients>()!;
+    final primary = Theme.of(context).colorScheme.primary;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.8)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        gradient: gradients.primary,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
+            color: primary.withOpacity(0.3),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -236,7 +234,9 @@ class _HealthDetailsScreenState extends ConsumerState<HealthDetailsScreen>
         ref.invalidate(dailyHealthPointsProvider);
       },
       style: ElevatedButton.styleFrom(
-        backgroundColor: isSelected ? AppColors.primary : Colors.grey.shade200,
+        backgroundColor: isSelected
+            ? Theme.of(context).colorScheme.primary
+            : Colors.grey.shade200,
         foregroundColor: isSelected ? Colors.white : Colors.black87,
         elevation: isSelected ? 2 : 0,
         padding: const EdgeInsets.symmetric(vertical: 12),
@@ -262,9 +262,9 @@ class _HealthDetailsScreenState extends ConsumerState<HealthDetailsScreen>
         children: [
           TabBar(
             controller: _tabController,
-            labelColor: AppColors.primary,
+            labelColor: Theme.of(context).colorScheme.primary,
             unselectedLabelColor: Colors.grey,
-            indicatorColor: AppColors.primary,
+            indicatorColor: Theme.of(context).colorScheme.primary,
             tabs: const [
               Tab(text: 'Steps'),
               Tab(text: 'Calories'),
@@ -350,12 +350,12 @@ class _HealthDetailsScreenState extends ConsumerState<HealthDetailsScreen>
                   .map((e) => FlSpot(e.key.toDouble(), e.value.steps.toDouble()))
                   .toList(),
               isCurved: true,
-              color: AppColors.primary,
+              color: Theme.of(context).colorScheme.primary,
               barWidth: 3,
               dotData: FlDotData(show: true),
               belowBarData: BarAreaData(
                 show: true,
-                color: AppColors.primary.withValues(alpha: 0.1),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
               ),
             ),
           ],
@@ -460,12 +460,12 @@ class _HealthDetailsScreenState extends ConsumerState<HealthDetailsScreen>
                   .map((e) => FlSpot(e.key.toDouble(), e.value.distanceKm))
                   .toList(),
               isCurved: true,
-              color: AppColors.accent,
+              color: Theme.of(context).colorScheme.tertiary,
               barWidth: 3,
               dotData: FlDotData(show: true),
               belowBarData: BarAreaData(
                 show: true,
-                color: AppColors.accent.withValues(alpha: 0.1),
+                color: Theme.of(context).colorScheme.tertiary.withOpacity(0.1),
               ),
             ),
           ],
@@ -515,12 +515,12 @@ class _HealthDetailsScreenState extends ConsumerState<HealthDetailsScreen>
                   .map((e) => FlSpot(e.key.toDouble(), e.value.sleepHours))
                   .toList(),
               isCurved: true,
-              color: AppColors.secondary,
+              color: Theme.of(context).colorScheme.secondary,
               barWidth: 3,
               dotData: FlDotData(show: true),
               belowBarData: BarAreaData(
                 show: true,
-                color: AppColors.secondary.withValues(alpha: 0.1),
+                color: Theme.of(context).colorScheme.secondary.withOpacity(0.1),
               ),
             ),
           ],
@@ -570,7 +570,7 @@ class _HealthDetailsScreenState extends ConsumerState<HealthDetailsScreen>
               icon: const Icon(Icons.lock_open),
               label: const Text('Grant Access'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               ),

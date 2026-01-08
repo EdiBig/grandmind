@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../domain/models/habit.dart';
-import '../../../../core/theme/app_colors.dart';
 
 class HabitIconHelper {
   /// Get Flutter IconData from HabitIcon enum
@@ -35,11 +34,11 @@ class HabitIconHelper {
   static Color getColor(HabitColor habitColor) {
     switch (habitColor) {
       case HabitColor.blue:
-        return AppColors.primary;
+        return Colors.blue;
       case HabitColor.purple:
-        return AppColors.secondary;
+        return Colors.deepPurple;
       case HabitColor.pink:
-        return AppColors.accent;
+        return Colors.pink;
       case HabitColor.red:
         return Colors.red;
       case HabitColor.orange:

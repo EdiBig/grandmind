@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../domain/models/progress_goal.dart';
 import '../providers/progress_providers.dart';
 import 'create_goal_screen.dart';
@@ -127,6 +126,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
   }
 
   Widget _buildGoalCard(BuildContext context, ProgressGoal goal) {
+    final colorScheme = Theme.of(context).colorScheme;
     final isCompleted = goal.status == GoalStatus.completed;
     final cardColor = isCompleted
         ? Colors.green.withOpacity(0.1)
@@ -135,13 +135,13 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
     Color progressColor;
     switch (goal.type) {
       case GoalType.weight:
-        progressColor = AppColors.primary;
+        progressColor = colorScheme.primary;
         break;
       case GoalType.measurement:
-        progressColor = AppColors.secondary;
+        progressColor = colorScheme.secondary;
         break;
       case GoalType.custom:
-        progressColor = AppColors.accent;
+        progressColor = colorScheme.tertiary;
         break;
     }
 

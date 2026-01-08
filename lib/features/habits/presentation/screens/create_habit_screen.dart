@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../domain/models/habit.dart';
 import '../../data/repositories/habit_repository.dart';
 import '../providers/habit_providers.dart';
@@ -264,7 +263,7 @@ class _CreateHabitScreenState extends ConsumerState<CreateHabitScreen> {
               onPressed: _isLoading ? null : _saveHabit,
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: AppColors.primary,
+                backgroundColor: Theme.of(context).colorScheme.primary,
               ),
               child: _isLoading
                   ? const SizedBox(
@@ -302,17 +301,21 @@ class _CreateHabitScreenState extends ConsumerState<CreateHabitScreen> {
             height: 60,
             decoration: BoxDecoration(
               color: isSelected
-                  ? AppColors.primary.withOpacity(0.1)
+                  ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
                   : Colors.grey[200],
               border: Border.all(
-                color: isSelected ? AppColors.primary : Colors.transparent,
+                color: isSelected
+                    ? Theme.of(context).colorScheme.primary
+                    : Colors.transparent,
                 width: 2,
               ),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
               iconData,
-              color: isSelected ? AppColors.primary : Colors.grey[700],
+              color: isSelected
+                  ? Theme.of(context).colorScheme.primary
+                  : Colors.grey[700],
               size: 28,
             ),
           ),
