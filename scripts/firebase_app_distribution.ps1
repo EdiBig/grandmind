@@ -1,9 +1,10 @@
 param(
-  [string]$AppId = "",
+  [string]$AppId = "1:891051622598:android:68c9f9d42b3f233c10d7c7",
   [string]$ArtifactPath = "",
   [string]$Testers = "",
-  [string]$Groups = "",
-  [string]$ProjectId = "",
+  [string]$Groups = "kinesa-testers",
+  [string]$ProjectId = "grandmind-kinesa",
+  [string]$ReleaseNotes = "New build for testing",
   [switch]$BuildApk,
   [switch]$BuildAab
 )
@@ -48,7 +49,7 @@ if ($Testers -eq "" -and $Groups -eq "") {
   exit 1
 }
 
-$args = @("appdistribution:distribute", $ArtifactPath, "--app", $AppId)
+$args = @("appdistribution:distribute", $ArtifactPath, "--app", $AppId, "--release-notes", $ReleaseNotes)
 if ($Testers -ne "") {
   $args += @("--testers", $Testers)
 }
