@@ -278,16 +278,22 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
       ).calculateTotals();
 
       final operations = ref.read(nutritionOperationsProvider.notifier);
-      final success = widget.mealId == null
-          ? await operations.logMeal(meal) != null
-          : await operations.updateMeal(widget.mealId!, meal.toJson());
+      final isCreate = widget.mealId == null;
+      final mealId = isCreate
+          ? await operations.logMeal(meal)
+          : (await operations.updateMeal(widget.mealId!, meal.toJson())
+              ? widget.mealId
+              : null);
+      final success = mealId != null;
 
       if (mounted) {
         if (success) {
+          ref.invalidate(todayMealsProvider);
+          ref.invalidate(todayNutritionSummaryProvider);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                widget.mealId == null
+                isCreate
                     ? 'Meal logged successfully!'
                     : 'Meal updated successfully!',
               ),
@@ -295,8 +301,12 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
           );
           context.pop();
         } else {
+          final opState = ref.read(nutritionOperationsProvider);
+          final errorText = opState.hasError
+              ? opState.error.toString()
+              : 'Failed to save meal';
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to save meal')),
+            SnackBar(content: Text(errorText)),
           );
         }
       }
@@ -409,7 +419,7 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.5),
+                color: Colors.black.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Center(
@@ -511,7 +521,7 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
       padding: const EdgeInsets.all(16),
       children: [
         DropdownButtonFormField<MealType>(
-          value: _mealType,
+          initialValue: _mealType,
           decoration: const InputDecoration(
             labelText: 'Meal Type',
             border: OutlineInputBorder(),

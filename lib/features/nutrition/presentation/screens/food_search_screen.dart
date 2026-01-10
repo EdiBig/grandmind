@@ -57,11 +57,13 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                 RouteConstants.barcodeScanner,
               );
 
+              if (!context.mounted) return;
+
               if (scannedFood != null) {
-                if (widget.isSelection && mounted) {
+                if (widget.isSelection) {
                   // Return the scanned food to the previous screen
                   context.pop(scannedFood);
-                } else if (mounted) {
+                } else {
                   // Show confirmation
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Scanned: ${scannedFood.name}')),
@@ -138,9 +140,9 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                     ),
                     title: Text(item.name),
                     subtitle: Text(
-                      '${item.calories.toStringAsFixed(0)} cal • '
-                      '${item.proteinGrams.toStringAsFixed(0)}g P • '
-                      '${item.carbsGrams.toStringAsFixed(0)}g C • '
+                      '${item.calories.toStringAsFixed(0)} cal - '
+                      '${item.proteinGrams.toStringAsFixed(0)}g P - '
+                      '${item.carbsGrams.toStringAsFixed(0)}g C - '
                       '${item.fatGrams.toStringAsFixed(0)}g F',
                       style: TextStyle(color: Colors.grey.shade600),
                     ),

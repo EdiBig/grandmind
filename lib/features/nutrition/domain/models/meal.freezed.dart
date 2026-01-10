@@ -250,7 +250,8 @@ class __$$MealImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(explicitToJson: true)
 class _$MealImpl extends _Meal {
   const _$MealImpl(
       {required this.id,
@@ -557,7 +558,8 @@ class __$$MealEntryImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(explicitToJson: true)
 class _$MealEntryImpl implements _MealEntry {
   const _$MealEntryImpl(
       {required this.foodItem, this.servings = 1.0, this.customServingSize});

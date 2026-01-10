@@ -35,13 +35,15 @@ final todayMealsProvider = StreamProvider<List<Meal>>((ref) {
   final repository = ref.watch(nutritionRepositoryProvider);
   final today = DateTime.now();
   final startOfDay = DateTime(today.year, today.month, today.day);
-  final endOfDay = startOfDay;
+  final endOfDay = startOfDay.add(const Duration(days: 1));
 
-  return repository.getUserMealsStream(
-    userId,
-    startDate: startOfDay,
-    endDate: endOfDay,
-  );
+  return repository.getUserMealsStream(userId).map((meals) {
+    return meals.where((meal) {
+      final mealDate =
+          DateTime(meal.mealDate.year, meal.mealDate.month, meal.mealDate.day);
+      return !mealDate.isBefore(startOfDay) && mealDate.isBefore(endOfDay);
+    }).toList();
+  });
 });
 
 /// Meals for a specific date range (parameterized)
@@ -51,11 +53,21 @@ final mealsForDateRangeProvider =
   if (userId == null) return Stream.value([]);
 
   final repository = ref.watch(nutritionRepositoryProvider);
-  return repository.getUserMealsStream(
-    userId,
-    startDate: dateRange.start,
-    endDate: dateRange.end,
-  );
+  final start =
+      DateTime(dateRange.start.year, dateRange.start.month, dateRange.start.day);
+  final endExclusive = DateTime(
+    dateRange.end.year,
+    dateRange.end.month,
+    dateRange.end.day,
+  ).add(const Duration(days: 1));
+
+  return repository.getUserMealsStream(userId).map((meals) {
+    return meals.where((meal) {
+      final mealDate =
+          DateTime(meal.mealDate.year, meal.mealDate.month, meal.mealDate.day);
+      return !mealDate.isBefore(start) && mealDate.isBefore(endExclusive);
+    }).toList();
+  });
 });
 
 /// Single meal by ID

@@ -9,6 +9,7 @@ part 'meal.g.dart';
 /// Contains multiple food items (MealEntry) with their serving sizes
 @freezed
 class Meal with _$Meal {
+  @JsonSerializable(explicitToJson: true)
   const factory Meal({
     required String id,
     required String userId,
@@ -55,6 +56,7 @@ class Meal with _$Meal {
 /// A single food item within a meal, with serving size
 @freezed
 class MealEntry with _$MealEntry {
+  @JsonSerializable(explicitToJson: true)
   const factory MealEntry({
     required FoodItem foodItem,
     @Default(1.0) double servings, // Number of servings consumed

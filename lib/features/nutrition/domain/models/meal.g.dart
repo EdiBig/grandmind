@@ -30,7 +30,7 @@ Map<String, dynamic> _$$MealImplToJson(_$MealImpl instance) =>
       'mealType': _$MealTypeEnumMap[instance.mealType]!,
       'mealDate': const TimestampConverter().toJson(instance.mealDate),
       'loggedAt': const TimestampConverter().toJson(instance.loggedAt),
-      'entries': instance.entries,
+      'entries': instance.entries.map((e) => e.toJson()).toList(),
       'notes': instance.notes,
       'photoUrl': instance.photoUrl,
       'totalCalories': instance.totalCalories,
@@ -55,7 +55,7 @@ _$MealEntryImpl _$$MealEntryImplFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$$MealEntryImplToJson(_$MealEntryImpl instance) =>
     <String, dynamic>{
-      'foodItem': instance.foodItem,
+      'foodItem': instance.foodItem.toJson(),
       'servings': instance.servings,
       'customServingSize': instance.customServingSize,
     };

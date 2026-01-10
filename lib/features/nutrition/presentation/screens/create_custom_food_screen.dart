@@ -94,13 +94,18 @@ class _CreateCustomFoodScreenState
 
       if (mounted) {
         if (success) {
+          ref.invalidate(userCustomFoodsProvider);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Custom food saved')),
           );
           Navigator.of(context).pop();
         } else {
+          final opState = ref.read(nutritionOperationsProvider);
+          final errorText = opState.hasError
+              ? opState.error.toString()
+              : 'Failed to save food';
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to save food')),
+            SnackBar(content: Text(errorText)),
           );
         }
       }
@@ -143,7 +148,7 @@ class _CreateCustomFoodScreenState
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<FoodCategory>(
-              value: _category,
+              initialValue: _category,
               decoration: const InputDecoration(
                 labelText: 'Category',
                 border: OutlineInputBorder(),
