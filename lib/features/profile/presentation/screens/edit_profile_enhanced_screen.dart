@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -296,7 +295,7 @@ class _EditProfileEnhancedScreenState
               border: Border.all(color: colorScheme.primary, width: 3),
               boxShadow: [
                 BoxShadow(
-                  color: colorScheme.primary.withOpacity(0.3),
+                  color: colorScheme.primary.withValues(alpha: 0.3),
                   blurRadius: 10,
                   offset: const Offset(0, 5),
                 ),
@@ -308,7 +307,25 @@ class _EditProfileEnhancedScreenState
                   : _selectedImage != null
                       ? Image.file(_selectedImage!, fit: BoxFit.cover)
                       : _currentPhotoUrl != null
-                          ? Image.network(_currentPhotoUrl!, fit: BoxFit.cover)
+                          ? Image.network(
+                              _currentPhotoUrl!,
+                              fit: BoxFit.cover,
+                              gaplessPlayback: true,
+                              webHtmlElementStrategy: kIsWeb
+                                  ? WebHtmlElementStrategy.prefer
+                                  : WebHtmlElementStrategy.never,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(
+                                decoration: BoxDecoration(
+                                  gradient: gradients.primary,
+                                ),
+                                child: const Icon(
+                                  Icons.person,
+                                  size: 70,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            )
                           : Container(
                               decoration: BoxDecoration(
                                 gradient: gradients.primary,
@@ -526,7 +543,7 @@ class _EditProfileEnhancedScreenState
   }) {
     final colorScheme = Theme.of(context).colorScheme;
     return DropdownButtonFormField<String>(
-      value: _normalizeDropdownValue(value, options),
+      initialValue: _normalizeDropdownValue(value, options),
       items: options
           .map((option) => DropdownMenuItem(value: option, child: Text(option)))
           .toList(),

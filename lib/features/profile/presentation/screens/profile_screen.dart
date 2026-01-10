@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/route_constants.dart';
 import '../../../../core/theme/app_gradients.dart';
@@ -115,31 +116,35 @@ class ProfileScreen extends ConsumerWidget {
                 border: Border.all(color: Colors.white, width: 4),
                 boxShadow: [
                   BoxShadow(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                     blurRadius: 10,
                     offset: const Offset(0, 5),
                   ),
                 ],
               ),
               child: ClipOval(
-                child: photoUrl != null
-                    ? Image.network(
-                        photoUrl,
-                        key: ValueKey(photoUrl),
-                        fit: BoxFit.cover,
-                        gaplessPlayback: true,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          decoration: BoxDecoration(
-                            gradient: gradients.primary,
+                  child: photoUrl != null
+                      ? Image.network(
+                          photoUrl,
+                          key: ValueKey(photoUrl),
+                          fit: BoxFit.cover,
+                          gaplessPlayback: true,
+                          webHtmlElementStrategy: kIsWeb
+                              ? WebHtmlElementStrategy.prefer
+                              : WebHtmlElementStrategy.never,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
+                            decoration: BoxDecoration(
+                              gradient: gradients.primary,
+                            ),
+                            child: const Icon(
+                              Icons.person,
+                              size: 60,
+                              color: Colors.white,
+                            ),
                           ),
-                          child: const Icon(
-                            Icons.person,
-                            size: 60,
-                            color: Colors.white,
-                          ),
-                        ),
-                      )
-                    : Container(
+                        )
+                      : Container(
                         decoration: BoxDecoration(
                           gradient: gradients.primary,
                         ),
@@ -243,9 +248,9 @@ class ProfileScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
@@ -286,7 +291,7 @@ class ProfileScreen extends ConsumerWidget {
           decoration: BoxDecoration(
             color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.withOpacity(0.2)),
+            border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
           ),
           child: Column(
             children: children,
@@ -307,7 +312,7 @@ class ProfileScreen extends ConsumerWidget {
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: primary.withOpacity(0.1),
+          color: primary.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(icon, color: primary),
