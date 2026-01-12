@@ -15,12 +15,34 @@ import '../../../progress/presentation/widgets/progress_summary_card.dart';
 import '../../../progress/presentation/providers/progress_providers.dart';
 import '../../../progress/domain/models/progress_goal.dart';
 import '../../../progress/presentation/screens/goals_screen.dart';
+import '../../../mood_energy/data/repositories/mood_energy_repository.dart';
+import '../../../mood_energy/domain/models/energy_log.dart';
+import '../../../mood_energy/presentation/providers/mood_energy_providers.dart';
+import '../../../progress/presentation/providers/weekly_summary_provider.dart';
 
-class DashboardTab extends ConsumerWidget {
+class DashboardTab extends ConsumerStatefulWidget {
   const DashboardTab({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardTab> createState() => _DashboardTabState();
+}
+
+class _DashboardTabState extends ConsumerState<DashboardTab> {
+  final TextEditingController _checkInNotesController =
+      TextEditingController();
+  int? _selectedEnergy;
+  final Set<String> _selectedTags = {};
+  bool _isSavingCheckIn = false;
+  bool _showCheckInForm = false;
+
+  @override
+  void dispose() {
+    _checkInNotesController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final userAsync = ref.watch(currentUserProvider);
     final settings = ref.watch(appSettingsProvider);
     return Scaffold(
@@ -45,6 +67,10 @@ class DashboardTab extends ConsumerWidget {
                 _buildWelcomeCard(context, ref),
                 const SizedBox(height: 20),
                 _buildDailySnapshot(context, ref),
+                if (settings.moodEnergyEnabled) ...[
+                  const SizedBox(height: 20),
+                  _buildDailyCheckIn(context),
+                ],
                 const SizedBox(height: 24),
                 _buildQuickActions(context),
                 const SizedBox(height: 24),
@@ -528,6 +554,283 @@ class DashboardTab extends ConsumerWidget {
       loading: () => _buildSnapshotSkeleton(context),
       error: (_, __) => _buildSnapshotSkeleton(context),
     );
+  }
+
+  Widget _buildDailyCheckIn(BuildContext context) {
+    final logsAsync = ref.watch(todayEnergyLogsProvider);
+    return logsAsync.when(
+      loading: () => _buildCheckInCard(
+        context,
+        child: const Center(child: CircularProgressIndicator()),
+      ),
+      error: (_, __) => _buildCheckInCard(
+        context,
+        child: Text(
+          'Unable to load today\'s check-in.',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+        ),
+      ),
+      data: (logs) {
+        final latestLog = _latestEnergyLog(logs);
+        final hasLog = latestLog != null;
+        final showForm = _showCheckInForm || !hasLog;
+
+        return _buildCheckInCard(
+          context,
+          statusLabel: hasLog ? 'Saved today' : null,
+          child: showForm
+              ? _buildCheckInForm(context)
+              : _buildCheckInSummary(context, latestLog!),
+        );
+      },
+    );
+  }
+
+  Widget _buildCheckInCard(
+    BuildContext context, {
+    required Widget child,
+    String? statusLabel,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outlineVariant,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'Daily Check-In',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const Spacer(),
+              if (statusLabel != null)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    statusLabel,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCheckInForm(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'How\'s your energy right now?',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          children: List.generate(5, (index) {
+            final level = index + 1;
+            final selected = _selectedEnergy == level;
+            return ChoiceChip(
+              label: Text('$level'),
+              selected: selected,
+              onSelected: (_) => setState(() => _selectedEnergy = level),
+            );
+          }),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'Add a mood tag',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          children: _buildMoodTags(context),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'Notes (optional)',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _checkInNotesController,
+          minLines: 2,
+          maxLines: 4,
+          decoration: const InputDecoration(
+            hintText: 'What\'s contributing to your energy today?',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: _selectedEnergy == null || _isSavingCheckIn
+                ? null
+                : () => _saveDailyCheckIn(context),
+            child: _isSavingCheckIn
+                ? const SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Text('Save Check-In'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _buildMoodTags(BuildContext context) {
+    const tags = ['Stressed', 'Tired', 'Great', 'Calm', 'Sick'];
+    return tags.map((tag) {
+      final selected = _selectedTags.contains(tag);
+      return FilterChip(
+        label: Text(tag),
+        selected: selected,
+        onSelected: (value) {
+          setState(() {
+            if (value) {
+              _selectedTags.add(tag);
+            } else {
+              _selectedTags.remove(tag);
+            }
+          });
+        },
+      );
+    }).toList();
+  }
+
+  Widget _buildCheckInSummary(BuildContext context, EnergyLog log) {
+    final avg = log.averageEnergy?.toStringAsFixed(1) ?? '--';
+    final tags = log.tags;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Energy: $avg/5',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: 8),
+        if (tags.isNotEmpty)
+          Wrap(
+            spacing: 8,
+            children: tags.map((tag) => Chip(label: Text(tag))).toList(),
+          )
+        else
+          Text(
+            'No mood tags logged yet.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
+        const SizedBox(height: 12),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton(
+            onPressed: () => setState(() => _showCheckInForm = true),
+            child: const Text('Update check-in'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _saveDailyCheckIn(BuildContext context) async {
+    if (_selectedEnergy == null) return;
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please sign in to check in.')),
+      );
+      return;
+    }
+
+    setState(() => _isSavingCheckIn = true);
+    try {
+      final repository = ref.read(moodEnergyRepositoryProvider);
+      final log = EnergyLog(
+        id: '',
+        userId: userId,
+        loggedAt: DateTime.now(),
+        energyBefore: _selectedEnergy,
+        tags: _selectedTags.toList(),
+        notes: _checkInNotesController.text.trim().isEmpty
+            ? null
+            : _checkInNotesController.text.trim(),
+        source: 'daily_checkin',
+      );
+      await repository.logEnergy(log);
+      setState(() {
+        _checkInNotesController.clear();
+        _selectedTags.clear();
+        _selectedEnergy = null;
+        _showCheckInForm = false;
+      });
+      ref.invalidate(todayEnergyLogsProvider);
+      ref.invalidate(weeklyEnergyLogsProvider);
+      ref.invalidate(previousWeeklyEnergyLogsProvider);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Daily check-in saved!')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Unable to save check-in: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSavingCheckIn = false);
+      }
+    }
+  }
+
+  EnergyLog? _latestEnergyLog(List<EnergyLog> logs) {
+    if (logs.isEmpty) return null;
+    final sorted = List<EnergyLog>.from(logs)
+      ..sort((a, b) => b.loggedAt.compareTo(a.loggedAt));
+    return sorted.first;
   }
 
   Widget _buildSnapshotSkeleton(BuildContext context) {

@@ -197,6 +197,31 @@ class HabitRepository {
         .toList();
   }
 
+  /// Get all habit logs for a user in a date range (inclusive)
+  Future<List<HabitLog>> getUserHabitLogsInRange(
+    String userId,
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
+    final startOfDay = DateTime(startDate.year, startDate.month, startDate.day);
+    final endOfDay =
+        DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59, 999);
+
+    final snapshot = await _firestore
+        .collection(_habitLogsCollection)
+        .where('userId', isEqualTo: userId)
+        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
+        .get();
+
+    return snapshot.docs
+        .map((doc) => HabitLog.fromJson({
+              ...doc.data(),
+              'id': doc.id,
+            }))
+        .toList();
+  }
+
   /// Check if a habit was completed on a specific date
   Future<HabitLog?> getHabitLogForDate(String habitId, DateTime date) async {
     final startOfDay = DateTime(date.year, date.month, date.day);

@@ -34,6 +34,7 @@ class RouteConstants {
   static const String progressInsights = '/progress/insights';
   static const String progressDashboard = '/progress/dashboard';
   static const String achievements = '/progress/achievements';
+  static const String weeklySummary = '/progress/weekly-summary';
   static const String plan = '/plan';
   static const String profile = '/profile';
   static const String settings = '/settings';

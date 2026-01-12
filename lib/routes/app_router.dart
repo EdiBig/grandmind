@@ -42,6 +42,7 @@ import '../features/challenges/presentation/screens/challenge_rankings_screen.da
 import '../features/challenges/presentation/screens/challenge_activity_feed_screen.dart';
 import '../features/progress/presentation/screens/progress_insights_screen.dart';
 import '../features/progress/presentation/screens/progress_dashboard_screen.dart';
+import '../features/progress/presentation/screens/weekly_summary_screen.dart';
 import '../features/notifications/presentation/screens/notification_settings_screen.dart';
 import '../features/nutrition/presentation/screens/log_meal_screen.dart';
 import '../features/nutrition/presentation/screens/food_search_screen.dart';
@@ -344,6 +345,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: RouteConstants.achievements,
         name: 'achievements',
         builder: (context, state) => const AchievementsScreen(),
+      ),
+      GoRoute(
+        path: RouteConstants.weeklySummary,
+        name: 'weeklySummary',
+        builder: (context, state) => const WeeklySummaryScreen(),
       ),
 
       // Nutrition Routes

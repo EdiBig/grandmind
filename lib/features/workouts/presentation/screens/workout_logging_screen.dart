@@ -5,6 +5,8 @@ import '../../data/repositories/workout_repository.dart';
 import '../../domain/models/exercise.dart';
 import '../../domain/models/workout.dart';
 import '../../domain/models/workout_log.dart';
+import '../../../mood_energy/data/repositories/mood_energy_repository.dart';
+import '../../../mood_energy/domain/models/energy_log.dart';
 
 class WorkoutLoggingScreen extends ConsumerStatefulWidget {
   final Workout? workout;
@@ -121,6 +123,7 @@ class _WorkoutLoggingScreenState extends ConsumerState<WorkoutLoggingScreen> {
       );
 
       await repository.logWorkout(workoutLog);
+      await _logEnergyEntry(userId, startedAt);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -138,6 +141,32 @@ class _WorkoutLoggingScreenState extends ConsumerState<WorkoutLoggingScreen> {
       if (mounted) {
         setState(() => _isLogging = false);
       }
+    }
+  }
+
+  Future<void> _logEnergyEntry(String userId, DateTime loggedAt) async {
+    final hasEnergy = _energyBefore != null || _energyAfter != null;
+    final hasTags = _contextTags.isNotEmpty;
+    if (!hasEnergy && !hasTags) {
+      return;
+    }
+
+    final notes = _notesController.text.trim();
+    final repository = ref.read(moodEnergyRepositoryProvider);
+    final log = EnergyLog(
+      id: '',
+      userId: userId,
+      loggedAt: loggedAt,
+      energyBefore: _energyBefore,
+      energyAfter: _energyAfter,
+      tags: _contextTags.toList(),
+      notes: notes.isEmpty ? null : notes,
+      source: 'workout',
+    );
+    try {
+      await repository.logEnergy(log);
+    } catch (_) {
+      // Ignore energy logging failures to avoid blocking workout saves.
     }
   }
 
