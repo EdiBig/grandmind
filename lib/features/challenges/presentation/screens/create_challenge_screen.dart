@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../home/presentation/providers/dashboard_provider.dart';
+import '../../../user/data/models/user_model.dart';
 import '../../data/models/challenge_model.dart';
 import '../../data/repositories/challenge_repository.dart';
 
@@ -37,6 +39,15 @@ class _CreateChallengeScreenState extends ConsumerState<CreateChallengeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final userAsync = ref.watch(currentUserProvider);
+    final units = _resolveUnits(userAsync.asData?.value?.preferences?['units']);
+    ref.listen<AsyncValue<UserModel?>>(currentUserProvider, (previous, next) {
+      final nextUnits = _resolveUnits(next.asData?.value?.preferences?['units']);
+      final nextUnit = _goalUnitForType(_goalType, nextUnits);
+      if (_goalUnit != nextUnit && mounted) {
+        setState(() => _goalUnit = nextUnit);
+      }
+    });
     return Scaffold(
       appBar: AppBar(
         title: const Text('Create Challenge'),
@@ -73,7 +84,7 @@ class _CreateChallengeScreenState extends ConsumerState<CreateChallengeScreen> {
             onChanged: (value) {
               setState(() {
                 _goalType = value;
-                _goalUnit = _goalUnitForType(value);
+                _goalUnit = _goalUnitForType(value, units);
               });
             },
           ),
@@ -93,12 +104,11 @@ class _CreateChallengeScreenState extends ConsumerState<CreateChallengeScreen> {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: TextField(
+                child: InputDecorator(
                   decoration: const InputDecoration(
                     labelText: 'Goal unit',
                   ),
-                  controller: TextEditingController(text: _goalUnit),
-                  readOnly: true,
+                  child: Text(_goalUnit),
                 ),
               ),
             ],
@@ -262,7 +272,7 @@ class _CreateChallengeScreenState extends ConsumerState<CreateChallengeScreen> {
     }
   }
 
-  String _goalUnitForType(ChallengeGoalType type) {
+  String _goalUnitForType(ChallengeGoalType type, String units) {
     switch (type) {
       case ChallengeGoalType.steps:
         return 'steps';
@@ -271,8 +281,14 @@ class _CreateChallengeScreenState extends ConsumerState<CreateChallengeScreen> {
       case ChallengeGoalType.habit:
         return 'days';
       case ChallengeGoalType.distance:
-        return 'km';
+        return units == 'imperial' ? 'mi' : 'km';
     }
+  }
+
+  String _resolveUnits(dynamic value) {
+    final resolved = value is String ? value.trim().toLowerCase() : '';
+    if (resolved == 'imperial') return 'imperial';
+    return 'metric';
   }
 
   String _formatDate(DateTime date) {

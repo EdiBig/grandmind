@@ -777,138 +777,161 @@ class _EasyPickWorkoutsScreenState
     WorkoutLibraryEntry entry, {
     bool isGrid = false,
   }) {
-    final tagWidgets = [
-      _buildTag(
-        context,
-        entry.resolvedSubCategory,
-        Icons.category,
-      ),
-      _buildTag(
-        context,
-        entry.equipment.displayName,
-        Icons.handyman,
-      ),
-      _buildTag(
-        context,
-        '${entry.durationMinutes} min',
-        Icons.access_time,
-      ),
-      _buildTag(
-        context,
-        entry.difficulty.displayName,
-        Icons.bar_chart,
-        color: _difficultyColor(entry.difficulty),
-      ),
-      _buildTag(
-        context,
-        entry.resolvedIntensity.displayName,
-        Icons.local_fire_department,
-      ),
-    ];
-    return Semantics(
-      label: 'Workout ${entry.name}',
-      button: true,
-      child: InkWell(
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => WorkoutLibraryDetailScreen(entry: entry),
-            ),
-          );
-        },
-        borderRadius: BorderRadius.circular(18),
-        child: Container(
-          margin: EdgeInsets.only(bottom: isGrid ? 0 : 16),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: Theme.of(context).colorScheme.outlineVariant,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final tagMaxWidth = constraints.maxWidth - 32;
+        final tagWidgets = [
+          _buildTag(
+            context,
+            entry.resolvedSubCategory,
+            Icons.category,
+            maxWidth: isGrid ? tagMaxWidth : null,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    height: 54,
-                    width: 54,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Theme.of(context).colorScheme.primary,
-                          Theme.of(context).colorScheme.secondary,
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Icon(
-                      _getEntryIcon(entry),
-                      color: Colors.white,
-                    ),
+          _buildTag(
+            context,
+            entry.equipment.displayName,
+            Icons.handyman,
+            maxWidth: isGrid ? tagMaxWidth : null,
+          ),
+          _buildTag(
+            context,
+            '${entry.durationMinutes} min',
+            Icons.access_time,
+            maxWidth: isGrid ? tagMaxWidth : null,
+          ),
+          _buildTag(
+            context,
+            entry.difficulty.displayName,
+            Icons.bar_chart,
+            color: _difficultyColor(entry.difficulty),
+            maxWidth: isGrid ? tagMaxWidth : null,
+          ),
+          _buildTag(
+            context,
+            entry.resolvedIntensity.displayName,
+            Icons.local_fire_department,
+            maxWidth: isGrid ? tagMaxWidth : null,
+          ),
+        ];
+        final visibleTags =
+            (isGrid ? tagWidgets.take(2) : tagWidgets).toList();
+        return Semantics(
+          label: 'Workout ${entry.name}',
+          button: true,
+          child: InkWell(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => WorkoutLibraryDetailScreen(entry: entry),
+                ),
+              );
+            },
+            borderRadius: BorderRadius.circular(18),
+            child: Container(
+              margin: EdgeInsets.only(bottom: isGrid ? 0 : 16),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withValues(alpha: 0.08),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          entry.name,
-                          maxLines: isGrid ? 2 : 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        height: 54,
+                        width: 54,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Theme.of(context).colorScheme.primary,
+                              Theme.of(context).colorScheme.secondary,
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          entry.targetSummary,
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                        child: Icon(
+                          _getEntryIcon(entry),
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              entry.name,
+                              maxLines: isGrid ? 2 : 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              entry.targetSummary,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
                                     color: Theme.of(context)
                                         .colorScheme
                                         .onSurfaceVariant,
                                   ),
-                          maxLines: isGrid ? 2 : 1,
-                          overflow: TextOverflow.ellipsis,
+                              maxLines: isGrid ? 2 : 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                      if (!isGrid) const Icon(Icons.chevron_right),
+                    ],
                   ),
-                  const Icon(Icons.chevron_right),
+                  const SizedBox(height: 14),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: visibleTags,
+                  ),
+                  if (!isGrid) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      entry.previewLabel ?? 'Quick guide inside',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant,
+                          ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ],
               ),
-              const SizedBox(height: 14),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children:
-                    (isGrid ? tagWidgets.take(3) : tagWidgets).toList(),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                entry.previewLabel ?? 'Quick guide inside',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                maxLines: isGrid ? 2 : 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -992,9 +1015,10 @@ class _EasyPickWorkoutsScreenState
     String label,
     IconData icon, {
     Color? color,
+    double? maxWidth,
   }) {
     final tagColor = color ?? Theme.of(context).colorScheme.primary;
-    return Container(
+    final tag = Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: tagColor.withValues(alpha: 0.1),
@@ -1009,15 +1033,24 @@ class _EasyPickWorkoutsScreenState
             color: tagColor,
           ),
           const SizedBox(width: 6),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: tagColor,
-                ),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: tagColor,
+                  ),
+            ),
           ),
         ],
       ),
+    );
+    if (maxWidth == null) return tag;
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: maxWidth),
+      child: tag,
     );
   }
 
