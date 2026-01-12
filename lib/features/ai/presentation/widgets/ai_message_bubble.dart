@@ -130,7 +130,7 @@ class AIMessageBubble extends StatelessWidget {
     return CircleAvatar(
       radius: 18,
       backgroundColor: isUser
-          ? Theme.of(context).primaryColor.withOpacity(0.2)
+          ? Theme.of(context).primaryColor.withValues(alpha: 0.2)
           : Colors.grey[300],
       child: Icon(
         isUser ? Icons.person : Icons.fitness_center,

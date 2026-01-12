@@ -101,7 +101,7 @@ class NutritionTab extends ConsumerWidget {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.blue.withOpacity(0.3),
+                color: Colors.blue.withValues(alpha: 0.3),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),
@@ -148,7 +148,7 @@ class NutritionTab extends ConsumerWidget {
                 child: LinearProgressIndicator(
                   value: progress / 100,
                   minHeight: 8,
-                  backgroundColor: Colors.white.withOpacity(0.3),
+                  backgroundColor: Colors.white.withValues(alpha: 0.3),
                   valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               ),
@@ -216,7 +216,7 @@ class NutritionTab extends ConsumerWidget {
         final isFilled = index < consumed;
         return Icon(
           isFilled ? Icons.local_drink : Icons.local_drink_outlined,
-          color: Colors.white.withOpacity(isFilled ? 1.0 : 0.3),
+          color: Colors.white.withValues(alpha: isFilled ? 1.0 : 0.3),
           size: 32,
         );
       }),
@@ -296,8 +296,8 @@ class NutritionTab extends ConsumerWidget {
                   Expanded(
                     child: _buildMacroCard(
                       'Calories',
-                      '${summary.totalCalories.toStringAsFixed(0)}',
-                      '${summary.goal?.dailyCalories.toStringAsFixed(0) ?? '0'}',
+                      summary.totalCalories.toStringAsFixed(0),
+                      summary.goal?.dailyCalories.toStringAsFixed(0) ?? '0',
                       summary.caloriesProgress,
                       Colors.orange,
                     ),
@@ -362,10 +362,10 @@ class NutritionTab extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: color.withOpacity(0.3),
+          color: color.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -403,7 +403,7 @@ class NutritionTab extends ConsumerWidget {
             child: LinearProgressIndicator(
               value: (progress / 100).clamp(0.0, 1.0),
               minHeight: 4,
-              backgroundColor: color.withOpacity(0.2),
+              backgroundColor: color.withValues(alpha: 0.2),
               valueColor: AlwaysStoppedAnimation<Color>(color),
             ),
           ),
@@ -719,10 +719,10 @@ class NutritionTab extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: color.withOpacity(0.3),
+            color: color.withValues(alpha: 0.3),
             width: 1.5,
           ),
         ),

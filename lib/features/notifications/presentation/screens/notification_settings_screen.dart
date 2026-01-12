@@ -180,7 +180,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
       avatar: Icon(icon, size: 18),
       label: Text(label),
       onPressed: onTap,
-      backgroundColor: primary.withOpacity(0.1),
+      backgroundColor: primary.withValues(alpha: 0.1),
       labelStyle: TextStyle(color: primary),
     );
   }
@@ -199,7 +199,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: preference.enabled
-              ? primary.withOpacity(0.2)
+              ? primary.withValues(alpha: 0.2)
               : Colors.grey.shade200,
           child: Icon(
             _getTypeIcon(preference.type),
@@ -255,7 +255,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
                   );
                 }
               },
-              activeColor: primary,
+              activeThumbColor: primary,
             ),
             IconButton(
               icon: const Icon(Icons.more_vert),

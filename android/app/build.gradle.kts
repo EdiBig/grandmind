@@ -15,7 +15,7 @@ plugins {
 android {
     namespace = "com.kinesa.kinesa"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "27.0.12077973"
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -85,3 +85,4 @@ dependencies {
     // Required by Flutter deferred components to satisfy R8 class references.
     implementation("com.google.android.play:core:1.10.3")
 }
+

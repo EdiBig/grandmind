@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/workout.dart';
-import '../../domain/models/exercise.dart';
 import '../../domain/models/workout_log.dart';
+import '../../domain/models/user_saved_workout.dart';
 
 /// Provider for WorkoutRepository
 final workoutRepositoryProvider = Provider<WorkoutRepository>((ref) {
@@ -14,7 +14,7 @@ class WorkoutRepository {
 
   static const String _workoutsCollection = 'workouts';
   static const String _workoutLogsCollection = 'workout_logs';
-  static const String _exercisesCollection = 'exercises';
+  static const String _savedWorkoutsCollection = 'user_saved_workouts';
 
   // ========== Workout Templates ==========
 
@@ -36,10 +36,7 @@ class WorkoutRepository {
     final snapshot = await query.get();
 
     return snapshot.docs
-        .map((doc) => Workout.fromJson({
-              ...doc.data() as Map<String, dynamic>,
-              'id': doc.id,
-            }))
+        .map((doc) => Workout.fromJson(_normalizeWorkoutJson(doc)))
         .toList();
   }
 
@@ -59,10 +56,7 @@ class WorkoutRepository {
     }
 
     return query.snapshots().map((snapshot) => snapshot.docs
-        .map((doc) => Workout.fromJson({
-              ...doc.data() as Map<String, dynamic>,
-              'id': doc.id,
-            }))
+        .map((doc) => Workout.fromJson(_normalizeWorkoutJson(doc)))
         .toList());
   }
 
@@ -72,10 +66,7 @@ class WorkoutRepository {
 
     if (!doc.exists) return null;
 
-    return Workout.fromJson({
-      ...doc.data()!,
-      'id': doc.id,
-    });
+    return Workout.fromJson(_normalizeWorkoutJson(doc));
   }
 
   /// Get workout stream by ID
@@ -86,11 +77,20 @@ class WorkoutRepository {
         .snapshots()
         .map((doc) {
       if (!doc.exists || doc.data() == null) return null;
-      return Workout.fromJson({
-        ...doc.data()!,
-        'id': doc.id,
-      });
+      return Workout.fromJson(_normalizeWorkoutJson(doc));
     });
+  }
+
+  Map<String, dynamic> _normalizeWorkoutJson(
+    DocumentSnapshot doc,
+  ) {
+    final data = (doc.data() as Map<String, dynamic>?) ?? <String, dynamic>{};
+    final createdAt = data['createdAt'];
+    return {
+      ...data,
+      'id': doc.id,
+      if (createdAt is Timestamp) 'createdAt': createdAt.toDate().toIso8601String(),
+    };
   }
 
   /// Create a custom workout
@@ -215,6 +215,108 @@ class WorkoutRepository {
     await _firestore.collection(_workoutLogsCollection).doc(logId).delete();
   }
 
+  // ========== Saved Workouts ==========
+
+  /// Get user's saved workouts stream
+  Stream<List<UserSavedWorkout>> getUserSavedWorkoutsStream(String userId) {
+    return _firestore
+        .collection(_savedWorkoutsCollection)
+        .where('userId', isEqualTo: userId)
+        .orderBy('savedAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => UserSavedWorkout.fromJson(
+                  doc.data(),
+                  id: doc.id,
+                ))
+            .toList());
+  }
+
+  /// Check if a workout is already saved
+  Future<UserSavedWorkout?> getSavedWorkout(
+    String userId,
+    String workoutId,
+  ) async {
+    final snapshot = await _firestore
+        .collection(_savedWorkoutsCollection)
+        .where('userId', isEqualTo: userId)
+        .where('workoutId', isEqualTo: workoutId)
+        .limit(1)
+        .get();
+
+    if (snapshot.docs.isEmpty) {
+      return null;
+    }
+    final doc = snapshot.docs.first;
+    return UserSavedWorkout.fromJson(doc.data(), id: doc.id);
+  }
+
+  /// Save a workout to the user's routines
+  Future<String> saveWorkoutToRoutines({
+    required String userId,
+    required String workoutId,
+    String? folderName,
+    String? notes,
+  }) async {
+    final existing = await getSavedWorkout(userId, workoutId);
+    if (existing != null) {
+      return existing.id;
+    }
+
+    final data = <String, dynamic>{
+      'userId': userId,
+      'workoutId': workoutId,
+      'savedAt': FieldValue.serverTimestamp(),
+      'folderName': folderName?.trim().isEmpty ?? true ? null : folderName,
+      'notes': notes?.trim().isEmpty ?? true ? null : notes,
+    };
+
+    final docRef = await _firestore.collection(_savedWorkoutsCollection).add(
+          data,
+        );
+    return docRef.id;
+  }
+
+  /// Update folder or notes for a saved workout
+  Future<void> updateSavedWorkout({
+    required String savedWorkoutId,
+    String? folderName,
+    String? notes,
+  }) async {
+    final data = <String, dynamic>{
+      'folderName': folderName?.trim().isEmpty ?? true ? null : folderName,
+      'notes': notes?.trim().isEmpty ?? true ? null : notes,
+    };
+    await _firestore
+        .collection(_savedWorkoutsCollection)
+        .doc(savedWorkoutId)
+        .update(data);
+  }
+
+  /// Remove a saved workout by saved id
+  Future<void> removeSavedWorkout(String savedWorkoutId) async {
+    await _firestore
+        .collection(_savedWorkoutsCollection)
+        .doc(savedWorkoutId)
+        .delete();
+  }
+
+  /// Remove a saved workout by workout id
+  Future<void> removeSavedWorkoutByWorkoutId(
+    String userId,
+    String workoutId,
+  ) async {
+    final snapshot = await _firestore
+        .collection(_savedWorkoutsCollection)
+        .where('userId', isEqualTo: userId)
+        .where('workoutId', isEqualTo: workoutId)
+        .get();
+
+    for (final doc in snapshot.docs) {
+      await doc.reference.delete();
+    }
+  }
+
   // ========== Statistics ==========
 
   /// Get workout statistics for a user
@@ -245,12 +347,12 @@ class WorkoutRepository {
 
     final totalDuration = logs.fold<int>(
       0,
-      (sum, log) => sum + log.duration,
+      (total, log) => total + log.duration,
     );
 
     final totalCalories = logs.fold<int>(
       0,
-      (sum, log) => sum + (log.caloriesBurned ?? 0),
+      (total, log) => total + (log.caloriesBurned ?? 0),
     );
 
     return {

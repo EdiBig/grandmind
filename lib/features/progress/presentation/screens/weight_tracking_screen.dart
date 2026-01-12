@@ -190,7 +190,7 @@ class _WeightTrackingScreenState extends ConsumerState<WeightTrackingScreen> {
               Text(
                 _useKg ? 'kg' : 'lbs',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                     ),
               ),
             ],
@@ -199,7 +199,7 @@ class _WeightTrackingScreenState extends ConsumerState<WeightTrackingScreen> {
           Text(
             'Last updated: ${DateFormat('MMM d, yyyy').format(latest.date)}',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.white.withOpacity(0.8),
+                  color: Colors.white.withValues(alpha: 0.8),
                 ),
           ),
         ],
@@ -340,7 +340,7 @@ class _WeightTrackingScreenState extends ConsumerState<WeightTrackingScreen> {
         leading: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(
@@ -373,9 +373,9 @@ class _WeightTrackingScreenState extends ConsumerState<WeightTrackingScreen> {
             ],
           ],
         ),
-        trailing: PopupMenuButton(
+        trailing: PopupMenuButton<String>(
           itemBuilder: (context) => [
-            const PopupMenuItem(
+            const PopupMenuItem<String>(
               value: 'edit',
               child: Row(
                 children: [
@@ -385,7 +385,7 @@ class _WeightTrackingScreenState extends ConsumerState<WeightTrackingScreen> {
                 ],
               ),
             ),
-            const PopupMenuItem(
+            const PopupMenuItem<String>(
               value: 'delete',
               child: Row(
                 children: [
@@ -396,7 +396,7 @@ class _WeightTrackingScreenState extends ConsumerState<WeightTrackingScreen> {
               ),
             ),
           ],
-          onSelected: (value) => _handleMenuAction(value as String, entry),
+          onSelected: (value) => _handleMenuAction(value, entry),
         ),
       ),
     );
@@ -432,18 +432,16 @@ class _WeightTrackingScreenState extends ConsumerState<WeightTrackingScreen> {
               final operations = ref.read(progressOperationsProvider.notifier);
               final success = await operations.deleteWeight(entry.id);
 
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      success
-                          ? 'Weight entry deleted'
-                          : 'Failed to delete entry',
-                    ),
-                    backgroundColor: success ? Colors.green : Colors.red,
+              if (!context.mounted) return;
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    success ? 'Weight entry deleted' : 'Failed to delete entry',
                   ),
-                );
-              }
+                  backgroundColor: success ? Colors.green : Colors.red,
+                ),
+              );
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),

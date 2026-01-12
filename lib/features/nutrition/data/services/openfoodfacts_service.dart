@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../../domain/models/food_item.dart';
 import 'package:uuid/uuid.dart';
 
@@ -33,7 +34,7 @@ class OpenFoodFactsService {
 
       return null;
     } catch (e) {
-      print('Error fetching product: $e');
+      debugPrint('Error fetching product: $e');
       return null;
     }
   }
@@ -64,7 +65,7 @@ class OpenFoodFactsService {
 
       return [];
     } catch (e) {
-      print('Error searching products: $e');
+      debugPrint('Error searching products: $e');
       return [];
     }
   }
@@ -130,7 +131,7 @@ class OpenFoodFactsService {
         createdAt: DateTime.now(),
       );
     } catch (e) {
-      print('Error parsing food item: $e');
+      debugPrint('Error parsing food item: $e');
       return null;
     }
   }
@@ -147,8 +148,6 @@ class OpenFoodFactsService {
   /// Guess food category from name and brand
   FoodCategory? _guessCategory(String name, String? brand) {
     final lowerName = name.toLowerCase();
-    final lowerBrand = brand?.toLowerCase() ?? '';
-
     // Protein
     if (lowerName.contains('chicken') ||
         lowerName.contains('beef') ||

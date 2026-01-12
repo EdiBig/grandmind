@@ -100,7 +100,7 @@ class WorkoutDetailScreen extends ConsumerWidget {
       height: 200,
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [color.withOpacity(0.8), color],
+          colors: [color.withValues(alpha: 0.8), color],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -212,15 +212,15 @@ class WorkoutDetailScreen extends ConsumerWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Theme.of(context).colorScheme.primary.withOpacity(0.08),
-            Theme.of(context).colorScheme.primary.withOpacity(0.12),
+            Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
+            Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
           width: 1.5,
         ),
       ),
@@ -229,7 +229,7 @@ class WorkoutDetailScreen extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -299,12 +299,12 @@ class WorkoutDetailScreen extends ConsumerWidget {
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -329,7 +329,7 @@ class WorkoutDetailScreen extends ConsumerWidget {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -409,10 +409,10 @@ class WorkoutDetailScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: primary.withOpacity(0.1),
+        color: primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: primary.withOpacity(0.3),
+          color: primary.withValues(alpha: 0.3),
           width: 1,
         ),
       ),

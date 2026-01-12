@@ -94,7 +94,7 @@ class HabitsTab extends ConsumerWidget {
               todayLog?.count ?? 0,
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -179,7 +179,7 @@ class HabitsTab extends ConsumerWidget {
             gradient: LinearGradient(
               colors: [
                 Theme.of(context).colorScheme.primary,
-                Theme.of(context).colorScheme.secondary.withOpacity(0.9),
+                Theme.of(context).colorScheme.secondary.withValues(alpha: 0.9),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -208,7 +208,7 @@ class HabitsTab extends ConsumerWidget {
                   Container(
                     height: 50,
                     width: 1,
-                    color: Colors.white.withOpacity(0.3),
+                    color: Colors.white.withValues(alpha: 0.3),
                   ),
                   _buildProgressItem(
                     context,
@@ -219,7 +219,7 @@ class HabitsTab extends ConsumerWidget {
                   Container(
                     height: 50,
                     width: 1,
-                    color: Colors.white.withOpacity(0.3),
+                    color: Colors.white.withValues(alpha: 0.3),
                   ),
                   _buildProgressItem(
                     context,
@@ -239,7 +239,7 @@ class HabitsTab extends ConsumerWidget {
           gradient: LinearGradient(
             colors: [
               Theme.of(context).colorScheme.primary,
-              Theme.of(context).colorScheme.secondary.withOpacity(0.9),
+              Theme.of(context).colorScheme.secondary.withValues(alpha: 0.9),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -276,7 +276,7 @@ class HabitsTab extends ConsumerWidget {
               Text(
                 '/$suffix',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Colors.white.withOpacity(0.8),
+                      color: Colors.white.withValues(alpha: 0.8),
                     ),
               ),
           ],
@@ -285,7 +285,7 @@ class HabitsTab extends ConsumerWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.white.withOpacity(0.9),
+                color: Colors.white.withValues(alpha: 0.9),
               ),
         ),
       ],
@@ -337,8 +337,8 @@ class HabitsTab extends ConsumerWidget {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isCompletedToday
-                ? color.withOpacity(0.3)
-                : Colors.grey.withOpacity(0.2),
+                ? color.withValues(alpha: 0.3)
+                : Colors.grey.withValues(alpha: 0.2),
           ),
         ),
         child: Column(
@@ -349,7 +349,7 @@ class HabitsTab extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, color: color, size: 24),

@@ -5,6 +5,7 @@ import '../../../workouts/domain/models/workout.dart';
 import '../../../workouts/presentation/screens/workout_detail_screen.dart';
 import '../../../workouts/presentation/screens/workout_logging_screen.dart';
 import '../../../workouts/presentation/screens/easy_pick_workouts_screen.dart';
+import '../../../workouts/presentation/screens/create_workout_template_screen.dart';
 
 class WorkoutsTab extends ConsumerWidget {
   const WorkoutsTab({super.key});
@@ -13,6 +14,8 @@ class WorkoutsTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final filters = ref.watch(workoutFiltersProvider);
     final workoutsAsync = ref.watch(workoutsProvider(filters));
+    final recentLogsAsync = ref.watch(recentWorkoutLogsProvider);
+    final workoutStatsAsync = ref.watch(workoutStatsProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -33,27 +36,11 @@ class WorkoutsTab extends ConsumerWidget {
       body: workoutsAsync.when(
         data: (workouts) {
           if (workouts.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.fitness_center, size: 64, color: Colors.grey[400]),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No workouts available',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: Colors.grey[600],
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Try adjusting your filters',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey[500],
-                        ),
-                  ),
-                ],
-              ),
+            return _buildEmptyState(
+              context,
+              ref,
+              recentLogsAsync: recentLogsAsync,
+              workoutStatsAsync: workoutStatsAsync,
             );
           }
 
@@ -100,6 +87,209 @@ class WorkoutsTab extends ConsumerWidget {
     );
   }
 
+  Widget _buildEmptyState(
+    BuildContext context,
+    WidgetRef ref, {
+    required AsyncValue<List<dynamic>> recentLogsAsync,
+    required AsyncValue<Map<String, dynamic>> workoutStatsAsync,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                colorScheme.primary.withValues(alpha: 0.12),
+                colorScheme.secondary.withValues(alpha: 0.12),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: colorScheme.primary.withValues(alpha: 0.2),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Start your workout journey',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Log a quick session, explore curated plans, or create your own routine.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 130,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    SizedBox(
+                      width: 180,
+                      child: _ActionCard(
+                        label: 'Log Workout',
+                        subtitle: 'Quick entry',
+                        icon: Icons.add_task,
+                        color: colorScheme.primary,
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const WorkoutLoggingScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    SizedBox(
+                      width: 180,
+                      child: _ActionCard(
+                        label: 'Easy Pick',
+                        subtitle: 'Curated plans',
+                        icon: Icons.auto_awesome,
+                        color: colorScheme.secondary,
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const EasyPickWorkoutsScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    SizedBox(
+                      width: 180,
+                      child: _ActionCard(
+                        label: 'Create Template',
+                        subtitle: 'Build your own plan',
+                        icon: Icons.edit,
+                        color: colorScheme.tertiary,
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const CreateWorkoutTemplateScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    SizedBox(
+                      width: 180,
+                      child: _ActionCard(
+                        label: 'Add Workout',
+                        subtitle: 'More options',
+                        icon: Icons.add_circle,
+                        color: colorScheme.primary,
+                        onTap: () => _showAddWorkoutSheet(context),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        Text(
+          'Your Week',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: 12),
+        workoutStatsAsync.when(
+          data: (stats) => Row(
+            children: [
+              Expanded(
+                child: _StatMiniCard(
+                  label: 'Workouts',
+                  value: '${stats['workoutsThisWeek'] ?? 0}',
+                  icon: Icons.fitness_center,
+                  color: colorScheme.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _StatMiniCard(
+                  label: 'Minutes',
+                  value: '${stats['totalDuration'] ?? 0}',
+                  icon: Icons.schedule,
+                  color: colorScheme.tertiary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _StatMiniCard(
+                  label: 'Calories',
+                  value: '${stats['totalCalories'] ?? 0}',
+                  icon: Icons.local_fire_department,
+                  color: Colors.orange,
+                ),
+              ),
+            ],
+          ),
+          loading: () => const SizedBox(
+            height: 72,
+            child: Center(child: CircularProgressIndicator()),
+          ),
+          error: (_, __) => const SizedBox.shrink(),
+        ),
+        const SizedBox(height: 24),
+        Text(
+          'Recent Activity',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: 12),
+        recentLogsAsync.when(
+          data: (logs) {
+            if (logs.isEmpty) {
+              return _EmptyPlaceholder(
+                icon: Icons.history_toggle_off,
+                title: 'No logged workouts yet',
+                subtitle: 'Your recent sessions will show up here.',
+              );
+            }
+            return Column(
+              children: logs.take(3).map((log) {
+                return _RecentLogTile(
+                  title: log.workoutName,
+                  subtitle: '${log.duration} min - ${log.category?.displayName ?? 'Workout'}',
+                );
+              }).toList(),
+            );
+          },
+          loading: () => const SizedBox(
+            height: 72,
+            child: Center(child: CircularProgressIndicator()),
+          ),
+          error: (_, __) => _EmptyPlaceholder(
+            icon: Icons.error_outline,
+            title: 'Unable to load activity',
+            subtitle: 'Try again in a moment.',
+          ),
+        ),
+      ],
+    );
+  }
+
   void _showAddWorkoutSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -130,7 +320,7 @@ class WorkoutsTab extends ConsumerWidget {
               leading: Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -138,8 +328,8 @@ class WorkoutsTab extends ConsumerWidget {
                   color: Theme.of(context).colorScheme.primary,
                 ),
               ),
-              title: const Text('Manual Entry'),
-              subtitle: const Text('Log a custom workout from scratch'),
+              title: const Text('Log Workout'),
+              subtitle: const Text('Quick or detailed manual entry'),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.of(context).push(
@@ -154,7 +344,7 @@ class WorkoutsTab extends ConsumerWidget {
               leading: Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.secondary.withOpacity(0.1),
+                  color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -169,6 +359,30 @@ class WorkoutsTab extends ConsumerWidget {
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (context) => const EasyPickWorkoutsScreen(),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 8),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.edit,
+                  color: Theme.of(context).colorScheme.tertiary,
+                ),
+              ),
+              title: const Text('Create Template'),
+              subtitle: const Text('Build a reusable workout plan'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const CreateWorkoutTemplateScreen(),
                   ),
                 );
               },
@@ -198,7 +412,7 @@ class WorkoutsTab extends ConsumerWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -211,7 +425,7 @@ class WorkoutsTab extends ConsumerWidget {
               height: 120,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [color.withOpacity(0.8), color],
+                  colors: [color.withValues(alpha: 0.8), color],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -352,7 +566,7 @@ class WorkoutsTab extends ConsumerWidget {
                   ),
                   selected: isSelected,
                   selectedColor: primary,
-                  backgroundColor: outline.withOpacity(0.3),
+                  backgroundColor: outline.withValues(alpha: 0.3),
                   checkmarkColor: Colors.white,
                   side: BorderSide(
                     color: isSelected ? primary : outline,
@@ -397,7 +611,7 @@ class WorkoutsTab extends ConsumerWidget {
                   ),
                   selected: isSelected,
                   selectedColor: secondary,
-                  backgroundColor: outline.withOpacity(0.3),
+                  backgroundColor: outline.withValues(alpha: 0.3),
                   checkmarkColor: Colors.white,
                   side: BorderSide(
                     color: isSelected ? secondary : outline,
@@ -493,10 +707,10 @@ class WorkoutsTab extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: primary.withOpacity(0.1),
+        color: primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: primary.withOpacity(0.3),
+          color: primary.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -517,3 +731,226 @@ class WorkoutsTab extends ConsumerWidget {
     );
   }
 }
+
+class _ActionCard extends StatelessWidget {
+  const _ActionCard({
+    required this.label,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  final String label;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Ink(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.7),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 22),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatMiniCard extends StatelessWidget {
+  const _StatMiniCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecentLogTile extends StatelessWidget {
+  const _RecentLogTile({
+    required this.title,
+    required this.subtitle,
+  });
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.fitness_center,
+              size: 18,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyPlaceholder extends StatelessWidget {
+  const _EmptyPlaceholder({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 24, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+

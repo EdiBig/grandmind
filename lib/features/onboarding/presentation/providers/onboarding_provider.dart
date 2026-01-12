@@ -86,6 +86,7 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
 
       // Save onboarding data to Firestore
       await _firestoreService.updateUser(user.uid, {
+        'hasCompletedOnboarding': true,
         'onboarding': {
           'completed': true,
           'goalType': state.goal!.name,

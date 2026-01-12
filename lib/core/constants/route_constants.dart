@@ -7,6 +7,7 @@ class RouteConstants {
   static const String login = '/login';
   static const String signup = '/signup';
   static const String forgotPassword = '/forgot-password';
+  static const String resetPassword = '/reset-password';
 
   // Onboarding Routes
   static const String onboarding = '/onboarding';
@@ -24,6 +25,11 @@ class RouteConstants {
   static const String habits = '/habits';
   static const String createHabit = '/habits/create';
   static const String editHabit = '/habits/:id/edit';
+  static const String together = '/together';
+  static const String createChallenge = '/together/create';
+  static const String challengeDetail = '/together/:id';
+  static const String challengeRankings = '/together/:id/rankings';
+  static const String challengeFeed = '/together/:id/feed';
   static const String progress = '/progress';
   static const String progressInsights = '/progress/insights';
   static const String progressDashboard = '/progress/dashboard';
@@ -44,6 +50,9 @@ class RouteConstants {
   static const String editProfile = '/settings/edit-profile';
   static const String notifications = '/settings/notifications';
   static const String healthSync = '/settings/health-sync';
+  static const String fitnessProfile = '/settings/fitness-profile';
+  static const String myRoutines = '/settings/my-routines';
+  static const String communityGuidelines = '/settings/community-guidelines';
   static const String privacy = '/settings/privacy';
   static const String dataManagement = '/settings/data-management';
   static const String about = '/settings/about';

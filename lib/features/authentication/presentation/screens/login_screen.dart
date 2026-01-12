@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,6 +22,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _hasNavigated = false;
 
   @override
   void dispose() {
@@ -52,39 +54,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final appleEnabledAsync = ref.watch(appleSignInEnabledProvider);
 
     ref.listen<AuthState>(authControllerProvider, (previous, next) async {
-      if (next.status == AuthStatus.authenticated) {
-        // Get current user from authStateProvider
-        final user = ref.read(authStateProvider).value;
-
-        if (user != null) {
-          // Check if user has completed onboarding
-          try {
-            final firestoreService = ref.read(firestoreServiceProvider);
-            final userData = await firestoreService.getUser(user.uid);
-
-            if (userData != null) {
-              final hasCompletedOnboarding =
-                  userData.onboarding?['completed'] as bool? ?? true;
-
-              if (!mounted) return;
-
-              if (hasCompletedOnboarding) {
-                context.go(RouteConstants.home);
-              } else {
-                context.go(RouteConstants.onboarding);
-              }
-            } else {
-              // User document doesn't exist, go to onboarding
-              if (!mounted) return;
-              context.go(RouteConstants.onboarding);
-            }
-          } catch (e) {
-            // Error fetching user data, default to onboarding
-            if (!mounted) return;
-            context.go(RouteConstants.onboarding);
-          }
-        }
-      } else if (next.status == AuthStatus.error) {
+      if (next.status == AuthStatus.error) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(next.errorMessage ?? 'An error occurred'),
@@ -92,6 +62,41 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
         );
       }
+    });
+
+    ref.listen<AsyncValue<User?>>(authStateProvider, (previous, next) async {
+      if (!mounted || _hasNavigated) return;
+
+      await next.when(
+        data: (user) async {
+          if (user == null || _hasNavigated || !mounted) return;
+
+          _hasNavigated = true;
+
+          try {
+            final firestoreService = ref.read(firestoreServiceProvider);
+            var userData = await firestoreService.getUser(user.uid);
+            userData ??= await ref
+                .read(authRepositoryProvider)
+                .ensureUserProfile(user);
+
+            if (!context.mounted) return;
+
+            final hasCompletedOnboarding = userData.hasCompletedOnboarding;
+
+            if (hasCompletedOnboarding) {
+              context.go(RouteConstants.home);
+            } else {
+              context.go(RouteConstants.onboarding);
+            }
+          } catch (e) {
+            if (!context.mounted) return;
+            context.go(RouteConstants.onboarding);
+          }
+        },
+        loading: () async {},
+        error: (_, __) async {},
+      );
     });
 
     final isAppleSignInSupported = !kIsWeb &&

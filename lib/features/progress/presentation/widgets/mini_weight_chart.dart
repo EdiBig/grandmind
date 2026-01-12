@@ -18,14 +18,14 @@ class MiniWeightChart extends StatelessWidget {
       return Container(
         height: 100,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
+          color: Colors.white.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Center(
           child: Text(
             'No data yet',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.7),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 12,
             ),
           ),
@@ -55,8 +55,8 @@ class MiniWeightChart extends StatelessWidget {
                 show: true,
                 gradient: LinearGradient(
                   colors: [
-                    Colors.white.withOpacity(0.3),
-                    Colors.white.withOpacity(0.0),
+                    Colors.white.withValues(alpha: 0.3),
+                    Colors.white.withValues(alpha: 0.0),
                   ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,

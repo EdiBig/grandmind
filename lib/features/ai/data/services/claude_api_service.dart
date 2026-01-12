@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 import 'package:kinesa/core/config/ai_config.dart';
 import 'package:kinesa/features/ai/data/repositories/ai_cache_repository.dart';
-import 'package:kinesa/features/ai/data/models/cache_entry.dart';
 
 /// Response from Claude API
 class ClaudeResponse {
@@ -119,9 +118,15 @@ class ClaudeAPIService {
   ClaudeAPIService({
     Dio? dio,
     AICacheRepository? cacheRepository,
+    String? apiKey,
   })  : _dio = dio ?? Dio(),
         _cacheRepository = cacheRepository {
     _configureDio();
+    if (apiKey != null && apiKey.isNotEmpty) {
+      _apiKey = apiKey;
+      _dio.options.headers['x-api-key'] = _apiKey;
+      _dio.options.headers['anthropic-version'] = AIConfig.apiVersion;
+    }
   }
 
   void _configureDio() {
@@ -164,6 +169,13 @@ class ClaudeAPIService {
   Future<void> initialize() async {
     if (kIsWeb) {
       _logger.i('ClaudeAPIService initialized for web proxy');
+      return;
+    }
+
+    if (_apiKey != null && _apiKey!.isNotEmpty) {
+      _dio.options.headers['x-api-key'] = _apiKey;
+      _dio.options.headers['anthropic-version'] = AIConfig.apiVersion;
+      _logger.i('ClaudeAPIService already configured');
       return;
     }
 

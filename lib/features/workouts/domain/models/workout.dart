@@ -43,6 +43,17 @@ enum WorkoutDifficulty {
         return 'Advanced';
     }
   }
+
+  String get description {
+    switch (this) {
+      case WorkoutDifficulty.beginner:
+        return 'Beginner: Suitable for those new to exercise.';
+      case WorkoutDifficulty.intermediate:
+        return 'Intermediate: Best for 6+ months of consistent training.';
+      case WorkoutDifficulty.advanced:
+        return 'Advanced: For 2+ years of consistent training.';
+    }
+  }
 }
 
 /// Workout categories

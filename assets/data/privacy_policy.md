@@ -1,7 +1,7 @@
-# Kinesa Privacy Policy
+﻿# Kinesa Privacy Policy
 
-Last Updated: 7 January 2025  
-Effective Date: 7 January 2025
+Last Updated: 12 January 2026  
+Effective Date: 12 January 2026
 
 ## Introduction
 
@@ -117,30 +117,76 @@ personal data from children under 16.
 Some service providers may process data outside the UK/EU under appropriate
 safeguards such as Standard Contractual Clauses.
 
-## 9. Cookies and Tracking Technologies
+## 9. Data Collection and Use in Community Challenges
+
+### 9.1 Additional Data We Collect in Challenges
+When you participate in Unity Features, we collect:
+- Challenge participation records (which challenges, when joined/left)
+- Progress metrics shared with participants (steps, workouts, etc.)
+- Rankings and leaderboard positions (if you opt-in)
+- Posts, comments, and reactions in activity feeds
+- Reports and moderation actions
+- Display name and optional profile photo
+
+### 9.2 How We Use Challenge Data
+- To facilitate challenge participation and show progress
+- To display rankings and leaderboards
+- To enable social interactions (posts, comments)
+- To moderate content and enforce community guidelines
+- To improve Unity Features
+- To send notifications about challenge updates
+
+### 9.3 Who Sees Your Challenge Data
+Other challenge participants can see:
+- Your display name and avatar
+- Your progress metrics (if you opt-in)
+- Your ranking (if you opt-in)
+- Your posts and comments (if activity feed enabled)
+
+We may share challenge data with:
+- Third-party partners for sponsored challenges (only with your explicit consent)
+- Law enforcement (if required by law or to investigate violations)
+
+We never share challenge data with third parties for marketing without your consent.
+
+### 9.4 Your Choices
+You can:
+- Choose a display name different from your real name
+- Opt-out of rankings
+- Leave challenges at any time
+- Delete your posts before leaving
+- Disable Unity Features entirely in Settings
+
+### 9.5 Data Retention for Challenges
+- Active challenge data: retained while you participate
+- After leaving: your progress is removed, but past posts remain unless deleted
+- After account deletion: all challenge data deleted within 30 days
+
+## 10. Cookies and Tracking Technologies
 
 Kinesa is a native mobile app and does not use cookies. Analytics SDKs may
 store small amounts of data locally for usage tracking.
 
-## 10. Marketing and Communications
+## 11. Marketing and Communications
 
 You can opt out of marketing emails at any time. Transactional emails are
 required for account and subscription notices.
 
-## 11. Third-Party Links and Services
+## 12. Third-Party Links and Services
 
 Kinesa may link to third-party services. Their privacy policies apply when you
 use those services.
 
-## 12. Changes to This Privacy Policy
+## 13. Changes to This Privacy Policy
 
 We may update this policy from time to time and will notify you of material
 changes.
 
-## 13. Contact Us
+## 14. Contact Us
 
 Email: privacy@grandpoint.uk
 Website: www.grandpoint.uk
 Postal Address: 108 St Helens Street, Ipswich, UK
 
-Document Version: 1.0
+Document Version: 2.0
+

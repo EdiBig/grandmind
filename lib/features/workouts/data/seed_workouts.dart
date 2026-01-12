@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../domain/models/workout.dart';
 import '../domain/models/exercise.dart';
 
@@ -10,7 +11,7 @@ Future<void> seedWorkouts() async {
   // Check if workouts already exist
   final existingWorkouts = await workoutsCollection.limit(1).get();
   if (existingWorkouts.docs.isNotEmpty) {
-    print('Workouts already seeded');
+    debugPrint('Workouts already seeded');
     return;
   }
 
@@ -228,5 +229,5 @@ Future<void> seedWorkouts() async {
     await workoutsCollection.add(workoutData);
   }
 
-  print('Successfully seeded ${workouts.length} workouts');
+  debugPrint('Successfully seeded ${workouts.length} workouts');
 }

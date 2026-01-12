@@ -219,7 +219,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     required ValueChanged<String?> onChanged,
   }) {
     return DropdownButtonFormField<String>(
-      value: _normalizeDropdownValue(value, options),
+      initialValue: _normalizeDropdownValue(value, options),
       items: options
           .map((option) => DropdownMenuItem(value: option, child: Text(option)))
           .toList(),

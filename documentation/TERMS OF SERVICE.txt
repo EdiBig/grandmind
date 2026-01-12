@@ -1,7 +1,7 @@
-# Kinesa Terms of Service
+﻿# Kinesa Terms of Service
 
-Last Updated: 7 January 2025
-Effective Date: 7 January 2025
+Last Updated: 12 January 2026
+Effective Date: 12 January 2026
 
 ## 1. Introduction and Acceptance
 
@@ -77,11 +77,113 @@ accounts that violate these Terms.
 
 ## 13. Governing Law
 
-These Terms are governed by the laws of England and Wales. Any disputes are
-subject to the exclusive jurisdiction of the courts of England and Wales.
+These Terms are governed by the laws of England and Wales. Any disputes are     
+subject to the exclusive jurisdiction of the courts of England and Wales.       
+
+## 20. Community Challenges and Accountability Features ("Unity")
+
+### 20.1 Feature Overview
+Kinesa offers community features that allow users to participate in fitness
+challenges, join accountability groups, and interact with other users
+("Unity Features" or "Challenges"). These features include:
+- Community Challenges: Large-scale, public challenges open to all users
+- Accountability Pods: Private, small-group challenges limited to invited members
+- Activity Feeds: Social features allowing participants to post updates, comments,
+  and reactions
+- Rankings and Leaderboards: Optional competitive elements showing participant
+  progress
+
+Your participation in Unity Features is voluntary and subject to the
+additional terms in this Section 20.
+
+### 20.2 Eligibility and Age Restrictions
+Users must be at least 16 years old to participate in Unity Features without
+parental consent. Users aged 13-15 may participate only with verified parental
+or guardian consent. Users under 13 may not access Unity Features.
+
+### 20.3 Health and Safety Acknowledgment
+Unity Features are for motivational and social purposes only and do not
+constitute medical advice, diagnosis, treatment, or therapy. Exercise involves
+inherent risks, including injury. You agree to consult a qualified healthcare
+professional before participating, especially if you have medical conditions,
+are pregnant or postpartum, have injuries or chronic pain, or have other health
+concerns.
+
+By joining a challenge, you assume all risks associated with participation and
+agree to stop immediately if you experience pain, dizziness, shortness of
+breath, chest pain, or other concerning symptoms.
+
+### 20.4 Voluntary Participation and Assumption of Risk
+Participation is voluntary. You may join and leave challenges at any time. You
+assume all risks related to participation, including physical injury, data
+privacy risks from sharing information with participants, and interactions with
+other users.
+
+### 20.5 User Conduct in Challenges
+You agree to be respectful, supportive, honest, and safe. You may not cheat,
+harass, discriminate, share inappropriate content, spam, impersonate others,
+encourage harm, provide medical advice, or infringe rights.
+
+### 20.6 Content Moderation and Enforcement
+We reserve the right to monitor activity feeds, remove violating content, and
+suspend or terminate users who violate these terms. Reports should be submitted
+through in-app tools or support@grandpoint.uk. We review reports within 48 hours.
+
+### 20.7 Privacy and Data Sharing in Challenges
+Other participants may see your display name, progress metrics, rankings (if you
+opt in), posts, comments, and reactions. We do not share your email, exact
+location, or full health data without consent. You can revoke consent by leaving
+the challenge.
+
+### 20.8 Rankings and Competition
+Rankings and leaderboards are optional. You may opt in or out at any time. You
+agree to log activities honestly and not manipulate data.
+
+### 20.9 Challenge Creation and Management
+Users in good standing may create challenges. You must be at least 18 years old
+to create public community challenges. Challenge creators are responsible for
+setting safe goals and moderating challenges with activity feeds.
+
+### 20.10 Intellectual Property in User-Generated Content
+You retain ownership of your content. By posting content, you grant Grandpoint a
+worldwide, non-exclusive, royalty-free license to use and display the content
+for the purpose of operating Unity Features.
+
+### 20.11 Disclaimers Specific to Unity Features
+We do not guarantee results, accuracy of device data, or real-time rankings. We
+are not responsible for the conduct of other participants or interactions
+between users.
+
+### 20.12 Limitation of Liability for Unity Features
+To the maximum extent permitted by UK law, Grandpoint is not liable for injuries,
+illness, or harm arising from participation in challenges. This does not limit
+liability for death or personal injury caused by our negligence, fraud, or other
+non-excludable liabilities.
+
+### 20.13 Termination of Unity Features Access
+We may suspend or terminate access to Unity Features for violations of these
+terms or failure to verify age eligibility.
+
+### 20.14 Changes to Unity Features
+We may modify or discontinue Unity Features and change challenge rules with
+reasonable notice where feasible.
+
+### 20.15 Indemnification
+You agree to indemnify Grandpoint from claims arising from your participation in
+Unity Features, your violations of these terms, or your content.
+
+### 20.16 Dispute Resolution
+Disputes related to Unity Features are governed by the laws of England and
+Wales. You agree to contact support@grandpoint.uk before filing a claim.
+
+## 21. Acknowledgment of Unity Features Terms
+
+By joining a challenge, you acknowledge that you have read and agree to Section
+20, understand the risks of exercise, and consent to data sharing as described.
 
 ## Contact
 
 Questions about these Terms? Email info@grandpoint.uk.
 
-Document Version: 1.0
+Document Version: 2.0
+

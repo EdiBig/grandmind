@@ -9,7 +9,6 @@ import '../providers/progress_providers.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/route_constants.dart';
 import '../widgets/weight_chart_widget.dart';
-import '../widgets/measurement_chart_widget.dart';
 import '../widgets/goal_progress_card.dart';
 import 'weight_tracking_screen.dart';
 import 'measurements_screen.dart';
@@ -31,9 +30,8 @@ class _ProgressDashboardScreenState
   @override
   Widget build(BuildContext context) {
     final weightEntriesAsync = ref.watch(weightEntriesProvider);
-    final latestWeightAsync = ref.watch(latestWeightProvider);
-    final latestMeasurementsAsync = ref.watch(latestMeasurementsProvider);
     final activeGoalsAsync = ref.watch(activeGoalsProvider);
+    final measurementEntriesAsync = ref.watch(measurementEntriesProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -50,6 +48,7 @@ class _ProgressDashboardScreenState
           ref.invalidate(weightEntriesProvider);
           ref.invalidate(latestWeightProvider);
           ref.invalidate(latestMeasurementsProvider);
+          ref.invalidate(measurementEntriesProvider);
           ref.invalidate(activeGoalsProvider);
         },
         child: ListView(
@@ -58,8 +57,8 @@ class _ProgressDashboardScreenState
             // Progress Summary Card
             _buildProgressSummaryCard(
               context,
-              latestWeightAsync,
-              latestMeasurementsAsync,
+              weightEntriesAsync,
+              measurementEntriesAsync,
               activeGoalsAsync,
             ),
             const SizedBox(height: 24),
@@ -67,7 +66,8 @@ class _ProgressDashboardScreenState
             // Active Goals Section
             activeGoalsAsync.when(
               data: (goals) {
-                if (goals.isNotEmpty) {
+                final filteredGoals = _filterGoalsByRange(goals);
+                if (filteredGoals.isNotEmpty) {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -96,7 +96,7 @@ class _ProgressDashboardScreenState
                         ],
                       ),
                       const SizedBox(height: 12),
-                      ...goals.take(3).map((goal) => Padding(
+                      ...filteredGoals.take(3).map((goal) => Padding(
                             padding: const EdgeInsets.only(bottom: 12),
                             child: GoalProgressCard(goal: goal),
                           )),
@@ -104,7 +104,7 @@ class _ProgressDashboardScreenState
                     ],
                   );
                 }
-                return const SizedBox.shrink();
+                return _buildEmptyGoalsState(context);
               },
               loading: () => const SizedBox.shrink(),
               error: (_, __) => const SizedBox.shrink(),
@@ -113,7 +113,8 @@ class _ProgressDashboardScreenState
             // Weight Trend Section
             weightEntriesAsync.when(
               data: (entries) {
-                if (entries.isNotEmpty) {
+                final filteredEntries = _filterEntriesByRange(entries);
+                if (filteredEntries.isNotEmpty) {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -142,18 +143,23 @@ class _ProgressDashboardScreenState
                           ),
                         ],
                       ),
+                      const SizedBox(height: 8),
+                      _buildRangeChip(context),
                       const SizedBox(height: 12),
                       WeightChartWidget(
-                        entries: entries.reversed.toList(),
+                        entries: filteredEntries.reversed.toList(),
                         useKg: true,
                       ),
                       const SizedBox(height: 8),
-                      _buildWeightInsights(context, entries),
+                      _buildWeightInsights(context, filteredEntries),
                       const SizedBox(height: 24),
                     ],
                   );
                 }
-                return _buildEmptyWeightState(context);
+                return _buildEmptyWeightState(
+                  context,
+                  subtitle: 'No weight entries in the selected range.',
+                );
               },
               loading: () => const Center(
                 child: Padding(
@@ -165,9 +171,11 @@ class _ProgressDashboardScreenState
             ),
 
             // Measurements Section
-            latestMeasurementsAsync.when(
-              data: (latest) {
-                if (latest != null && latest.measurements.isNotEmpty) {
+            measurementEntriesAsync.when(
+              data: (entries) {
+                final filtered = _filterMeasurementEntriesByRange(entries);
+                if (filtered.isNotEmpty) {
+                  final latest = _latestMeasurement(filtered);
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -202,14 +210,17 @@ class _ProgressDashboardScreenState
                     ],
                   );
                 }
-                return _buildEmptyMeasurementsState(context);
+                return _buildEmptyMeasurementsState(
+                  context,
+                  subtitle: 'No measurements in the selected range.',
+                );
               },
               loading: () => const SizedBox.shrink(),
               error: (_, __) => const SizedBox.shrink(),
             ),
 
             // Insights & Correlations Section
-            _buildInsightsSection(context),
+            _buildInsightsSection(context, _rangeLabel()),
           ],
         ),
       ),
@@ -218,8 +229,8 @@ class _ProgressDashboardScreenState
 
   Widget _buildProgressSummaryCard(
     BuildContext context,
-    AsyncValue<WeightEntry?> latestWeight,
-    AsyncValue<MeasurementEntry?> latestMeasurements,
+    AsyncValue<List<WeightEntry>> weightEntriesAsync,
+    AsyncValue<List<MeasurementEntry>> measurementEntriesAsync,
     AsyncValue<List<ProgressGoal>> activeGoals,
   ) {
     return Container(
@@ -243,12 +254,14 @@ class _ProgressDashboardScreenState
             children: [
               // Latest Weight
               Expanded(
-                child: latestWeight.when(
-                  data: (weight) {
+                child: weightEntriesAsync.when(
+                  data: (entries) {
+                    final filtered = _filterEntriesByRange(entries);
+                    final weight = _latestWeight(filtered);
                     if (weight != null) {
                       return _buildSummaryStatWhite(
                         context,
-                        '${weight.weight.toStringAsFixed(1)}',
+                        weight.weight.toStringAsFixed(1),
                         'kg',
                         Icons.monitor_weight,
                       );
@@ -278,8 +291,10 @@ class _ProgressDashboardScreenState
               Expanded(
                 child: activeGoals.when(
                   data: (goals) {
-                    final activeCount =
-                        goals.where((g) => g.status == GoalStatus.active).length;
+                    final filtered = _filterGoalsByRange(goals);
+                    final activeCount = filtered
+                        .where((g) => g.status == GoalStatus.active)
+                        .length;
                     return _buildSummaryStatWhite(
                       context,
                       '$activeCount',
@@ -303,9 +318,13 @@ class _ProgressDashboardScreenState
               ),
               // Measurements Count
               Expanded(
-                child: latestMeasurements.when(
-                  data: (measurements) {
-                    final count = measurements?.measurements.length ?? 0;
+                child: measurementEntriesAsync.when(
+                  data: (entries) {
+                    final filtered = _filterMeasurementEntriesByRange(entries);
+                    final latest = filtered.isEmpty
+                        ? null
+                        : _latestMeasurement(filtered);
+                    final count = latest?.measurements.length ?? 0;
                     return _buildSummaryStatWhite(
                       context,
                       '$count',
@@ -355,7 +374,7 @@ class _ProgressDashboardScreenState
         Text(
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.white.withOpacity(0.9),
+                color: Colors.white.withValues(alpha: 0.9),
               ),
           textAlign: TextAlign.center,
         ),
@@ -367,8 +386,10 @@ class _ProgressDashboardScreenState
       BuildContext context, List<WeightEntry> entries) {
     if (entries.length < 2) return const SizedBox.shrink();
 
-    final latest = entries.first;
-    final oldest = entries.last;
+    final sorted = List<WeightEntry>.from(entries)
+      ..sort((a, b) => b.date.compareTo(a.date));
+    final latest = sorted.first;
+    final oldest = sorted.last;
     final change = latest.weight - oldest.weight;
     final isLoss = change < 0;
     final daysBetween = latest.date.difference(oldest.date).inDays;
@@ -430,7 +451,7 @@ class _ProgressDashboardScreenState
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -470,9 +491,9 @@ class _ProgressDashboardScreenState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: colorScheme.secondary.withOpacity(0.12),
+        color: colorScheme.secondary.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: colorScheme.secondary.withOpacity(0.3)),
+        border: Border.all(color: colorScheme.secondary.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -504,7 +525,7 @@ class _ProgressDashboardScreenState
     );
   }
 
-  Widget _buildInsightsSection(BuildContext context) {
+  Widget _buildInsightsSection(BuildContext context, String rangeLabel) {
     final gradients = Theme.of(context).extension<AppGradients>()!;
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
@@ -512,7 +533,7 @@ class _ProgressDashboardScreenState
       decoration: BoxDecoration(
         gradient: gradients.secondary,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.secondary.withOpacity(0.2)),
+        border: Border.all(color: colorScheme.secondary.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -542,7 +563,8 @@ class _ProgressDashboardScreenState
           ),
           const SizedBox(height: 16),
           Text(
-            'Discover correlations between your habits and progress. See which habits help you achieve your goals!',
+            'Discover correlations between your habits and progress ($rangeLabel). '
+            'See which habits help you achieve your goals!',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Colors.grey[700],
                 ),
@@ -564,7 +586,7 @@ class _ProgressDashboardScreenState
     );
   }
 
-  Widget _buildEmptyWeightState(BuildContext context) {
+  Widget _buildEmptyWeightState(BuildContext context, {String? subtitle}) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -585,7 +607,7 @@ class _ProgressDashboardScreenState
           ),
           const SizedBox(height: 8),
           Text(
-            'Start tracking your weight to see trends',
+            subtitle ?? 'Start tracking your weight to see trends',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Colors.grey[500],
                 ),
@@ -608,7 +630,7 @@ class _ProgressDashboardScreenState
     );
   }
 
-  Widget _buildEmptyMeasurementsState(BuildContext context) {
+  Widget _buildEmptyMeasurementsState(BuildContext context, {String? subtitle}) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -628,7 +650,7 @@ class _ProgressDashboardScreenState
           ),
           const SizedBox(height: 8),
           Text(
-            'Track body measurements to monitor changes',
+            subtitle ?? 'Track body measurements to monitor changes',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Colors.grey[500],
                 ),
@@ -705,6 +727,139 @@ class _ProgressDashboardScreenState
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  List<WeightEntry> _filterEntriesByRange(List<WeightEntry> entries) {
+    final range = _selectedRange;
+    return entries.where((entry) {
+      return !entry.date.isBefore(range.start) &&
+          !entry.date.isAfter(range.end);
+    }).toList();
+  }
+
+  List<MeasurementEntry> _filterMeasurementEntriesByRange(
+    List<MeasurementEntry> entries,
+  ) {
+    final range = _selectedRange;
+    return entries.where((entry) {
+      return !entry.date.isBefore(range.start) &&
+          !entry.date.isAfter(range.end);
+    }).toList();
+  }
+
+  List<ProgressGoal> _filterGoalsByRange(List<ProgressGoal> goals) {
+    final range = _selectedRange;
+    return goals.where((goal) {
+      final startedWithin = !goal.startDate.isBefore(range.start) &&
+          !goal.startDate.isAfter(range.end);
+      final completedWithin = goal.completedDate != null &&
+          !goal.completedDate!.isBefore(range.start) &&
+          !goal.completedDate!.isAfter(range.end);
+      final targetWithin = goal.targetDate != null &&
+          !goal.targetDate!.isBefore(range.start) &&
+          !goal.targetDate!.isAfter(range.end);
+      final overlaps = goal.startDate.isBefore(range.end) &&
+          (goal.targetDate == null || !goal.targetDate!.isBefore(range.start));
+      return startedWithin || completedWithin || targetWithin || overlaps;
+    }).toList();
+  }
+
+  WeightEntry? _latestWeight(List<WeightEntry> entries) {
+    if (entries.isEmpty) return null;
+    final sorted = List<WeightEntry>.from(entries)
+      ..sort((a, b) => b.date.compareTo(a.date));
+    return sorted.first;
+  }
+
+  MeasurementEntry _latestMeasurement(List<MeasurementEntry> entries) {
+    final sorted = List<MeasurementEntry>.from(entries)
+      ..sort((a, b) => b.date.compareTo(a.date));
+    return sorted.first;
+  }
+
+  String _rangeLabel() {
+    final days = _selectedRange.end.difference(_selectedRange.start).inDays;
+    if (days <= 7) {
+      return 'last 7 days';
+    }
+    if (days <= 30) {
+      return 'last 30 days';
+    }
+    if (days <= 90) {
+      return 'last 90 days';
+    }
+    return 'all time';
+  }
+
+  Widget _buildRangeChip(BuildContext context) {
+    final label = _rangeLabel();
+    final displayLabel =
+        label.isEmpty ? label : '${label[0].toUpperCase()}${label.substring(1)}';
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: Theme.of(context)
+                .colorScheme
+                .outlineVariant
+                .withValues(alpha: 0.6),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.calendar_today,
+              size: 14,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              displayLabel,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyGoalsState(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outlineVariant,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.flag_outlined,
+            size: 28,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'No active goals in the selected range.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+          ),
+        ],
       ),
     );
   }

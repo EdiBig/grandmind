@@ -124,7 +124,7 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
           _selectedAngle = selected ? angle : null;
         });
       },
-      selectedColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+      selectedColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
       checkmarkColor: Theme.of(context).colorScheme.primary,
     );
   }
@@ -217,7 +217,7 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.6),
+                color: Colors.black.withValues(alpha: 0.6),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
@@ -372,7 +372,7 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
               const Text('Photo Angle', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               DropdownButtonFormField<PhotoAngle>(
-                value: selectedAngle,
+                initialValue: selectedAngle,
                 decoration: const InputDecoration(
                   border: OutlineInputBorder(),
                   contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),

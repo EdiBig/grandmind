@@ -164,10 +164,13 @@ class HabitRepository {
     final snapshot = await query.get();
 
     return snapshot.docs
-        .map((doc) => HabitLog.fromJson({
-              ...doc.data() as Map<String, dynamic>,
-              'id': doc.id,
-            }))
+        .map((doc) {
+          final data = doc.data() as Map<String, dynamic>?;
+          return HabitLog.fromJson({
+            ...?data,
+            'id': doc.id,
+          });
+        })
         .toList();
   }
 
@@ -188,7 +191,7 @@ class HabitRepository {
 
     return snapshot.docs
         .map((doc) => HabitLog.fromJson({
-              ...doc.data() as Map<String, dynamic>,
+              ...doc.data(),
               'id': doc.id,
             }))
         .toList();

@@ -62,12 +62,7 @@ class DashboardTab extends ConsumerWidget {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push(RouteConstants.logActivity),
-        icon: const Icon(Icons.add),
-        label: const Text('Log Activity'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-      ),
+      floatingActionButton: null,
     );
   }
 
@@ -659,7 +654,7 @@ class DashboardTab extends ConsumerWidget {
   Widget _buildQuickActions(BuildContext context) {
     final actions = [
       _DashboardAction(
-        label: 'Log',
+        label: 'Plan',
         icon: Icons.add_task,
         color: Theme.of(context).colorScheme.primary,
         onTap: () => context.push(RouteConstants.logActivity),

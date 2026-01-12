@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -16,56 +17,70 @@ class SplashScreen extends ConsumerStatefulWidget {
 }
 
 class _SplashScreenState extends ConsumerState<SplashScreen> {
+  bool _minDelayComplete = false;
+  bool _hasNavigated = false;
+  ProviderSubscription<AsyncValue<User?>>? _authSubscription;
+
   @override
   void initState() {
     super.initState();
-    _navigateToNextScreen();
+    Future.delayed(const Duration(seconds: 2)).then((_) {
+      _minDelayComplete = true;
+      _tryNavigate(ref.read(authStateProvider));
+    });
+
+    _authSubscription =
+        ref.listenManual<AsyncValue<User?>>(authStateProvider, (previous, next) {
+      _tryNavigate(next);
+    });
   }
 
-  Future<void> _navigateToNextScreen() async {
-    await Future.delayed(const Duration(seconds: 2));
+  @override
+  void dispose() {
+    _authSubscription?.close();
+    super.dispose();
+  }
 
-    if (!mounted) return;
-
-    final authState = ref.read(authStateProvider);
+  Future<void> _tryNavigate(AsyncValue<User?> authState) async {
+    if (!mounted || _hasNavigated || !_minDelayComplete) return;
 
     authState.when(
       data: (user) async {
-        if (user != null) {
-          // Check if user has completed onboarding
-          try {
-            final firestoreService = ref.read(firestoreServiceProvider);
-            final userData = await firestoreService.getUser(user.uid);
+        if (_hasNavigated || !mounted) return;
+        if (user == null) {
+          _hasNavigated = true;
+          context.go(RouteConstants.login);
+          return;
+        }
 
-            if (userData != null) {
-              final hasCompletedOnboarding = userData.onboarding?['completed'] as bool? ?? false;
+        _hasNavigated = true;
 
-              if (!mounted) return;
+        // Check if user has completed onboarding
+        try {
+          final firestoreService = ref.read(firestoreServiceProvider);
+          var userData = await firestoreService.getUser(user.uid);
+          userData ??= await ref
+              .read(authRepositoryProvider)
+              .ensureUserProfile(user);
 
-              if (hasCompletedOnboarding) {
-                context.go(RouteConstants.home);
-              } else {
-                context.go(RouteConstants.onboarding);
-              }
-            } else {
-              // User document doesn't exist, go to onboarding
-              if (!mounted) return;
-              context.go(RouteConstants.onboarding);
-            }
-          } catch (e) {
-            // Error fetching user data, default to onboarding
-            if (!mounted) return;
+          if (!mounted) return;
+
+          final hasCompletedOnboarding = userData.hasCompletedOnboarding;
+
+          if (hasCompletedOnboarding) {
+            context.go(RouteConstants.home);
+          } else {
             context.go(RouteConstants.onboarding);
           }
-        } else {
-          context.go(RouteConstants.login);
+        } catch (e) {
+          if (!mounted) return;
+          context.go(RouteConstants.onboarding);
         }
       },
-      loading: () {
-        // If still loading after delay, assume no user and go to login
-        context.go(RouteConstants.login);
-      },
+      loading: () {},
       error: (_, __) {
+        if (!mounted || _hasNavigated) return;
+        _hasNavigated = true;
         context.go(RouteConstants.login);
       },
     );
@@ -93,7 +108,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                   borderRadius: BorderRadius.circular(AppConstants.radiusXLarge),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
@@ -117,7 +132,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
               Text(
                 AppConstants.appTagline,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: colorScheme.onPrimary.withOpacity(0.9),
+                      color: colorScheme.onPrimary.withValues(alpha: 0.9),
                     ),
               ),
               const SizedBox(height: 48),

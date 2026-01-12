@@ -153,18 +153,21 @@ class _AICoachScreenState extends ConsumerState<AICoachScreen> {
           if (state.messages.isNotEmpty)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: Colors.grey[200],
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     '${state.messages.length} messages',
-                    style: Theme.of(context).textTheme.bodySmall,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                   ),
                   Text(
                     'Cost: \$${state.totalCost.toStringAsFixed(4)}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.green[700],
+                          color: Theme.of(context).colorScheme.primary,
                           fontWeight: FontWeight.bold,
                         ),
                   ),
@@ -205,7 +208,8 @@ class _AICoachScreenState extends ConsumerState<AICoachScreen> {
                   Text(
                     'Coach is typing...',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey[600],
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant,
                           fontStyle: FontStyle.italic,
                         ),
                   ),
@@ -217,15 +221,20 @@ class _AICoachScreenState extends ConsumerState<AICoachScreen> {
           if (state.error != null)
             Container(
               padding: const EdgeInsets.all(16),
-              color: Colors.red[50],
+              color: Theme.of(context).colorScheme.errorContainer,
               child: Row(
                 children: [
-                  Icon(Icons.error_outline, color: Colors.red[700]),
+                  Icon(
+                    Icons.error_outline,
+                    color: Theme.of(context).colorScheme.onErrorContainer,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       state.error!,
-                      style: TextStyle(color: Colors.red[700]),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onErrorContainer,
+                      ),
                     ),
                   ),
                   IconButton(
@@ -252,6 +261,7 @@ class _AICoachScreenState extends ConsumerState<AICoachScreen> {
   }
 
   Widget _buildEmptyState() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -259,13 +269,13 @@ class _AICoachScreenState extends ConsumerState<AICoachScreen> {
           Icon(
             Icons.fitness_center,
             size: 80,
-            color: Colors.grey[400],
+            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 16),
           Text(
             'Your AI Fitness Coach',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: Colors.grey[700],
+                  color: colorScheme.onSurface,
                   fontWeight: FontWeight.bold,
                 ),
           ),
@@ -276,7 +286,7 @@ class _AICoachScreenState extends ConsumerState<AICoachScreen> {
               'Get personalized workout recommendations, form guidance, and fitness advice',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[600],
+                    color: colorScheme.onSurfaceVariant,
                   ),
             ),
           ),
@@ -284,7 +294,7 @@ class _AICoachScreenState extends ConsumerState<AICoachScreen> {
           Text(
             'Choose a quick action or ask a question',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[500],
+                  color: colorScheme.onSurfaceVariant,
                 ),
           ),
         ],
@@ -293,15 +303,16 @@ class _AICoachScreenState extends ConsumerState<AICoachScreen> {
   }
 
   Widget _buildMessageInput() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surface,
         boxShadow: [
           BoxShadow(
             offset: const Offset(0, -2),
             blurRadius: 4,
-            color: Colors.black.withOpacity(0.1),
+            color: colorScheme.shadow.withValues(alpha: 0.15),
           ),
         ],
       ),
@@ -312,8 +323,11 @@ class _AICoachScreenState extends ConsumerState<AICoachScreen> {
               controller: _messageController,
               decoration: InputDecoration(
                 hintText: 'Ask your fitness coach...',
+                filled: true,
+                fillColor: colorScheme.surfaceContainerHighest,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide.none,
                 ),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 20,
@@ -328,7 +342,7 @@ class _AICoachScreenState extends ConsumerState<AICoachScreen> {
           const SizedBox(width: 8),
           IconButton(
             icon: const Icon(Icons.send),
-            color: Theme.of(context).primaryColor,
+            color: colorScheme.primary,
             onPressed: _sendMessage,
           ),
         ],
@@ -357,7 +371,7 @@ class _AICoachScreenState extends ConsumerState<AICoachScreen> {
             Text(
               'Powered by Claude AI',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[600],
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
             ),
           ],

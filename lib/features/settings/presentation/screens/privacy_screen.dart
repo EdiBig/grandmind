@@ -151,7 +151,7 @@ class PrivacyScreen extends ConsumerWidget {
       secondary: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: primary.withOpacity(0.1),
+          color: primary.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(icon, color: primary),
@@ -160,7 +160,7 @@ class PrivacyScreen extends ConsumerWidget {
       subtitle: Text(subtitle),
       value: value,
       onChanged: onChanged,
-      activeColor: primary,
+      activeThumbColor: primary,
     );
   }
 }

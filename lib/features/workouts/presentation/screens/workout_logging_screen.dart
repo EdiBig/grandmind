@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../data/repositories/workout_repository.dart';
+import '../../domain/models/exercise.dart';
 import '../../domain/models/workout.dart';
 import '../../domain/models/workout_log.dart';
-import '../../domain/models/exercise.dart';
-import '../../data/repositories/workout_repository.dart';
 
 class WorkoutLoggingScreen extends ConsumerStatefulWidget {
   final Workout? workout;
@@ -15,34 +15,71 @@ class WorkoutLoggingScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<WorkoutLoggingScreen> createState() => _WorkoutLoggingScreenState();
+  ConsumerState<WorkoutLoggingScreen> createState() =>
+      _WorkoutLoggingScreenState();
 }
 
 class _WorkoutLoggingScreenState extends ConsumerState<WorkoutLoggingScreen> {
-  late DateTime _startTime;
-  int _durationMinutes = 30;
-  int? _caloriesBurned;
-  String? _notes;
   final _notesController = TextEditingController();
+  final _durationController = TextEditingController();
+  TextEditingController? _exerciseSearchController;
+  FocusNode? _exerciseSearchFocus;
+  final List<_ExerciseEntry> _exerciseEntries = [];
+  final Set<String> _contextTags = {};
+  DateTime _selectedDate = DateTime.now();
+  _WorkoutLogTypeOption? _selectedType;
+  int? _energyBefore;
+  int? _energyAfter;
+  bool _showDetails = false;
   bool _isLogging = false;
+  final List<String> _recentExercises = [
+    'Squat',
+    'Push-up',
+    'Deadlift',
+    'Plank',
+  ];
+  final List<String> _exerciseSuggestions = [
+    'Squat',
+    'Push-up',
+    'Deadlift',
+    'Plank',
+    'Bench Press',
+    'Lunge',
+    'Pull-up',
+    'Row',
+    'Shoulder Press',
+    'Bicep Curl',
+    'Tricep Extension',
+    'Burpee',
+  ];
 
   @override
   void initState() {
     super.initState();
-    _startTime = DateTime.now();
     if (widget.workout != null) {
-      _durationMinutes = widget.workout!.estimatedDuration;
-      _caloriesBurned = widget.workout!.caloriesBurned;
+      _durationController.text = widget.workout!.estimatedDuration.toString();
+      _selectedType = _typeOptions.firstWhere(
+        (option) => option.category == widget.workout!.category,
+        orElse: () => _typeOptions.last,
+      );
+      _showDetails = true;
+      for (final exercise in widget.workout!.exercises) {
+        _exerciseEntries.add(_ExerciseEntry(name: exercise.name));
+      }
     }
   }
 
   @override
   void dispose() {
     _notesController.dispose();
+    _durationController.dispose();
+    for (final entry in _exerciseEntries) {
+      entry.dispose();
+    }
     super.dispose();
   }
 
-  Future<void> _logWorkout() async {
+  Future<void> _logWorkout({required bool isQuick}) async {
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -55,28 +92,32 @@ class _WorkoutLoggingScreenState extends ConsumerState<WorkoutLoggingScreen> {
 
     try {
       final repository = ref.read(workoutRepositoryProvider);
+      final durationMinutes = _resolveDuration();
+      final startedAt = DateTime(
+        _selectedDate.year,
+        _selectedDate.month,
+        _selectedDate.day,
+        DateTime.now().hour,
+        DateTime.now().minute,
+      );
+      final completedAt = startedAt.add(Duration(minutes: durationMinutes));
+      final notes = _buildNotesPayload();
 
       final workoutLog = WorkoutLog(
         id: '',
         userId: userId,
         workoutId: widget.workout?.id ?? '',
-        workoutName: widget.workout?.name ?? 'Quick Workout',
-        startedAt: _startTime,
-        completedAt: DateTime.now(),
-        duration: _durationMinutes,
-        exercises: widget.workout?.exercises
-                .map((exercise) => ExerciseLog(
-                      exerciseId: exercise.id,
-                      exerciseName: exercise.name,
-                      type: exercise.type,
-                      sets: [],
-                    ))
-                .toList() ??
-            [],
-        caloriesBurned: _caloriesBurned,
-        notes: _notes,
+        workoutName: widget.workout?.name ??
+            _selectedType?.label ??
+            (isQuick ? 'Quick Workout' : 'Workout'),
+        startedAt: startedAt,
+        completedAt: completedAt,
+        duration: durationMinutes,
+        exercises: isQuick ? [] : _buildExerciseLogs(),
+        caloriesBurned: widget.workout?.caloriesBurned,
+        notes: notes,
         difficulty: widget.workout?.difficulty,
-        category: widget.workout?.category,
+        category: widget.workout?.category ?? _selectedType?.category,
       );
 
       await repository.logWorkout(workoutLog);
@@ -102,48 +143,296 @@ class _WorkoutLoggingScreenState extends ConsumerState<WorkoutLoggingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final headlineStyle = Theme.of(context).textTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.bold,
+        );
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.workout?.name ?? 'Log Workout'),
+        title: const Text('Log Workout'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (widget.workout != null) _buildWorkoutInfo(),
+            Text('Log Workout', style: headlineStyle),
+            const SizedBox(height: 8),
+            _buildDateSelector(),
             const SizedBox(height: 24),
-            _buildDurationPicker(),
-            const SizedBox(height: 24),
-            _buildCaloriesPicker(),
-            const SizedBox(height: 24),
-            _buildNotesField(),
-            const SizedBox(height: 32),
-            _buildLogButton(),
+            _buildTypeSelector(),
+            const SizedBox(height: 20),
+            _buildQuickLogCard(),
+            if (_showDetails) ...[
+              const SizedBox(height: 28),
+              _buildDetailHeader(),
+              const SizedBox(height: 16),
+              _buildExerciseBuilder(),
+              const SizedBox(height: 20),
+              _buildDurationField(),
+              const SizedBox(height: 20),
+              _buildEnergySection(),
+              const SizedBox(height: 20),
+              _buildNotesField(),
+              const SizedBox(height: 20),
+              _buildContextTags(),
+              const SizedBox(height: 28),
+              _buildSaveButton(),
+              const SizedBox(height: 8),
+              _buildCancelLink(),
+            ],
           ],
         ),
       ),
     );
   }
 
-  Widget _buildWorkoutInfo() {
-    if (widget.workout == null) return const SizedBox.shrink();
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Theme.of(context).colorScheme.primary.withOpacity(0.12),
-            Theme.of(context).colorScheme.secondary.withOpacity(0.08),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+  Widget _buildDateSelector() {
+    return Row(
+      children: [
+        Text(
+          'Date',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
         ),
+        const SizedBox(width: 12),
+        TextButton.icon(
+          onPressed: _pickDate,
+          icon: const Icon(Icons.calendar_today, size: 18),
+          label: Text(_formatDate(_selectedDate)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTypeSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Type',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: 12),
+        GridView.count(
+          crossAxisCount: 2,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          childAspectRatio: 2.3,
+          children: _typeOptions.map((option) {
+            final isSelected = _selectedType == option;
+            return InkWell(
+              onTap: () {
+                setState(() {
+                  _selectedType = option;
+                  _showDetails = true;
+                });
+              },
+              borderRadius: BorderRadius.circular(16),
+              child: Ink(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withValues(alpha: 0.15)
+                      : Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.outlineVariant,
+                    width: 1.3,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        option.icon,
+                        color: isSelected
+                            ? Colors.white
+                            : Theme.of(context).colorScheme.primary,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        option.label,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuickLogCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _isLogging ? null : () => _logWorkout(isQuick: true),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: const Text(
+                'I worked out today',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Save details later or keep it simple',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailHeader() {
+    return Row(
+      children: [
+        Text(
+          'Details',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        if (widget.workout != null) ...[
+          const SizedBox(width: 8),
+          Chip(
+            label: Text(widget.workout!.name),
+            backgroundColor:
+                Theme.of(context).colorScheme.surfaceContainerHighest,
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildExerciseBuilder() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Exercise builder',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: 12),
+        Autocomplete<String>(
+          optionsBuilder: (value) {
+            if (value.text.trim().isEmpty) {
+              return const Iterable<String>.empty();
+            }
+            return _exerciseSuggestions.where(
+              (option) => option
+                  .toLowerCase()
+                  .contains(value.text.trim().toLowerCase()),
+            );
+          },
+          onSelected: (selection) {
+            _addExercise(selection);
+          },
+          fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
+            _exerciseSearchController = controller;
+            _exerciseSearchFocus = focusNode;
+            return TextField(
+              controller: controller,
+              focusNode: focusNode,
+              onSubmitted: (_) => _addExercise(controller.text),
+              decoration: InputDecoration(
+                hintText: 'Add exercise',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.add_circle),
+                  onPressed: () => _addExercise(controller.text),
+                ),
+                filled: true,
+                fillColor:
+                    Theme.of(context).colorScheme.surfaceContainerHighest,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _recentExercises.map((exercise) {
+            return ActionChip(
+              label: Text(exercise),
+              onPressed: () => _addExercise(exercise),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 16),
+        ..._exerciseEntries.map(_buildExerciseCard),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: () => _exerciseSearchFocus?.requestFocus(),
+          icon: const Icon(Icons.add),
+          label: const Text('Add another exercise'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildExerciseCard(_ExerciseEntry entry) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-          width: 1.5,
+          color: Theme.of(context).colorScheme.outlineVariant,
         ),
       ),
       child: Column(
@@ -151,41 +440,45 @@ class _WorkoutLoggingScreenState extends ConsumerState<WorkoutLoggingScreen> {
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.fitness_center,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  widget.workout!.name,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.onSurface,
+                  entry.name,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
                       ),
                 ),
               ),
+              IconButton(
+                icon: const Icon(Icons.close, size: 18),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                onPressed: () => _removeExercise(entry),
+                tooltip: 'Remove',
+              ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
+          Text(
+            'Sets  Reps @ Weight',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
+          const SizedBox(height: 8),
           Row(
             children: [
-              _buildInfoBadge(
-                Icons.category,
-                widget.workout!.category.displayName,
+              _buildMiniField(
+                controller: entry.setsController,
+                label: 'Sets',
               ),
-              const SizedBox(width: 12),
-              _buildInfoBadge(
-                Icons.bar_chart,
-                widget.workout!.difficulty.displayName,
+              const SizedBox(width: 8),
+              _buildMiniField(
+                controller: entry.repsController,
+                label: 'Reps',
+              ),
+              const SizedBox(width: 8),
+              _buildMiniField(
+                controller: entry.weightController,
+                label: 'Weight',
               ),
             ],
           ),
@@ -194,241 +487,108 @@ class _WorkoutLoggingScreenState extends ConsumerState<WorkoutLoggingScreen> {
     );
   }
 
-  Widget _buildInfoBadge(IconData icon, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-          width: 1,
+  Widget _buildMiniField({
+    required TextEditingController controller,
+    required String label,
+  }) {
+    return SizedBox(
+      width: 80,
+      child: TextField(
+        controller: controller,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        decoration: InputDecoration(
+          labelText: label,
+          isDense: true,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: 16,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface,
-              fontWeight: FontWeight.w600,
-              fontSize: 13,
-            ),
-          ),
-        ],
       ),
     );
   }
 
-  Widget _buildDurationPicker() {
+  Widget _buildDurationField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Duration',
+          'Duration (optional)',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.onSurface,
               ),
         ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Theme.of(context).colorScheme.primary.withOpacity(0.08),
-                Theme.of(context).colorScheme.primary.withOpacity(0.12),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+        const SizedBox(height: 8),
+        TextField(
+          controller: _durationController,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            hintText: 'How long? (minutes)',
+            filled: true,
+            fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide.none,
             ),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-              width: 1.5,
-            ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: IconButton(
-                  onPressed: () {
-                    if (_durationMinutes > 5) {
-                      setState(() => _durationMinutes -= 5);
-                    }
-                  },
-                  icon: const Icon(Icons.remove_circle),
-                  color: Theme.of(context).colorScheme.primary,
-                  iconSize: 32,
-                ),
-              ),
-              Expanded(
-                child: Center(
-                  child: Column(
-                    children: [
-                      Text(
-                        '$_durationMinutes',
-                        style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                      ),
-                      Text(
-                        'minutes',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.w500,
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Container(
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: IconButton(
-                  onPressed: () {
-                    setState(() => _durationMinutes += 5);
-                  },
-                  icon: const Icon(Icons.add_circle),
-                  color: Theme.of(context).colorScheme.primary,
-                  iconSize: 32,
-                ),
-              ),
-            ],
           ),
         ),
       ],
     );
   }
 
-  Widget _buildCaloriesPicker() {
+  Widget _buildEnergySection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Calories Burned (optional)',
+          'Energy',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.onSurface,
               ),
         ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Theme.of(context).colorScheme.secondary.withOpacity(0.08),
-                Theme.of(context).colorScheme.secondary.withOpacity(0.12),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Theme.of(context).colorScheme.secondary.withOpacity(0.2),
-              width: 1.5,
-            ),
+        const SizedBox(height: 8),
+        _buildEnergyScale(
+          label: 'Before',
+          value: _energyBefore,
+          onSelected: (value) => setState(() => _energyBefore = value),
+        ),
+        const SizedBox(height: 8),
+        _buildEnergyScale(
+          label: 'After',
+          value: _energyAfter,
+          onSelected: (value) => setState(() => _energyAfter = value),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEnergyScale({
+    required String label,
+    required int? value,
+    required ValueChanged<int> onSelected,
+  }) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 60,
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
           ),
-          child: Row(
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Theme.of(context).colorScheme.secondary.withOpacity(0.2),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: IconButton(
-                  onPressed: () {
-                    if ((_caloriesBurned ?? 0) > 10) {
-                      setState(() => _caloriesBurned = (_caloriesBurned ?? 0) - 10);
-                    }
-                  },
-                  icon: const Icon(Icons.remove_circle),
-                  color: Theme.of(context).colorScheme.secondary,
-                  iconSize: 32,
-                ),
-              ),
-              Expanded(
-                child: Center(
-                  child: Column(
-                    children: [
-                      Text(
-                        _caloriesBurned != null ? '$_caloriesBurned' : '--',
-                        style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.secondary,
-                            ),
-                      ),
-                      Text(
-                        'calories',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.w500,
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Container(
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Theme.of(context).colorScheme.secondary.withOpacity(0.2),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: IconButton(
-                  onPressed: () {
-                    setState(() => _caloriesBurned = (_caloriesBurned ?? 0) + 10);
-                  },
-                  icon: const Icon(Icons.add_circle),
-                  color: Theme.of(context).colorScheme.secondary,
-                  iconSize: 32,
-                ),
-              ),
-            ],
+        ),
+        Expanded(
+          child: Wrap(
+            spacing: 6,
+            children: List.generate(5, (index) {
+              final level = index + 1;
+              final isSelected = value == level;
+              return ChoiceChip(
+                label: Text('$level'),
+                selected: isSelected,
+                onSelected: (_) => onSelected(level),
+              );
+            }),
           ),
         ),
       ],
@@ -440,7 +600,7 @@ class _WorkoutLoggingScreenState extends ConsumerState<WorkoutLoggingScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Notes (optional)',
+          'Notes',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: Theme.of(context).colorScheme.onSurface,
@@ -450,20 +610,20 @@ class _WorkoutLoggingScreenState extends ConsumerState<WorkoutLoggingScreen> {
         TextField(
           controller: _notesController,
           decoration: InputDecoration(
-            hintText: 'How did the workout feel?',
+            hintText: 'How did it feel?',
             hintStyle:
                 TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
                 width: 1.5,
               ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
                 width: 1.5,
               ),
             ),
@@ -475,70 +635,258 @@ class _WorkoutLoggingScreenState extends ConsumerState<WorkoutLoggingScreen> {
               ),
             ),
             filled: true,
-            fillColor: Theme.of(context).colorScheme.primary.withOpacity(0.05),
+            fillColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
             contentPadding: const EdgeInsets.all(16),
           ),
-          maxLines: 4,
+          minLines: 3,
+          maxLines: 6,
           style: TextStyle(
             color: Theme.of(context).colorScheme.onSurface,
             fontSize: 15,
           ),
-          onChanged: (value) => _notes = value.isEmpty ? null : value,
         ),
       ],
     );
   }
 
-  Widget _buildLogButton() {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+  Widget _buildContextTags() {
+    const tags = ['Stressed', 'Tired', 'Great', 'Sick'];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Context tags (optional)',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          children: tags.map((tag) {
+            final selected = _contextTags.contains(tag);
+            return FilterChip(
+              label: Text(tag),
+              selected: selected,
+              onSelected: (value) {
+                setState(() {
+                  if (value) {
+                    _contextTags.add(tag);
+                  } else {
+                    _contextTags.remove(tag);
+                  }
+                });
+              },
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSaveButton() {
+    return SizedBox(
+      width: double.infinity,
       child: ElevatedButton(
-        onPressed: _isLogging ? null : _logWorkout,
+        onPressed: _isLogging ? null : () => _logWorkout(isQuick: false),
         style: ElevatedButton.styleFrom(
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          foregroundColor: Colors.white,
-          disabledBackgroundColor:
-              Theme.of(context).colorScheme.primary.withOpacity(0.6),
           padding: const EdgeInsets.symmetric(vertical: 18),
-          minimumSize: const Size(double.infinity, 56),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          elevation: 0,
         ),
         child: _isLogging
             ? const SizedBox(
-                height: 24,
-                width: 24,
+                height: 22,
+                width: 22,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.5,
                   color: Colors.white,
                 ),
               )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Icon(Icons.check_circle, size: 24),
-                  SizedBox(width: 12),
-                  Text(
-                    'Log Workout',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+            : const Text(
+                'Save Workout',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
               ),
       ),
     );
+  }
+
+  Widget _buildCancelLink() {
+    return Center(
+      child: TextButton(
+        onPressed: _isLogging ? null : () => Navigator.of(context).pop(),
+        child: Text(
+          'Cancel',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final selected = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(now.year - 2),
+      lastDate: DateTime(now.year + 1),
+    );
+    if (selected != null) {
+      setState(() => _selectedDate = selected);
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '$month/$day/${date.year}';
+  }
+
+  int _resolveDuration() {
+    final parsed = int.tryParse(_durationController.text.trim());
+    if (parsed != null && parsed > 0) {
+      return parsed;
+    }
+    if (widget.workout != null) {
+      return widget.workout!.estimatedDuration;
+    }
+    return 30;
+  }
+
+  void _addExercise(String name) {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) {
+      return;
+    }
+    if (_exerciseEntries.any((entry) => entry.name == trimmed)) {
+      _exerciseSearchController?.clear();
+      return;
+    }
+    setState(() {
+      _exerciseEntries.add(_ExerciseEntry(name: trimmed));
+      _recentExercises.remove(trimmed);
+      _recentExercises.insert(0, trimmed);
+      _exerciseSearchController?.clear();
+    });
+  }
+
+  void _removeExercise(_ExerciseEntry entry) {
+    setState(() {
+      entry.dispose();
+      _exerciseEntries.remove(entry);
+    });
+  }
+
+  List<ExerciseLog> _buildExerciseLogs() {
+    return _exerciseEntries.map((entry) {
+      final sets = entry.sets;
+      final reps = entry.reps;
+      final weight = entry.weight;
+      final setLogs = <SetLog>[];
+      for (var i = 0; i < sets; i++) {
+        setLogs.add(SetLog(
+          setNumber: i + 1,
+          reps: reps > 0 ? reps : null,
+          weight: weight > 0 ? weight : null,
+        ));
+      }
+      return ExerciseLog(
+        exerciseId: entry.name.toLowerCase().replaceAll(' ', '_'),
+        exerciseName: entry.name,
+        type: ExerciseType.reps,
+        sets: setLogs,
+      );
+    }).toList();
+  }
+
+  String? _buildNotesPayload() {
+    final notes = _notesController.text.trim();
+    final extras = <String>[];
+    if (_energyBefore != null || _energyAfter != null) {
+      final before = _energyBefore?.toString() ?? '-';
+      final after = _energyAfter?.toString() ?? '-';
+      extras.add('Energy before: $before, after: $after');
+    }
+    if (_contextTags.isNotEmpty) {
+      extras.add('Context: ${_contextTags.join(', ')}');
+    }
+    if (notes.isEmpty && extras.isEmpty) {
+      return null;
+    }
+    if (notes.isNotEmpty) {
+      extras.insert(0, notes);
+    }
+    return extras.join('\n');
+  }
+}
+
+class _WorkoutLogTypeOption {
+  const _WorkoutLogTypeOption({
+    required this.label,
+    required this.icon,
+    required this.category,
+  });
+
+  final String label;
+  final IconData icon;
+  final WorkoutCategory? category;
+}
+
+const List<_WorkoutLogTypeOption> _typeOptions = [
+  _WorkoutLogTypeOption(
+    label: 'Strength',
+    icon: Icons.fitness_center,
+    category: WorkoutCategory.strength,
+  ),
+  _WorkoutLogTypeOption(
+    label: 'Cardio',
+    icon: Icons.directions_run,
+    category: WorkoutCategory.cardio,
+  ),
+  _WorkoutLogTypeOption(
+    label: 'Yoga',
+    icon: Icons.self_improvement,
+    category: WorkoutCategory.yoga,
+  ),
+  _WorkoutLogTypeOption(
+    label: 'Walk',
+    icon: Icons.directions_walk,
+    category: WorkoutCategory.cardio,
+  ),
+  _WorkoutLogTypeOption(
+    label: 'Sport',
+    icon: Icons.sports_soccer,
+    category: WorkoutCategory.sports,
+  ),
+  _WorkoutLogTypeOption(
+    label: 'Other',
+    icon: Icons.more_horiz,
+    category: WorkoutCategory.other,
+  ),
+];
+
+class _ExerciseEntry {
+  _ExerciseEntry({
+    required this.name,
+  })  : setsController = TextEditingController(text: '3'),
+        repsController = TextEditingController(text: '10'),
+        weightController = TextEditingController();
+
+  final String name;
+  final TextEditingController setsController;
+  final TextEditingController repsController;
+  final TextEditingController weightController;
+
+  int get sets => int.tryParse(setsController.text) ?? 0;
+  int get reps => int.tryParse(repsController.text) ?? 0;
+  double get weight => double.tryParse(weightController.text) ?? 0;
+
+  void dispose() {
+    setsController.dispose();
+    repsController.dispose();
+    weightController.dispose();
   }
 }

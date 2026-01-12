@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:firebase_auth/firebase_auth.dart';
@@ -54,7 +55,7 @@ class NotificationSchedulerService {
   /// Handle notification tap
   void _handleNotificationTap(NotificationResponse response) {
     // TODO: Navigate to appropriate screen based on payload
-    print('Notification tapped: ${response.payload}');
+    debugPrint('Notification tapped: ${response.payload}');
   }
 
   // ========== WORKOUT REMINDERS ==========

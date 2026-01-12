@@ -126,7 +126,7 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<MeasurementType>(
-                  value: _selectedMeasurementType,
+                  initialValue: _selectedMeasurementType,
                   decoration: const InputDecoration(
                     border: OutlineInputBorder(),
                     hintText: 'Select measurement',

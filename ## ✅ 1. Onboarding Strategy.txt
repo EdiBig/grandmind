@@ -1,0 +1,209 @@
+## ✅ 1. **Onboarding Strategy**
+
+### 🔹 Decision: When to Show Onboarding?
+
+| User Type                       | Show Onboarding?      |
+| ------------------------------- | --------------------- |
+| **New user (email/pass)**       | ✅ Yes                 |
+| **Social sign-in (first time)** | ✅ Yes                 |
+| **Returning user**              | ❌ No, skip onboarding |
+
+> 🔁 **Exception:** Add a manual “Reset onboarding” option in settings for users who want to reconfigure goals/preferences.
+
+### 🔹 How to Track Completion?
+
+Add a `hasCompletedOnboarding: boolean` field in the user profile (`users/{uid}` in Firestore). Default is `false` when created.
+
+---
+
+## ✅ 2. **Auto-Create Minimal User Profile on Login**
+
+### 🔹 Best Practice
+
+✅ **Yes, always auto-create** a minimal user profile if it’s missing. This avoids app crashes and simplifies logic.
+
+Example:
+
+```ts
+// Firestore document structure (users/{uid})
+{
+  uid: 'abc123',
+  email: 'john@doe.com',
+  createdAt: Timestamp,
+  hasCompletedOnboarding: false,
+  signInProvider: 'google' | 'email' | 'apple',
+  preferences: {},
+}
+```
+
+> 🔐 Use Firestore **security rules** to prevent empty or invalid user docs from being written externally.
+
+---
+
+## ✅ 3. **Implementation for Onboarding Check**
+
+### 🔹 Pseudocode Logic
+
+```ts
+onAuthStateChanged((user) => {
+  if (!user) return showLogin();
+
+  const userDoc = await getUserProfile(user.uid);
+
+  if (!userDoc.exists()) {
+    await createMinimalUser(user);
+    return showOnboarding(); // first-time social sign-in
+  }
+
+  if (!userDoc.data().hasCompletedOnboarding) {
+    return showOnboarding();
+  }
+
+  return showHomeScreen();
+});
+```
+
+---
+
+## ✅ 4. **Forgot Password Flow – Isolated and Lightweight**
+
+### 🔹 Goals:
+
+* Clear UX separation from main auth flow
+* Stateless, no side effects unless confirmed
+
+### 🔹 Flow:
+
+1. User taps “Forgot password”
+2. Prompt for email
+3. Call `sendPasswordResetEmail(email)`
+4. Show “Check your inbox” confirmation screen
+
+> 🧼 **No need to create a user document** in this flow. Only touch Firestore on successful login or sign-up.
+
+---
+
+## ✅ 5. **Firebase Rules + UX Tips**
+
+* Enforce that `hasCompletedOnboarding` must be true before accessing certain protected features (e.g., health data).
+* Allow re-onboarding via settings → “Reset goals/preferences”
+* Log onboarding completion with analytics (`onboarding_completed` event)
+
+---
+
+## 🚫 Don’t Do This
+
+* ❌ Don’t block social sign-in users from entering the app just because a profile doc is missing
+* ❌ Don’t store onboarding state in local storage alone—must persist in Firestore
+* ❌ Don’t mix forgot password UI into the main login/signup logic tree—keep it modular
+
+---
+
+1. Auto-Create Minimal User Profile + Onboarding Check
+Future<void> handleUserAuth(User firebaseUser) async {
+  final userRef = FirebaseFirestore.instance.collection('users').doc(firebaseUser.uid);
+  final doc = await userRef.get();
+
+  if (!doc.exists) {
+    // Create minimal profile for first-time sign-ins
+    await userRef.set({
+      'uid': firebaseUser.uid,
+      'email': firebaseUser.email,
+      'createdAt': FieldValue.serverTimestamp(),
+      'hasCompletedOnboarding': false,
+      'signInProvider': firebaseUser.providerData.first.providerId,
+    });
+    // Navigate to onboarding
+    navigatorKey.currentState?.pushReplacementNamed('/onboarding');
+    return;
+  }
+
+  final data = doc.data()!;
+  if (data['hasCompletedOnboarding'] != true) {
+    navigatorKey.currentState?.pushReplacementNamed('/onboarding');
+    return;
+  }
+
+  // User is onboarded — go to main app
+  navigatorKey.currentState?.pushReplacementNamed('/home');
+}
+
+
+Use inside an onAuthStateChanged listener:
+FirebaseAuth.instance.authStateChanges().listen((user) {
+  if (user != null) {
+    handleUserAuth(user);
+  } else {
+    navigatorKey.currentState?.pushReplacementNamed('/login');
+  }
+});
+
+2. Mark Onboarding as Complete
+Future<void> completeOnboarding(User user) async {
+  await FirebaseFirestore.instance
+      .collection('users')
+      .doc(user.uid)
+      .update({'hasCompletedOnboarding': true});
+}
+
+Call it at the end of the onboarding flow, then navigate:
+
+await completeOnboarding(FirebaseAuth.instance.currentUser!);
+Navigator.of(context).pushReplacementNamed('/home');
+
+3. Forgot Password Flow
+
+Lightweight screen:
+
+class ForgotPasswordScreen extends StatefulWidget {
+  @override
+  _ForgotPasswordScreenState createState() => _ForgotPasswordScreenState();
+}
+
+class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+  final _emailController = TextEditingController();
+  bool _emailSent = false;
+
+  void _sendResetLink() async {
+    final email = _emailController.text.trim();
+
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      setState(() => _emailSent = true);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Reset Password')),
+      body: _emailSent
+          ? Center(child: Text('Check your email for a reset link.'))
+          : Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _emailController,
+                    decoration: InputDecoration(labelText: 'Email'),
+                  ),
+                  SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: _sendResetLink,
+                    child: Text('Send Reset Link'),
+                  ),
+                ],
+              ),
+            ),
+    );
+  }
+}
+
+ Firestore Rule Snippet
+
+match /users/{userId} {
+  allow read, write: if request.auth != null && request.auth.uid == userId;
+}
+

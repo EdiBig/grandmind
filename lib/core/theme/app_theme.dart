@@ -11,7 +11,7 @@ class AppTheme {
   /// Light theme configuration
   static ThemeData get lightTheme {
     return themeData(
-      preset: ThemePresets.sunrise,
+      preset: ThemePresets.kinesa,
       brightness: Brightness.light,
     );
   }
@@ -19,7 +19,7 @@ class AppTheme {
   /// Dark theme configuration
   static ThemeData get darkTheme {
     return themeData(
-      preset: ThemePresets.sunrise,
+      preset: ThemePresets.kinesa,
       brightness: Brightness.dark,
     );
   }
@@ -66,18 +66,18 @@ class AppTheme {
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: colorScheme.surface,
-        indicatorColor: colorScheme.primary.withOpacity(0.18),
-        labelTextStyle: MaterialStateProperty.resolveWith(
+        indicatorColor: colorScheme.primary.withValues(alpha: 0.18),
+        labelTextStyle: WidgetStateProperty.resolveWith(
           (states) => TextStyle(
             fontWeight: FontWeight.w600,
-            color: states.contains(MaterialState.selected)
+            color: states.contains(WidgetState.selected)
                 ? colorScheme.primary
                 : colorScheme.onSurfaceVariant,
           ),
         ),
-        iconTheme: MaterialStateProperty.resolveWith(
+        iconTheme: WidgetStateProperty.resolveWith(
           (states) => IconThemeData(
-            color: states.contains(MaterialState.selected)
+            color: states.contains(WidgetState.selected)
                 ? colorScheme.primary
                 : colorScheme.onSurfaceVariant,
           ),
@@ -93,25 +93,25 @@ class AppTheme {
       ),
       segmentedButtonTheme: SegmentedButtonThemeData(
         style: ButtonStyle(
-          backgroundColor: MaterialStateProperty.resolveWith((states) {
-            if (states.contains(MaterialState.selected)) {
-              return colorScheme.primary.withOpacity(0.12);
+          backgroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return colorScheme.primary.withValues(alpha: 0.12);
             }
             return colorScheme.surface;
           }),
-          foregroundColor: MaterialStateProperty.resolveWith((states) {
-            if (states.contains(MaterialState.selected)) {
+          foregroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
               return colorScheme.primary;
             }
             return colorScheme.onSurfaceVariant;
           }),
-          side: MaterialStateProperty.resolveWith((states) {
-            if (states.contains(MaterialState.selected)) {
+          side: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
               return BorderSide(color: colorScheme.primary, width: 1.4);
             }
             return BorderSide(color: colorScheme.outlineVariant);
           }),
-          shape: MaterialStateProperty.all(
+          shape: WidgetStateProperty.all(
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
@@ -158,8 +158,8 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: isDark
-            ? AppColors.greyDark.withOpacity(0.2)
-            : AppColors.greyLight.withOpacity(0.1),
+            ? AppColors.greyDark.withValues(alpha: 0.2)
+            : AppColors.greyLight.withValues(alpha: 0.1),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -275,14 +275,14 @@ class AppTheme {
         size: 24,
       ),
       dividerTheme: DividerThemeData(
-        color: isDark ? AppColors.greyDark.withOpacity(0.3) : AppColors.greyLight,
+        color: isDark ? AppColors.greyDark.withValues(alpha: 0.3) : AppColors.greyLight,
         thickness: 1,
         space: 1,
       ),
       chipTheme: ChipThemeData(
         backgroundColor: (isDark ? AppColors.greyDark : AppColors.greyLight)
-            .withOpacity(0.2),
-        selectedColor: colorScheme.primary.withOpacity(0.2),
+            .withValues(alpha: 0.2),
+        selectedColor: colorScheme.primary.withValues(alpha: 0.2),
         labelStyle: const TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w500,

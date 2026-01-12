@@ -551,13 +551,13 @@ class NutritionRepository {
 
       final daysLogged = mealsByDay.length;
       final totalCalories =
-          meals.fold<double>(0, (sum, meal) => sum + meal.totalCalories);
+          meals.fold<double>(0, (total, meal) => total + meal.totalCalories);
       final totalProtein =
-          meals.fold<double>(0, (sum, meal) => sum + meal.totalProtein);
+          meals.fold<double>(0, (total, meal) => total + meal.totalProtein);
       final totalCarbs =
-          meals.fold<double>(0, (sum, meal) => sum + meal.totalCarbs);
+          meals.fold<double>(0, (total, meal) => total + meal.totalCarbs);
       final totalFat =
-          meals.fold<double>(0, (sum, meal) => sum + meal.totalFat);
+          meals.fold<double>(0, (total, meal) => total + meal.totalFat);
 
       return {
         'averageDailyCalories': (totalCalories / daysLogged).round(),

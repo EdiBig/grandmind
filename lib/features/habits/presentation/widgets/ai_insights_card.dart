@@ -26,15 +26,15 @@ class AIInsightsCard extends ConsumerWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            primary.withOpacity(0.1),
-            primary.withOpacity(0.05),
+            primary.withValues(alpha: 0.1),
+            primary.withValues(alpha: 0.05),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: primary.withOpacity(0.2),
+          color: primary.withValues(alpha: 0.2),
         ),
       ),
       child: Column(
@@ -45,7 +45,7 @@ class AIInsightsCard extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: primary.withOpacity(0.2),
+                  color: primary.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
@@ -89,10 +89,10 @@ class AIInsightsCard extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.red.withOpacity(0.1),
+        color: Colors.red.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.red.withOpacity(0.3),
+          color: Colors.red.withValues(alpha: 0.3),
         ),
       ),
       child: Column(
@@ -134,15 +134,15 @@ class AIInsightsCard extends ConsumerWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            primary.withOpacity(0.15),
-            primary.withOpacity(0.05),
+            primary.withValues(alpha: 0.15),
+            primary.withValues(alpha: 0.05),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: primary.withOpacity(0.3),
+          color: primary.withValues(alpha: 0.3),
         ),
       ),
       child: Column(
@@ -156,7 +156,7 @@ class AIInsightsCard extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: primary.withOpacity(0.2),
+                    color: primary.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(

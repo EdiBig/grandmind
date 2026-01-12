@@ -41,7 +41,7 @@ class _LogActivityScreenState extends State<LogActivityScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _activityType,
+                initialValue: _activityType,
                 decoration: const InputDecoration(
                   labelText: 'Activity type',
                   border: OutlineInputBorder(),

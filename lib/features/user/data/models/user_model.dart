@@ -14,6 +14,8 @@ class UserModel {
   final String? goal;
   final Map<String, dynamic>? onboarding;
   final Map<String, dynamic>? preferences;
+  final bool hasCompletedOnboarding;
+  final String? signInProvider;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -31,6 +33,8 @@ class UserModel {
     this.goal,
     this.onboarding,
     this.preferences,
+    this.hasCompletedOnboarding = false,
+    this.signInProvider,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -52,6 +56,10 @@ class UserModel {
       goal: data['goal'],
       onboarding: data['onboarding'] as Map<String, dynamic>?,
       preferences: data['preferences'] as Map<String, dynamic>?,
+      hasCompletedOnboarding:
+          data['hasCompletedOnboarding'] as bool? ??
+          (data['onboarding']?['completed'] as bool? ?? false),
+      signInProvider: data['signInProvider'] as String?,
       createdAt: _parseTimestampOrNow(data['createdAt']),
       updatedAt: _parseTimestampOrNow(data['updatedAt']),
     );
@@ -69,6 +77,7 @@ class UserModel {
 
   Map<String, dynamic> toFirestore() {
     return {
+      'uid': id,
       'email': email,
       'displayName': displayName,
       'photoUrl': photoUrl,
@@ -81,6 +90,8 @@ class UserModel {
       'goal': goal,
       'onboarding': onboarding,
       'preferences': preferences,
+      'hasCompletedOnboarding': hasCompletedOnboarding,
+      'signInProvider': signInProvider,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
     };
@@ -100,6 +111,8 @@ class UserModel {
     String? goal,
     Map<String, dynamic>? onboarding,
     Map<String, dynamic>? preferences,
+    bool? hasCompletedOnboarding,
+    String? signInProvider,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -117,6 +130,9 @@ class UserModel {
       goal: goal ?? this.goal,
       onboarding: onboarding ?? this.onboarding,
       preferences: preferences ?? this.preferences,
+      hasCompletedOnboarding:
+          hasCompletedOnboarding ?? this.hasCompletedOnboarding,
+      signInProvider: signInProvider ?? this.signInProvider,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

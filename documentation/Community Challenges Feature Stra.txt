@@ -1,0 +1,901 @@
+﻿# Community Challenges Feature: Strategy & Implementation Guide
+
+## PART 1: What Samsung Health Does Well (Analysis)
+
+### Strengths to Adopt:
+âœ… **Visual Progress Journey** - Gamified map with milestone markers (not just numbers)
+âœ… **Massive Scale** - Shows 696,357 participants (social proof, FOMO)
+âœ… **Time-Bound** - "19 days left" creates urgency
+âœ… **Simple Entry** - Choose activity (Walking/Running) and join
+âœ… **Dual Metrics** - Both achievements (steps) AND rankings (competitive)
+âœ… **Low Friction** - Join with one button, no complex setup
+âœ… **Seasonal Theming** - "Igloo, January" with winter visuals
+
+### What Kinesa Should Do Differently:
+
+âŒ **Avoid Pure Competition** - Rankings can be demotivating for beginners
+âœ… **Add "Non-Competitive" Option** - Let users opt out of rankings
+âœ… **Diverse Activities** - Not just walking/running (strength, yoga, habits)
+âœ… **Smaller Pods** - 5-20 people "accountability groups" vs 696k strangers
+âœ… **Context-Aware** - Adjust goals based on user's energy/health state
+âœ… **Mental Health Focus** - Challenges include rest days, mindfulness
+
+---
+
+## PART 2: Kinesa's "Unity" Feature - Product Spec
+
+### Feature Name Options:
+1. **"Unity"** (simple, friendly)
+2. **"Challenges"** (clear, competitive)
+3. **"Move Unity"** (action-oriented)
+4. **"Circles"** (suggests small groups)
+
+**Recommended: "Unity"** (proven by Samsung, warm tone fits Kinesa brand)
+
+---
+
+### Two Challenge Types:
+
+#### TYPE 1: **Community Challenges** (Public, Large-Scale)
+Like Samsung's Igloo challenge - thousands of participants
+
+**Examples:**
+- "January Movement Month" - Log 15 workouts in January
+- "Spring Step Challenge" - 500,000 collective steps as a community
+- "International Yoga Day" - 10,000 people do yoga on June 21st
+
+**Features:**
+- Public participation (anyone can join)
+- Collective goals (community works together)
+- Individual milestones (personal progress tracked)
+- Opt-in rankings (see where you rank, but not required)
+- Themed visuals (seasonal, fun)
+
+#### TYPE 2: **Accountability Pods** (Private, Small-Scale)
+Kinesa's differentiation - intimate support groups
+
+**Examples:**
+- 5 friends challenge each other to 4 workouts/week
+- Colleagues compete in a "Step Challenge" at work
+- ADHD support group with flexible, non-judgmental tracking
+
+**Features:**
+- Private (invite-only or matched by algorithm)
+- 3-20 people max
+- Shared check-ins (not just numbers)
+- Mutual encouragement (comments, reactions)
+- No public leaderboards (safe space)
+
+---
+
+### User Experience Flow:
+
+#### **Screen 1: Unity Hub** (Main Screen)
+
+```
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚  Unity                        [Â·Â·Â·]  â”‚
+â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+â”‚                                         â”‚
+â”‚  [Avatar]   Level 3      17 Friends    â”‚
+â”‚                                         â”‚
+â”‚  [Create Challenge Button]              â”‚
+â”‚                                         â”‚
+â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+â”‚  Active Challenges (2)                  â”‚
+â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”‚
+â”‚  â”‚ ðŸŽ¯ My Workout Pod                 â”‚ â”‚
+â”‚  â”‚ 5 members Â· Private               â”‚ â”‚
+â”‚  â”‚                                   â”‚ â”‚
+â”‚  â”‚ This Week: 12/20 workouts        â”‚ â”‚
+â”‚  â”‚ [Progress Bar: 60%]              â”‚ â”‚
+â”‚  â”‚                                   â”‚ â”‚
+â”‚  â”‚ You: 3/4 âœ“  Sarah: 2/4  Tom: 4/4 â”‚ â”‚
+â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜ â”‚
+â”‚                                         â”‚
+â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”‚
+â”‚  â”‚ ðŸŒ January Movement  [NEW]        â”‚ â”‚
+â”‚  â”‚ 45,231 participants               â”‚ â”‚
+â”‚  â”‚                                   â”‚ â”‚
+â”‚  â”‚ [Journey Map Visual]              â”‚ â”‚
+â”‚  â”‚ Milestone: 100,000 steps          â”‚ â”‚
+â”‚  â”‚                                   â”‚ â”‚
+â”‚  â”‚ Your progress: 12,450 steps       â”‚ â”‚
+â”‚  â”‚ [Join Button]                     â”‚ â”‚
+â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜ â”‚
+â”‚                                         â”‚
+â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+â”‚  Discover Challenges                    â”‚
+â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+â”‚  â€¢ 30-Day Yoga Journey (12k members)   â”‚
+â”‚  â€¢ Office Step Challenge (Invite-only)  â”‚
+â”‚  â€¢ ADHD Fitness Friends (289 members)   â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+```
+
+#### **Screen 2: Challenge Detail** (Like Samsung's Igloo screen)
+
+```
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚  <  January Movement           [âš™] [ðŸ“¤] â”‚
+â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+â”‚                                         â”‚
+â”‚  [Visual Progress Map]                  â”‚
+â”‚  â€¢ Milestone: 20k steps âœ“               â”‚
+â”‚  â€¢ Milestone: 50k steps (in progress)   â”‚
+â”‚  â€¢ Milestone: 100k steps (locked)       â”‚
+â”‚                                         â”‚
+â”‚  Your Progress: 12,450 / 100,000        â”‚
+â”‚  [Progress Bar]                         â”‚
+â”‚                                         â”‚
+â”‚  19 days left                          â”‚
+â”‚                                         â”‚
+â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+â”‚  [Tab: Overview] [Tab: Feed] [Tab: Rank]â”‚
+â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+â”‚  OVERVIEW TAB:                          â”‚
+â”‚                                         â”‚
+â”‚  Your Stats:                            â”‚
+â”‚  â€¢ Total steps: 12,450                  â”‚
+â”‚  â€¢ Workouts logged: 5                   â”‚
+â”‚  â€¢ Current streak: 3 days               â”‚
+â”‚                                         â”‚
+â”‚  Community Stats:                       â”‚
+â”‚  â€¢ 45,231 participants                  â”‚
+â”‚  â€¢ 5.2M total steps                     â”‚
+â”‚  â€¢ 78% completion rate                  â”‚
+â”‚                                         â”‚
+â”‚  [View My Progress Details]             â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+```
+
+#### **Screen 3: Create Challenge**
+
+```
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚  <  Create Challenge                    â”‚
+â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+â”‚  Challenge Type:                        â”‚
+â”‚  â—‹ Community Challenge (Public)         â”‚
+â”‚  â— Accountability Pod (Private)         â”‚
+â”‚                                         â”‚
+â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+â”‚  Challenge Name:                        â”‚
+â”‚  [Input: "Office Step Challenge"]      â”‚
+â”‚                                         â”‚
+â”‚  Goal:                                  â”‚
+â”‚  [ ] Step Count:  10,000 steps/week     â”‚
+â”‚  [âœ“] Workouts:    4 workouts/week       â”‚
+â”‚  [ ] Habit:       Custom habit daily    â”‚
+â”‚  [ ] Distance:    5K per week           â”‚
+â”‚                                         â”‚
+â”‚  Duration:                              â”‚
+â”‚  â—‹ 1 week   â— 2 weeks   â—‹ 1 month      â”‚
+â”‚  â—‹ Custom: [__] days                    â”‚
+â”‚                                         â”‚
+â”‚  Privacy:                               â”‚
+â”‚  â— Invite Only (Share link with friends)â”‚
+â”‚  â—‹ Open (Anyone can join)               â”‚
+â”‚                                         â”‚
+â”‚  Features:                              â”‚
+â”‚  [âœ“] Rankings/Leaderboard               â”‚
+â”‚  [âœ“] Activity feed (members can post)   â”‚
+â”‚  [âœ“] Allow members to invite others     â”‚
+â”‚                                         â”‚
+â”‚  [Create Challenge Button]              â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+```
+
+---
+
+## PART 3: Legal & Compliance Requirements
+
+### Critical Legal Considerations:
+
+#### 1. **GDPR/UK Data Protection Act Compliance**
+
+**Data You'll Collect:**
+- User participation in challenges (public vs private)
+- Progress metrics (steps, workouts, rankings)
+- Social interactions (comments, reactions)
+- Potentially: Profile visibility, usernames, photos
+
+**Legal Requirements:**
+
+âœ… **Consent:** Users must explicitly opt-in to challenges
+- Add checkbox during challenge join: "I agree to share my progress with challenge participants"
+- Separate consent for public vs private challenges
+
+âœ… **Data Minimization:** Only collect necessary data
+- Don't require real names (allow usernames)
+- Don't expose sensitive health data publicly
+- Rankings should be opt-in, not default
+
+âœ… **Right to be Forgotten:** Users can leave challenges and delete data
+- "Leave Challenge" button â†’ removes user from rankings, anonymizes their contributions
+- "Delete My Data" in settings â†’ removes all challenge history
+
+âœ… **Age Restrictions:** Users under 16 need parental consent (UK GDPR)
+- Challenge features should be age-gated
+- Or require parental email confirmation for under-16s
+
+**Implementation:**
+
+```sql
+-- Add to Terms of Service:
+CREATE TABLE challenge_consent (
+    consent_id UUID PRIMARY KEY,
+    user_id UUID REFERENCES users(user_id),
+    challenge_id UUID REFERENCES challenges(challenge_id),
+    consent_type VARCHAR(50), -- 'public_ranking', 'data_sharing', 'activity_feed'
+    granted_at TIMESTAMPTZ,
+    revoked_at TIMESTAMPTZ
+);
+```
+
+#### 2. **Health & Safety Disclaimers**
+
+**Risk:** Competitive challenges can encourage overexertion, injuries
+
+**Required Warnings:**
+
+```markdown
+## Challenge Health Disclaimer (Show when joining)
+
+âš ï¸ **Before You Join This Challenge:**
+
+- Consult your doctor before starting any new exercise program, especially if you have medical conditions
+- Listen to your body. If you experience pain, dizziness, or shortness of breath, stop immediately
+- Challenges are for motivation, not medical advice. We are not liable for injuries
+- You participate at your own risk
+
+By joining, you acknowledge you understand these risks and agree to exercise safely.
+
+[âœ“] I understand and agree  [Join Challenge]
+```
+
+Add this to **Terms of Service:**
+
+```markdown
+## Section: Community Challenges
+
+10.1 Voluntary Participation
+You voluntarily participate in challenges. Kinesa is not responsible for injuries, health issues, or adverse effects resulting from participation.
+
+10.2 Medical Disclaimer
+Challenges are motivational tools, not medical programs. Always consult a healthcare professional before increasing exercise intensity.
+
+10.3 Age Restrictions
+Users under 16 may only participate in challenges with verified parental consent.
+
+10.4 Competitive Activities
+Rankings and leaderboards are optional. You may opt out at any time without losing access to challenges.
+```
+
+#### 3. **Content Moderation** (If Activity Feed Enabled)
+
+**Risk:** Users post inappropriate content, harassment, spam
+
+**Requirements:**
+
+âœ… **Community Guidelines:**
+
+```markdown
+## Challenge Community Guidelines
+
+Allowed:
+âœ“ Encouragement and support
+âœ“ Sharing progress and tips
+âœ“ Asking questions
+âœ“ Celebrating achievements
+
+Not Allowed:
+âœ— Harassment, bullying, or mean comments
+âœ— Explicit content or profanity
+âœ— Spam or promotional content
+âœ— Discussing politics, religion (unless challenge-specific)
+âœ— Medical advice or diagnosis
+
+Violations result in:
+1st offense: Warning
+2nd offense: Removal from challenge
+3rd offense: Account suspension
+```
+
+âœ… **Report/Block Features:**
+- Every post has "Report" button
+- Users can block other users
+- Reported content reviewed within 24 hours
+
+âœ… **Automated Moderation:**
+- Use profanity filter (e.g., bad-words library)
+- Flag posts with banned keywords
+- Rate limit posting (max 10 posts/hour to prevent spam)
+
+**Implementation:**
+
+```sql
+CREATE TABLE challenge_posts (
+    post_id UUID PRIMARY KEY,
+    challenge_id UUID REFERENCES challenges(challenge_id),
+    user_id UUID REFERENCES users(user_id),
+    content TEXT NOT NULL,
+    flagged BOOLEAN DEFAULT FALSE,
+    flagged_reason TEXT,
+    moderated_by UUID, -- admin who reviewed
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE post_reports (
+    report_id UUID PRIMARY KEY,
+    post_id UUID REFERENCES challenge_posts(post_id),
+    reported_by UUID REFERENCES users(user_id),
+    reason VARCHAR(100), -- 'harassment', 'spam', 'inappropriate'
+    status VARCHAR(20) DEFAULT 'pending', -- 'pending', 'reviewed', 'actioned'
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+#### 4. **Prize/Reward Regulations** (If You Add Prizes Later)
+
+**UK Regulations:**
+
+- **Free-to-Enter:** If prizes are offered, challenges must be free to enter (no purchase required)
+- **Gambling Act 2005:** Avoid anything that could be considered gambling
+- **Tax Implications:** Prizes over Â£100 may have tax implications for winners
+- **Terms & Conditions:** Must clearly state eligibility, how winners are chosen, prize details
+
+**Recommendation for MVP:** No prizes initially. Just intrinsic motivation (badges, progress, community).
+
+If you add prizes later:
+- Keep them low-value (e.g., Â£10 voucher, free Premium month)
+- Clearly state "No purchase necessary"
+- Random draw or achievement-based (not gambling)
+
+---
+
+## PART 4: Database Schema for Challenges
+
+```sql
+-- ============================================================================
+-- CHALLENGES FEATURE SCHEMA
+-- ============================================================================
+
+-- Main challenges table
+CREATE TABLE challenges (
+    challenge_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    
+    -- Basic info
+    challenge_name VARCHAR(200) NOT NULL,
+    description TEXT,
+    challenge_type VARCHAR(50) NOT NULL CHECK (challenge_type IN ('community', 'pod')),
+    
+    -- Goal definition
+    goal_type VARCHAR(50) NOT NULL, -- 'step_count', 'workout_count', 'habit_streak', 'distance'
+    goal_target INTEGER NOT NULL, -- e.g., 100000 steps, 12 workouts
+    goal_unit VARCHAR(20), -- 'steps', 'workouts', 'km'
+    
+    -- Time bounds
+    start_date TIMESTAMPTZ NOT NULL,
+    end_date TIMESTAMPTZ NOT NULL,
+    
+    -- Privacy
+    visibility VARCHAR(20) DEFAULT 'public' CHECK (visibility IN ('public', 'private', 'invite_only')),
+    
+    -- Features
+    has_rankings BOOLEAN DEFAULT TRUE,
+    has_activity_feed BOOLEAN DEFAULT FALSE,
+    allow_member_invites BOOLEAN DEFAULT TRUE,
+    
+    -- Visual
+    theme VARCHAR(50), -- 'winter', 'spring', 'summer', 'fall', 'custom'
+    cover_image_url TEXT,
+    
+    -- Meta
+    created_by UUID REFERENCES users(user_id),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    participant_count INTEGER DEFAULT 0,
+    
+    -- Moderation
+    is_active BOOLEAN DEFAULT TRUE,
+    flagged BOOLEAN DEFAULT FALSE,
+    flagged_reason TEXT
+);
+
+-- User participation
+CREATE TABLE challenge_participants (
+    participant_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    challenge_id UUID NOT NULL REFERENCES challenges(challenge_id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    
+    -- Participation
+    joined_at TIMESTAMPTZ DEFAULT NOW(),
+    left_at TIMESTAMPTZ, -- NULL if still active
+    
+    -- Progress
+    current_progress INTEGER DEFAULT 0, -- steps, workouts, etc.
+    last_activity_at TIMESTAMPTZ,
+    
+    -- Privacy preferences
+    opt_in_rankings BOOLEAN DEFAULT TRUE,
+    opt_in_activity_feed BOOLEAN DEFAULT TRUE,
+    display_name VARCHAR(100), -- Can be different from real name
+    
+    -- Consent
+    health_disclaimer_accepted BOOLEAN DEFAULT FALSE,
+    data_sharing_consent BOOLEAN DEFAULT FALSE,
+    
+    CONSTRAINT unique_challenge_participant UNIQUE(challenge_id, user_id)
+);
+
+-- Activity feed posts (if enabled)
+CREATE TABLE challenge_posts (
+    post_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    challenge_id UUID NOT NULL REFERENCES challenges(challenge_id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    
+    content TEXT NOT NULL CHECK (LENGTH(content) <= 500), -- Max 500 chars
+    
+    -- Engagement
+    likes_count INTEGER DEFAULT 0,
+    comments_count INTEGER DEFAULT 0,
+    
+    -- Moderation
+    flagged BOOLEAN DEFAULT FALSE,
+    flagged_reason TEXT,
+    moderated_by UUID REFERENCES users(user_id),
+    hidden BOOLEAN DEFAULT FALSE,
+    
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Post reactions (likes/emoji)
+CREATE TABLE challenge_post_reactions (
+    reaction_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    post_id UUID NOT NULL REFERENCES challenge_posts(post_id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    reaction_type VARCHAR(20) DEFAULT 'like', -- 'like', 'fire', 'strong', 'clap'
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    
+    CONSTRAINT unique_post_reaction UNIQUE(post_id, user_id)
+);
+
+-- Comments on posts
+CREATE TABLE challenge_post_comments (
+    comment_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    post_id UUID NOT NULL REFERENCES challenge_posts(post_id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    
+    content TEXT NOT NULL CHECK (LENGTH(content) <= 300),
+    
+    flagged BOOLEAN DEFAULT FALSE,
+    hidden BOOLEAN DEFAULT FALSE,
+    
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Milestones within challenges
+CREATE TABLE challenge_milestones (
+    milestone_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    challenge_id UUID NOT NULL REFERENCES challenges(challenge_id) ON DELETE CASCADE,
+    
+    milestone_target INTEGER NOT NULL, -- e.g., 20000 steps, 5 workouts
+    milestone_name VARCHAR(100), -- e.g., "First Checkpoint"
+    reward_badge VARCHAR(50), -- e.g., "bronze_medal"
+    
+    order_index INTEGER, -- Display order
+    
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- User milestone achievements
+CREATE TABLE user_milestone_achievements (
+    achievement_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    milestone_id UUID NOT NULL REFERENCES challenge_milestones(milestone_id) ON DELETE CASCADE,
+    challenge_id UUID NOT NULL REFERENCES challenges(challenge_id) ON DELETE CASCADE,
+    
+    achieved_at TIMESTAMPTZ DEFAULT NOW(),
+    
+    CONSTRAINT unique_user_milestone UNIQUE(user_id, milestone_id)
+);
+
+-- Indexes for performance
+CREATE INDEX idx_challenges_type ON challenges(challenge_type);
+CREATE INDEX idx_challenges_active ON challenges(is_active, end_date);
+CREATE INDEX idx_participants_challenge ON challenge_participants(challenge_id);
+CREATE INDEX idx_participants_user ON challenge_participants(user_id);
+CREATE INDEX idx_posts_challenge ON challenge_posts(challenge_id, created_at DESC);
+CREATE INDEX idx_milestones_challenge ON challenge_milestones(challenge_id, order_index);
+```
+
+---
+
+## PART 5: Response to Your AI Code Assistant
+
+Here's what to tell your AI code assistant:
+
+---
+
+### **Current Status & Next Steps**
+
+**Good work so far on implementing:**
+âœ… "Add to My Routines" with Firestore  
+âœ… "Share" with native share sheet  
+âœ… My Routines screen with grid/search/sort  
+
+---
+
+### **NEW FEATURE: Community Challenges ("Unity")**
+
+We're adding a Samsung Health-style "Unity" feature for community challenges and accountability pods.
+
+**Architecture Decision:**
+
+**Use Firestore for MVP**, not API endpoints yet. Reasons:
+1. Real-time updates (leaderboards, activity feed)
+2. Faster development
+3. Scales to 100k users easily
+4. We can add API layer later if needed
+
+---
+
+### **Firestore Collections to Create:**
+
+```javascript
+// Collection: challenges
+{
+  challengeId: string,
+  name: string,
+  description: string,
+  type: 'community' | 'pod', // community = public, pod = private
+  goalType: 'steps' | 'workouts' | 'habit' | 'distance',
+  goalTarget: number, // e.g., 100000 steps
+  startDate: Timestamp,
+  endDate: Timestamp,
+  visibility: 'public' | 'private' | 'invite_only',
+  hasRankings: boolean,
+  hasActivityFeed: boolean,
+  theme: string, // 'winter', 'spring', etc.
+  coverImageUrl: string,
+  createdBy: string, // userId
+  createdAt: Timestamp,
+  participantCount: number,
+  isActive: boolean
+}
+
+// Collection: challengeParticipants
+{
+  participantId: string,
+  challengeId: string,
+  userId: string,
+  joinedAt: Timestamp,
+  leftAt: Timestamp | null,
+  currentProgress: number, // steps, workouts, etc.
+  lastActivityAt: Timestamp,
+  optInRankings: boolean,
+  optInActivityFeed: boolean,
+  displayName: string, // Can differ from real name
+  healthDisclaimerAccepted: boolean,
+  dataSharingConsent: boolean
+}
+
+// Collection: challengePosts (if activity feed enabled)
+{
+  postId: string,
+  challengeId: string,
+  userId: string,
+  content: string, // max 500 chars
+  likesCount: number,
+  commentsCount: number,
+  flagged: boolean,
+  hidden: boolean,
+  createdAt: Timestamp
+}
+
+// Collection: challengeMilestones
+{
+  milestoneId: string,
+  challengeId: string,
+  target: number, // e.g., 20000 steps
+  name: string,
+  rewardBadge: string, // e.g., 'bronze_medal'
+  orderIndex: number
+}
+
+// Collection: userMilestoneAchievements
+{
+  achievementId: string,
+  userId: string,
+  milestoneId: string,
+  challengeId: string,
+  achievedAt: Timestamp
+}
+```
+
+---
+
+### **Required Screens (Build These):**
+
+1. **`together_hub_screen.dart`**
+   - Shows user's active challenges
+   - "Create Challenge" button
+   - Discover public challenges
+   - User level + friend count (gamification light)
+
+2. **`challenge_detail_screen.dart`**
+   - Visual progress map (like Samsung's Igloo)
+   - Milestones with checkmarks
+   - Progress bar
+   - Tabs: Overview / Feed / Rankings
+   - "19 days left" countdown
+   - Share button
+
+3. **`create_challenge_screen.dart`**
+   - Challenge type (Community vs Pod)
+   - Goal selection (steps, workouts, habits, distance)
+   - Duration picker
+   - Privacy settings
+   - Features toggles (rankings, feed)
+
+4. **`challenge_rankings_screen.dart`**
+   - Leaderboard (if opt-in)
+   - User's rank highlighted
+   - Top 10 + user's position
+   - Pagination for full rankings
+
+5. **`challenge_activity_feed_screen.dart`**
+   - Social feed of posts
+   - Like/comment functionality
+   - Report/block options
+
+---
+
+### **Legal Requirements to Implement:**
+
+**1. Health Disclaimer Modal (before joining challenge):**
+
+```dart
+// Show this modal when user taps "Join Challenge"
+showHealthDisclaimerDialog(
+  title: "Before You Join",
+  content: """
+  âš ï¸ Important:
+  
+  â€¢ Consult your doctor before starting new exercise
+  â€¢ Stop if you experience pain or discomfort
+  â€¢ This challenge is for motivation, not medical advice
+  â€¢ You participate at your own risk
+  
+  Kinesa is not liable for injuries resulting from participation.
+  """,
+  onAccept: () {
+    // User accepted, proceed to join
+    joinChallenge(challengeId);
+  }
+);
+```
+
+**2. Data Sharing Consent (during join flow):**
+
+```dart
+// After health disclaimer, show consent options
+showDataSharingConsent(
+  options: [
+    "Share my progress in rankings (optional)",
+    "Share my posts in activity feed (optional)",
+    "Allow my display name to be visible"
+  ],
+  onSubmit: (selections) {
+    // Save preferences to challengeParticipants
+    updateParticipantConsent(userId, challengeId, selections);
+  }
+);
+```
+
+**3. Age Gate (check user age before allowing challenge features):**
+
+```dart
+// During onboarding or first challenge access
+if (userAge < 16) {
+  showAgeRestrictionDialog(
+    message: "You must be 16+ to join challenges, or have parental consent.",
+    actions: [
+      "Enter Parent Email for Consent",
+      "I'll Come Back When I'm 16"
+    ]
+  );
+}
+```
+
+**4. Report/Block Features (in activity feed):**
+
+```dart
+// Each post has overflow menu
+showPostMenu(
+  options: [
+    "Report Post" -> showReportDialog(reasons: ["Harassment", "Spam", "Inappropriate"]),
+    "Block User" -> confirmBlockUser(userId),
+    "Hide Post" -> hidePost(postId)
+  ]
+);
+```
+
+---
+
+### **Answers to Your Questions:**
+
+**Q1: Should I replace Firestore with POST /api/workouts/save, or do both?**
+
+**A:** Keep Firestore for now. For challenges, Firestore is better suited because:
+- Real-time updates (leaderboards change live)
+- Simpler for MVP
+- You can add API endpoints later for analytics/webhooks if needed
+
+**Q2: Do you want share tracking now?**
+
+**A:** Yes, but keep it simple. When user shares a challenge:
+
+```dart
+// In workout_share_helper.dart, add:
+Future<void> trackChallengeShare({
+  required String challengeId,
+  required String userId,
+  required String shareMethod, // 'whatsapp', 'copy_link', etc.
+}) async {
+  await FirebaseFirestore.instance.collection('challengeShares').add({
+    'challengeId': challengeId,
+    'userId': userId,
+    'shareMethod': shareMethod,
+    'sharedAt': FieldValue.serverTimestamp(),
+  });
+}
+```
+
+**Q3: Should I add deep-link configuration now?**
+
+**A:** Not yet. Deep links require:
+- iOS: Universal Links setup (apple-app-site-association file on domain)
+- Android: App Links setup (assetlinks.json on domain)
+- Web landing page for non-app users
+
+**Do this in Phase 2 after MVP launch.** For now, share links can just be:
+- `https://kinesa.app/challenge/[challengeId]` (shows "Download app" landing page if not installed)
+
+---
+
+### **Priority Build Order:**
+
+**Week 1:**
+1. Create Firestore collections (challenges, challengeParticipants, challengeMilestones)
+2. Build `together_hub_screen.dart` (basic list view)
+3. Build `create_challenge_screen.dart` (simple form)
+4. Implement join/leave challenge logic
+
+**Week 2:**
+5. Build `challenge_detail_screen.dart` with progress visualization
+6. Implement milestone tracking
+7. Add health disclaimer modal (legal requirement)
+8. Add data sharing consent (legal requirement)
+
+**Week 3:**
+9. Build `challenge_rankings_screen.dart` (if hasRankings = true)
+10. Build `challenge_activity_feed_screen.dart` (if hasActivityFeed = true)
+11. Implement report/block features (legal requirement)
+12. Add age gate check (legal requirement)
+
+**Week 4:**
+13. Polish UI (visual progress maps, animations)
+14. Add share functionality for challenges
+15. Testing & bug fixes
+16. Update Terms of Service & Privacy Policy
+
+---
+
+### **Files to Create/Modify:**
+
+**New Files:**
+```
+lib/features/challenges/
+  data/
+    models/
+      - challenge_model.dart
+      - challenge_participant_model.dart
+      - challenge_milestone_model.dart
+    repositories/
+      - challenge_repository.dart
+  presentation/
+    screens/
+      - together_hub_screen.dart
+      - challenge_detail_screen.dart
+      - create_challenge_screen.dart
+      - challenge_rankings_screen.dart
+      - challenge_activity_feed_screen.dart
+    widgets/
+      - challenge_card.dart
+      - progress_map_widget.dart
+      - milestone_marker.dart
+      - health_disclaimer_dialog.dart
+      - data_consent_dialog.dart
+```
+
+**Modified Files:**
+```
+lib/core/
+  navigation/
+    - app_router.dart (add challenge routes)
+    
+lib/features/settings/
+  presentation/screens/
+    - settings_screen.dart (add "Unity" section)
+```
+
+---
+
+### **UI Design Notes:**
+
+**Visual Progress Map (Samsung-style):**
+- Use `CustomPaint` widget to draw journey path
+- Milestones as circular markers with checkmarks
+- User's progress as animated avatar moving along path
+- Background: Themed illustration (winter scene, mountain path, etc.)
+
+**Card Design:**
+- Match existing Kinesa card style (rounded corners, soft shadows)
+- Use brand teal for active challenges
+- Coral accent for "Join" buttons
+- Gray for completed/past challenges
+
+**Typography:**
+- Challenge names: Bold, 22pt
+- Participant count: Regular, 15pt, gray
+- Progress numbers: Bold, 28pt, teal
+- Time remaining: Regular, 13pt, coral
+
+---
+
+### **Testing Checklist:**
+
+Before launch, verify:
+- [ ] Health disclaimer shows before joining
+- [ ] Users under 16 see age gate
+- [ ] Leaving challenge removes user from rankings
+- [ ] Reported posts are flagged in Firestore
+- [ ] Share functionality works (tracks in challengeShares)
+- [ ] Progress updates in real-time
+- [ ] Milestones trigger achievement notifications
+- [ ] Rankings update when users log activities
+
+---
+
+**Ready to build? Start with the Firestore collections and `together_hub_screen.dart`. Let me know when that's done and we'll tackle the detail screen next.**
+
+---
+
+## FINAL SUMMARY FOR YOU
+
+**What Makes Kinesa's "Unity" Stand Out:**
+
+1. **Dual Challenge Types:** Community (large-scale) + Pods (intimate)
+2. **Context-Aware:** Adapts to user's energy, health, goals
+3. **Non-Judgmental:** Rankings are opt-in, not default
+4. **Inclusive:** ADHD-friendly, beginner-friendly, diverse activities
+5. **Legally Compliant:** Health disclaimers, consent, age gates, moderation
+
+**Legal Safeguards:**
+âœ… Health disclaimer before joining (liability protection)
+âœ… Data sharing consent (GDPR compliance)
+âœ… Age gate for under-16s (UK GDPR requirement)
+âœ… Report/block features (content moderation)
+âœ… Terms of Service updates (challenge participation section)
+âœ… Opt-in rankings (privacy-first)
+
+**Implementation:**
+- Use Firestore (not API) for real-time updates
+- Build 5 main screens over 4 weeks
+- Add legal modals (health, consent, age)
+- Track shares in Firestore
+- Deep links in Phase 2
+
+Need me to draft the Terms of Service updates for the challenges feature?

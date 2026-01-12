@@ -22,14 +22,15 @@ class HealthService {
     final permissions = _types.map((type) => HealthDataAccess.READ_WRITE).toList();
 
     try {
-      final granted = await _health.requestAuthorization(_types, permissions: permissions);
+      final granted =
+          await _health.requestAuthorization(_types, permissions: permissions);
       if (kDebugMode) {
-        print('Health authorization: $granted');
+        debugPrint('Health authorization: $granted');
       }
-      return granted ?? false;
+      return granted;
     } catch (e) {
       if (kDebugMode) {
-        print('Error requesting health authorization: $e');
+        debugPrint('Error requesting health authorization: $e');
       }
       return false;
     }
@@ -60,7 +61,7 @@ class HealthService {
       return steps;
     } catch (e) {
       if (kDebugMode) {
-        print('Error fetching steps: $e');
+        debugPrint('Error fetching steps: $e');
       }
       return null;
     }

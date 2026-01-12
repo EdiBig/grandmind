@@ -6,7 +6,6 @@ import '../providers/nutrition_providers.dart';
 import '../../domain/models/daily_nutrition_summary.dart';
 import '../../domain/models/meal.dart';
 import '../../domain/models/nutrition_goal.dart';
-import '../../../../core/utils/formatters.dart';
 
 /// Nutrition AI Insights Screen
 /// Provides comprehensive analysis of nutrition data including:
@@ -304,7 +303,7 @@ class _NutritionInsightsScreenState
                   ),
                   belowBarData: BarAreaData(
                     show: true,
-                    color: Colors.orange.withOpacity(0.1),
+                    color: Colors.orange.withValues(alpha: 0.1),
                   ),
                 ),
                 // Target line
@@ -316,7 +315,7 @@ class _NutritionInsightsScreenState
                           (sortedDates.length - 1).toDouble(), targetCalories),
                     ],
                     isCurved: false,
-                    color: Colors.green.withOpacity(0.5),
+                    color: Colors.green.withValues(alpha: 0.5),
                     barWidth: 2,
                     dotData: const FlDotData(show: false),
                     dashArray: [5, 5],
@@ -455,7 +454,7 @@ class _NutritionInsightsScreenState
           height: 80,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             border: Border.all(color: color, width: 3),
           ),
           child: Center(
@@ -746,7 +745,7 @@ class _NutritionInsightsScreenState
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: color, size: 24),
@@ -866,7 +865,7 @@ class _NutritionInsightsScreenState
       padding: const EdgeInsets.only(bottom: 12),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: Colors.teal.withOpacity(0.1),
+          backgroundColor: Colors.teal.withValues(alpha: 0.1),
           child: Icon(icon, color: Colors.teal),
         ),
         title: Text(
@@ -1040,7 +1039,7 @@ class _NutritionInsightsScreenState
           child: LinearProgressIndicator(
             value: progress,
             minHeight: 12,
-            backgroundColor: color.withOpacity(0.2),
+            backgroundColor: color.withValues(alpha: 0.2),
             valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
         ),
@@ -1238,7 +1237,7 @@ class _NutritionInsightsScreenState
     return Card(
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: color.withOpacity(0.2),
+          backgroundColor: color.withValues(alpha: 0.2),
           child: Icon(icon, color: color),
         ),
         title: Text(

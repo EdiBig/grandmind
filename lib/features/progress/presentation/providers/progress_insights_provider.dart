@@ -1,7 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/services/progress_correlation_service.dart';
-import '../../../progress/presentation/providers/progress_providers.dart';
 
 /// Provider for the progress correlation service
 final progressCorrelationServiceProvider = Provider<ProgressCorrelationService>((ref) {

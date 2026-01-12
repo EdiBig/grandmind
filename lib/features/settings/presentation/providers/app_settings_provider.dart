@@ -9,22 +9,46 @@ class AppSettingsState {
   final ThemeMode themeMode;
   final String themePresetId;
   final bool offlineMode;
+  final bool workoutsEnabled;
+  final bool habitsEnabled;
+  final bool moodEnergyEnabled;
+  final bool nutritionEnabled;
+  final bool sleepEnabled;
+  final String language;
 
   const AppSettingsState({
     required this.themeMode,
     required this.themePresetId,
     required this.offlineMode,
+    required this.workoutsEnabled,
+    required this.habitsEnabled,
+    required this.moodEnergyEnabled,
+    required this.nutritionEnabled,
+    required this.sleepEnabled,
+    required this.language,
   });
 
   AppSettingsState copyWith({
     ThemeMode? themeMode,
     String? themePresetId,
     bool? offlineMode,
+    bool? workoutsEnabled,
+    bool? habitsEnabled,
+    bool? moodEnergyEnabled,
+    bool? nutritionEnabled,
+    bool? sleepEnabled,
+    String? language,
   }) {
     return AppSettingsState(
       themeMode: themeMode ?? this.themeMode,
       themePresetId: themePresetId ?? this.themePresetId,
       offlineMode: offlineMode ?? this.offlineMode,
+      workoutsEnabled: workoutsEnabled ?? this.workoutsEnabled,
+      habitsEnabled: habitsEnabled ?? this.habitsEnabled,
+      moodEnergyEnabled: moodEnergyEnabled ?? this.moodEnergyEnabled,
+      nutritionEnabled: nutritionEnabled ?? this.nutritionEnabled,
+      sleepEnabled: sleepEnabled ?? this.sleepEnabled,
+      language: language ?? this.language,
     );
   }
 }
@@ -46,13 +70,26 @@ class AppSettingsNotifier extends StateNotifier<AppSettingsState> {
 
   static AppSettingsState _loadFromPrefs(SharedPreferences prefs) {
     final themeMode = _themeModeFromString(prefs.getString('theme_mode'));
-    final presetId = prefs.getString('theme_preset') ?? ThemePresets.sunrise.id;
+    final presetId =
+        prefs.getString('theme_preset') ?? ThemePresets.kinesa.id;
     final offlineMode = prefs.getBool('offline_mode') ?? false;
+    final workoutsEnabled = prefs.getBool('module_workouts') ?? true;
+    final habitsEnabled = prefs.getBool('module_habits') ?? true;
+    final moodEnergyEnabled = prefs.getBool('module_mood_energy') ?? true;
+    final nutritionEnabled = prefs.getBool('module_nutrition') ?? true;
+    final sleepEnabled = prefs.getBool('module_sleep') ?? true;
+    final language = prefs.getString('language') ?? 'English (UK)';
 
     return AppSettingsState(
       themeMode: themeMode,
       themePresetId: presetId,
       offlineMode: offlineMode,
+      workoutsEnabled: workoutsEnabled,
+      habitsEnabled: habitsEnabled,
+      moodEnergyEnabled: moodEnergyEnabled,
+      nutritionEnabled: nutritionEnabled,
+      sleepEnabled: sleepEnabled,
+      language: language,
     );
   }
 
@@ -74,7 +111,6 @@ class AppSettingsNotifier extends StateNotifier<AppSettingsState> {
       case ThemeMode.dark:
         return 'dark';
       case ThemeMode.system:
-      default:
         return 'system';
     }
   }
@@ -95,6 +131,36 @@ class AppSettingsNotifier extends StateNotifier<AppSettingsState> {
     await _syncOfflineMode(enabled);
   }
 
+  Future<void> setModuleEnabled(AppModule module, bool enabled) async {
+    switch (module) {
+      case AppModule.workouts:
+        state = state.copyWith(workoutsEnabled: enabled);
+        await _prefs.setBool('module_workouts', enabled);
+        return;
+      case AppModule.habits:
+        state = state.copyWith(habitsEnabled: enabled);
+        await _prefs.setBool('module_habits', enabled);
+        return;
+      case AppModule.moodEnergy:
+        state = state.copyWith(moodEnergyEnabled: enabled);
+        await _prefs.setBool('module_mood_energy', enabled);
+        return;
+      case AppModule.nutrition:
+        state = state.copyWith(nutritionEnabled: enabled);
+        await _prefs.setBool('module_nutrition', enabled);
+        return;
+      case AppModule.sleep:
+        state = state.copyWith(sleepEnabled: enabled);
+        await _prefs.setBool('module_sleep', enabled);
+        return;
+    }
+  }
+
+  Future<void> setLanguage(String language) async {
+    state = state.copyWith(language: language);
+    await _prefs.setString('language', language);
+  }
+
   Future<void> _syncOfflineMode(bool enabled) async {
     try {
       if (enabled) {
@@ -106,4 +172,12 @@ class AppSettingsNotifier extends StateNotifier<AppSettingsState> {
       // Ignore Firestore network toggle errors; preference still saved.
     }
   }
+}
+
+enum AppModule {
+  workouts,
+  habits,
+  moodEnergy,
+  nutrition,
+  sleep,
 }

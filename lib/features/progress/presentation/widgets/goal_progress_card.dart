@@ -47,7 +47,7 @@ class GoalProgressCard extends StatelessWidget {
           color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: getStatusColor().withOpacity(0.3),
+            color: getStatusColor().withValues(alpha: 0.3),
             width: 1.5,
           ),
         ),
@@ -60,7 +60,7 @@ class GoalProgressCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: getStatusColor().withOpacity(0.1),
+                    color: getStatusColor().withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
@@ -266,7 +266,7 @@ class GoalProgressCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: (color ?? Colors.grey).withOpacity(0.1),
+        color: (color ?? Colors.grey).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(

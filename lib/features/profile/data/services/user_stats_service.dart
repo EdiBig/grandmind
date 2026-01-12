@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 /// Model for user statistics
 class UserStats {
@@ -54,7 +55,7 @@ class UserStatsService {
         activeDays: workoutStats['activeDays'] ?? 0,
       );
     } catch (e) {
-      print('Error calculating user stats: $e');
+      debugPrint('Error calculating user stats: $e');
       return UserStats.empty();
     }
   }
@@ -87,7 +88,7 @@ class UserStatsService {
         'activeDays': uniqueDates.length,
       };
     } catch (e) {
-      print('Error calculating workout stats: $e');
+      debugPrint('Error calculating workout stats: $e');
       return {'totalWorkouts': 0, 'activeDays': 0};
     }
   }
@@ -191,7 +192,7 @@ class UserStatsService {
         'longestStreak': longestStreak,
       };
     } catch (e) {
-      print('Error calculating habit stats: $e');
+      debugPrint('Error calculating habit stats: $e');
       return {
         'totalCompleted': 0,
         'currentStreak': 0,
@@ -248,7 +249,7 @@ class UserStatsService {
 
       return achievements;
     } catch (e) {
-      print('Error calculating achievement stats: $e');
+      debugPrint('Error calculating achievement stats: $e');
       return 0;
     }
   }

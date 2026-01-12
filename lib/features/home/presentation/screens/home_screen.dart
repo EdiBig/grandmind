@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../widgets/bottom_nav_bar.dart';
 import 'dashboard_tab.dart';
 import 'workouts_tab.dart';
+import '../../../challenges/presentation/screens/together_hub_screen.dart';
 import 'habits_tab.dart';
 import 'progress_tab.dart';
 import '../../../nutrition/presentation/screens/nutrition_tab.dart';
@@ -19,6 +20,7 @@ class HomeScreen extends ConsumerWidget {
     final List<Widget> tabs = [
       const DashboardTab(),
       const WorkoutsTab(),
+      const TogetherHubScreen(),
       const HabitsTab(),
       const ProgressTab(),
       const NutritionTab(),

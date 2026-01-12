@@ -96,7 +96,7 @@ class _HealthDetailsScreenState extends ConsumerState<HealthDetailsScreen>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: primary.withOpacity(0.3),
+            color: primary.withValues(alpha: 0.3),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -355,7 +355,7 @@ class _HealthDetailsScreenState extends ConsumerState<HealthDetailsScreen>
               dotData: FlDotData(show: true),
               belowBarData: BarAreaData(
                 show: true,
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
               ),
             ),
           ],
@@ -465,7 +465,7 @@ class _HealthDetailsScreenState extends ConsumerState<HealthDetailsScreen>
               dotData: FlDotData(show: true),
               belowBarData: BarAreaData(
                 show: true,
-                color: Theme.of(context).colorScheme.tertiary.withOpacity(0.1),
+                color: Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.1),
               ),
             ),
           ],
@@ -520,7 +520,7 @@ class _HealthDetailsScreenState extends ConsumerState<HealthDetailsScreen>
               dotData: FlDotData(show: true),
               belowBarData: BarAreaData(
                 show: true,
-                color: Theme.of(context).colorScheme.secondary.withOpacity(0.1),
+                color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.1),
               ),
             ),
           ],

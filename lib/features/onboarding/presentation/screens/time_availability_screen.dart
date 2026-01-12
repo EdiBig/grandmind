@@ -5,6 +5,7 @@ import '../../../../core/constants/route_constants.dart';
 import '../../../../core/theme/app_gradients.dart';
 import '../../domain/onboarding_data.dart';
 import '../providers/onboarding_provider.dart';
+import '../widgets/onboarding_shell.dart';
 
 class TimeAvailabilityScreen extends ConsumerWidget {
   const TimeAvailabilityScreen({super.key});
@@ -15,37 +16,33 @@ class TimeAvailabilityScreen extends ConsumerWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
-        ),
-        title: const Text('Step 3 of 5'),
-      ),
-      body: SafeArea(
+      body: OnboardingBackground(
         child: Column(
           children: [
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'How often can you work out?',
-                      style:
-                          Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                    OnboardingStepHeader(
+                      step: 3,
+                      totalSteps: 5,
+                      title: 'How often can you work out?',
+                      subtitle: 'We\'ll build a rhythm that fits your week.',
+                      onBack: () => context.pop(),
+                      eyebrow: 'Create a sustainable routine',
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'We\'ll create a realistic plan for you',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: Colors.grey[600],
-                          ),
+                    const SizedBox(height: 24),
+                    _FrequencySlider(
+                      selected: onboardingState.weeklyWorkouts,
+                      onSelected: (frequency) {
+                        ref
+                            .read(onboardingProvider.notifier)
+                            .setWeeklyWorkouts(frequency);
+                      },
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 20),
                     ...WeeklyWorkoutFrequency.values.map((frequency) {
                       final isSelected =
                           onboardingState.weeklyWorkouts == frequency;
@@ -62,13 +59,15 @@ class TimeAvailabilityScreen extends ConsumerWidget {
                         ),
                       );
                     }),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: colorScheme.secondaryContainer,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: colorScheme.secondary),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: colorScheme.secondary.withValues(alpha: 0.6),
+                        ),
                       ),
                       child: Row(
                         children: [
@@ -93,16 +92,15 @@ class TimeAvailabilityScreen extends ConsumerWidget {
                 ),
               ),
             ),
-            // Continue button
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: colorScheme.surface,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, -5),
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 12,
+                    offset: const Offset(0, -6),
                   ),
                 ],
               ),
@@ -112,14 +110,15 @@ class TimeAvailabilityScreen extends ConsumerWidget {
                   onPressed: onboardingState.weeklyWorkouts != null
                       ? () => context.push(RouteConstants.onboardingLimitations)
                       : null,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                     backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor: colorScheme.surfaceVariant,
+                    disabledBackgroundColor:
+                        colorScheme.surfaceContainerHighest,
                   ),
                   child: const Text(
                     'Continue',
@@ -154,32 +153,42 @@ class _FrequencyCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(18),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         decoration: BoxDecoration(
           color: isSelected
-              ? colorScheme.primary.withOpacity(0.1)
-              : colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
+              ? colorScheme.primary.withValues(alpha: 0.12)
+              : colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: isSelected
                 ? colorScheme.primary
-                : colorScheme.outlineVariant,
+                : colorScheme.outlineVariant.withValues(alpha: 0.6),
             width: isSelected ? 2 : 1,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  gradient: isSelected
-                      ? Theme.of(context).extension<AppGradients>()!.primary
-                      : LinearGradient(
-                          colors: [Colors.grey[300]!, Colors.grey[400]!],
-                        ),
-                borderRadius: BorderRadius.circular(12),
+              decoration: BoxDecoration(
+                gradient: isSelected
+                    ? Theme.of(context).extension<AppGradients>()!.primary
+                    : LinearGradient(
+                        colors: [
+                          colorScheme.surface,
+                          colorScheme.outlineVariant.withValues(alpha: 0.6),
+                        ],
+                      ),
+                borderRadius: BorderRadius.circular(14),
               ),
               child: const Icon(
                 Icons.calendar_today,
@@ -203,11 +212,81 @@ class _FrequencyCard extends StatelessWidget {
             if (isSelected)
               Icon(
                 Icons.check_circle,
-                color: Theme.of(context).colorScheme.primary,
-                size: 28,
+                color: colorScheme.primary,
+                size: 26,
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _FrequencySlider extends StatelessWidget {
+  const _FrequencySlider({
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final WeeklyWorkoutFrequency? selected;
+  final ValueChanged<WeeklyWorkoutFrequency> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final options = WeeklyWorkoutFrequency.values;
+    final selectedIndex = selected == null ? 0 : options.indexOf(selected!);
+    final active = options[selectedIndex];
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.6),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Weekly target',
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            active.displayName,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.primary,
+                ),
+          ),
+          const SizedBox(height: 12),
+          SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              trackHeight: 4,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
+              activeTrackColor: colorScheme.primary,
+              inactiveTrackColor:
+                  colorScheme.outlineVariant.withValues(alpha: 0.4),
+              thumbColor: colorScheme.primary,
+            ),
+            child: Slider(
+              value: selectedIndex.toDouble(),
+              min: 0,
+              max: (options.length - 1).toDouble(),
+              divisions: options.length - 1,
+              onChanged: (value) {
+                final nextIndex = value.round();
+                onSelected(options[nextIndex]);
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

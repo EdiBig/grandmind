@@ -168,10 +168,13 @@ class ProgressRepository {
     final snapshot = await query.get();
 
     return snapshot.docs
-        .map((doc) => MeasurementEntry.fromJson({
-              ...doc.data() as Map<String, dynamic>,
-              'id': doc.id,
-            }))
+        .map((doc) {
+          final data = doc.data() as Map<String, dynamic>?;
+          return MeasurementEntry.fromJson({
+            ...?data,
+            'id': doc.id,
+          });
+        })
         .toList();
   }
 
@@ -184,7 +187,7 @@ class ProgressRepository {
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => MeasurementEntry.fromJson({
-                  ...doc.data() as Map<String, dynamic>,
+                  ...doc.data(),
                   'id': doc.id,
                 }))
             .toList());
@@ -328,7 +331,7 @@ class ProgressRepository {
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => ProgressPhoto.fromJson({
-                  ...doc.data() as Map<String, dynamic>,
+                  ...doc.data(),
                   'id': doc.id,
                 }))
             .toList());
@@ -398,7 +401,7 @@ class ProgressRepository {
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => ProgressGoal.fromJson({
-                  ...doc.data() as Map<String, dynamic>,
+                  ...doc.data(),
                   'id': doc.id,
                 }))
             .toList());

@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../habits/domain/models/habit.dart';
 import '../../../habits/domain/models/habit_log.dart';
 import '../../domain/models/weight_entry.dart';
-import '../../domain/models/measurement_entry.dart';
 
 /// Service for analyzing correlations between habits and progress
 class ProgressCorrelationService {

@@ -342,7 +342,6 @@ $userMessage''';
     _logger.i('Optimizing prompt to fit within $maxTokens tokens');
 
     // Strategy: Compress the user context
-    final lines = prompt.userPrompt.split('\n');
     final compressedLines = PromptTemplates.compressContext(
       prompt.userPrompt,
       maxLines: 10,

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kinesa/core/providers/shared_preferences_provider.dart';
 import '../../data/workout_library_data.dart';
 import '../../domain/models/workout_library_entry.dart';
 import '../../domain/models/workout.dart';
 import '../providers/workout_library_providers.dart';
+import '../providers/fitness_profile_provider.dart';
+import 'fitness_profile_screen.dart';
 import 'workout_library_detail_screen.dart';
 
 class EasyPickWorkoutsScreen extends ConsumerStatefulWidget {
@@ -18,6 +21,18 @@ class _EasyPickWorkoutsScreenState
     extends ConsumerState<EasyPickWorkoutsScreen> {
   final _searchController = TextEditingController();
   final _searchFocus = FocusNode();
+  static const _recentSearchesKey = 'workout_library_recent_searches';
+  List<String> _recentSearches = [];
+  bool _didPromptProfile = false;
+  bool _isGridView = true;
+
+  @override
+  void initState() {
+    super.initState();
+    final prefs = ref.read(sharedPreferencesProvider);
+    _recentSearches = prefs.getStringList(_recentSearchesKey) ?? [];
+    _searchFocus.addListener(() => setState(() {}));
+  }
 
   @override
   void dispose() {
@@ -28,23 +43,111 @@ class _EasyPickWorkoutsScreenState
 
   void _updateSearch(String value) {
     final filters = ref.read(workoutLibraryFiltersProvider);
-    ref.read(workoutLibraryFiltersProvider.notifier).state =
-        filters.copyWith(searchQuery: value);
+    _setFilters(filters.copyWith(searchQuery: value));
+  }
+
+  void _commitSearch(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) {
+      return;
+    }
+    _saveRecentSearch(trimmed);
+  }
+
+  void _saveRecentSearch(String term) {
+    final prefs = ref.read(sharedPreferencesProvider);
+    setState(() {
+      _recentSearches.removeWhere(
+        (item) => item.toLowerCase() == term.toLowerCase(),
+      );
+      _recentSearches.insert(0, term);
+      if (_recentSearches.length > 5) {
+        _recentSearches = _recentSearches.sublist(0, 5);
+      }
+    });
+    prefs.setStringList(_recentSearchesKey, _recentSearches);
+  }
+
+  void _showFitnessProfilePrompt(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Get personalized recommendations'),
+        content: const Text(
+          'Answer 5 quick questions to tailor workouts to your goals and needs.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Not now'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const FitnessProfileScreen(),
+                ),
+              );
+            },
+            child: const Text('Start'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _applySearchTerm(String term) {
+    _searchController.text = term;
+    _searchController.selection = TextSelection.fromPosition(
+      TextPosition(offset: term.length),
+    );
+    _updateSearch(term);
+    _commitSearch(term);
+  }
+
+  List<String> _buildSuggestions(String query) {
+    final suggestions = <String>{};
+    for (final entry in workoutLibraryEntries) {
+      if (entry.name.toLowerCase().contains(query)) {
+        suggestions.add(entry.name);
+      }
+      if (entry.targetSummary.toLowerCase().contains(query)) {
+        suggestions.add(entry.name);
+      }
+      if (entry.equipment.displayName.toLowerCase().contains(query)) {
+        suggestions.add(entry.name);
+      }
+      if (entry.resolvedSubCategory.toLowerCase().contains(query)) {
+        suggestions.add(entry.name);
+      }
+    }
+    return suggestions.take(5).toList();
   }
 
   void _applyCategory(WorkoutLibraryCategory category) {
-    final filters = ref.read(workoutLibraryFiltersProvider);
-    ref.read(workoutLibraryFiltersProvider.notifier).state = filters.copyWith(
-      bodyFocuses: _addToSet(filters.bodyFocuses, category.bodyFocus),
-      goals: _addToSet(filters.goals, category.goal),
-      conditionTags: _addToSet(filters.conditionTags, category.conditionTag),
-      abilityTags: _addToSet(filters.abilityTags, category.abilityTag),
-      accessibilityTags:
-          _addToSet(filters.accessibilityTags, category.accessibilityTag),
+    const base = WorkoutLibraryFilters();
+    _searchController.clear();
+    _setFilters(base.copyWith(
+      searchQuery: '',
+      bodyFocuses: category.bodyFocus == null ? {} : {category.bodyFocus!},
+      goals: category.goal == null ? {} : {category.goal!},
+      conditionTags:
+          category.conditionTag == null ? {} : {category.conditionTag!},
+      abilityTags: category.abilityTag == null ? {} : {category.abilityTag!},
+      accessibilityTags: category.accessibilityTag == null
+          ? {}
+          : {category.accessibilityTag!},
       durationRanges:
-          _addToSet(filters.durationRanges, category.durationRange),
-      equipments: _addToSet(filters.equipments, category.equipment),
-    );
+          category.durationRange == null ? {} : {category.durationRange!},
+      equipments: category.equipment == null ? {} : {category.equipment!},
+      recommendedOnly: false,
+      sort: WorkoutLibrarySort.recommended,
+    ));
+  }
+
+  void _setFilters(WorkoutLibraryFilters filters) {
+    ref.read(workoutLibraryFiltersProvider.notifier).update(filters);
   }
 
   Set<T> _addToSet<T>(Set<T> current, T? value) {
@@ -64,13 +167,27 @@ class _EasyPickWorkoutsScreenState
   Widget build(BuildContext context) {
     final filters = ref.watch(workoutLibraryFiltersProvider);
     final entries = ref.watch(workoutLibraryProvider);
+    final profile = ref.watch(fitnessProfileProvider);
     final showCategories =
-        !filters.hasActiveFilters && filters.searchQuery.trim().isEmpty;
+        !filters.hasActiveFilters && filters.searchQuery.trim().isEmpty;        
+    if (!profile.isComplete && !_didPromptProfile) {
+      _didPromptProfile = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _showFitnessProfilePrompt(context);
+      });
+    }
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Easy Pick Workouts'),
         actions: [
+          IconButton(
+            onPressed: () {
+              setState(() => _isGridView = !_isGridView);
+            },
+            icon: Icon(_isGridView ? Icons.view_list : Icons.grid_view),
+          ),
           IconButton(
             onPressed: () => _showFilterSheet(context),
             icon: const Icon(Icons.filter_list),
@@ -81,8 +198,21 @@ class _EasyPickWorkoutsScreenState
         padding: const EdgeInsets.all(16),
         children: [
           _buildSearchRow(context, filters),
+          _buildSearchHelpers(filters),
           const SizedBox(height: 16),
           _buildSortRow(context, filters),
+          const SizedBox(height: 8),
+          _buildRecommendedChip(filters),
+          if (filters.recommendedOnly)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                'Based on your profile and energy today, we filtered these workouts.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+            ),
           if (filters.hasActiveFilters) ...[
             const SizedBox(height: 12),
             _buildActiveFilterChips(context, filters),
@@ -98,11 +228,18 @@ class _EasyPickWorkoutsScreenState
                   fontWeight: FontWeight.bold,
                 ),
           ),
+          const SizedBox(height: 6),
+          Text(
+            'Showing ${entries.length} workouts',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
           const SizedBox(height: 12),
           if (entries.isEmpty)
             _buildEmptyState(context, filters)
           else
-            ...entries.map((entry) => _buildWorkoutCard(context, entry)),
+            _buildWorkoutResults(context, entries),
         ],
       ),
     );
@@ -116,6 +253,7 @@ class _EasyPickWorkoutsScreenState
             controller: _searchController,
             focusNode: _searchFocus,
             onChanged: _updateSearch,
+            onSubmitted: _commitSearch,
             decoration: InputDecoration(
               hintText: 'Search glutes, dumbbell, mobility...',
               prefixIcon: const Icon(Icons.search),
@@ -130,7 +268,7 @@ class _EasyPickWorkoutsScreenState
                       },
                     ),
               filled: true,
-              fillColor: Theme.of(context).colorScheme.surfaceVariant,
+              fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
                 borderSide: BorderSide.none,
@@ -153,7 +291,7 @@ class _EasyPickWorkoutsScreenState
     );
   }
 
-  Widget _buildSortRow(BuildContext context, WorkoutLibraryFilters filters) {
+  Widget _buildSortRow(BuildContext context, WorkoutLibraryFilters filters) {   
     return Row(
       children: [
         Text(
@@ -165,8 +303,7 @@ class _EasyPickWorkoutsScreenState
         const SizedBox(width: 12),
         PopupMenuButton<WorkoutLibrarySort>(
           onSelected: (value) {
-            ref.read(workoutLibraryFiltersProvider.notifier).state =
-                filters.copyWith(sort: value);
+            _setFilters(filters.copyWith(sort: value));
           },
           itemBuilder: (context) => WorkoutLibrarySort.values
               .map(
@@ -179,7 +316,7 @@ class _EasyPickWorkoutsScreenState
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceVariant,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -199,11 +336,65 @@ class _EasyPickWorkoutsScreenState
         const Spacer(),
         TextButton(
           onPressed: () {
-            ref.read(workoutLibraryFiltersProvider.notifier).state =
-                const WorkoutLibraryFilters();
+            ref.read(workoutLibraryFiltersProvider.notifier).clearAll();
             _searchController.clear();
           },
           child: const Text('Clear'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSearchHelpers(WorkoutLibraryFilters filters) {
+    if (!_searchFocus.hasFocus) {
+      return const SizedBox.shrink();
+    }
+    final query = filters.searchQuery.trim().toLowerCase();
+    final items = query.isEmpty ? _recentSearches : _buildSuggestions(query);
+    if (items.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final title = query.isEmpty ? 'Recent searches' : 'Suggestions';
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: items
+                .map(
+                  (item) => ActionChip(
+                    label: Text(item),
+                    onPressed: () => _applySearchTerm(item),
+                  ),
+                )
+                .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecommendedChip(WorkoutLibraryFilters filters) {
+    return Wrap(
+      spacing: 8,
+      children: [
+        FilterChip(
+          label: const Text('Recommended for You'),
+          selected: filters.recommendedOnly,
+          onSelected: (selected) {
+            _setFilters(filters.copyWith(recommendedOnly: selected));
+          },
         ),
       ],
     );
@@ -215,21 +406,67 @@ class _EasyPickWorkoutsScreenState
   ) {
     final onSurface = Theme.of(context).colorScheme.onSurface;
     final outline = Theme.of(context).colorScheme.outlineVariant;
-    final surfaceVariant = Theme.of(context).colorScheme.surfaceVariant;
+    final surfaceContainerHighest = Theme.of(context).colorScheme.surfaceContainerHighest;
     final chips = <Widget>[];
+    if (filters.recommendedOnly) {
+      chips.add(
+        InputChip(
+          label: const Text('Recommended for You'),
+          labelStyle: TextStyle(color: onSurface, fontWeight: FontWeight.w600),
+          backgroundColor: surfaceContainerHighest,
+          deleteIconColor: onSurface,
+          side: BorderSide(color: outline),
+          onDeleted: () {
+            _setFilters(filters.copyWith(recommendedOnly: false));
+          },
+        ),
+      );
+    }
+    for (final category in filters.primaryCategories) {
+      chips.add(
+        InputChip(
+          label: Text(category.displayName),
+          labelStyle: TextStyle(color: onSurface, fontWeight: FontWeight.w600),
+          backgroundColor: surfaceContainerHighest,
+          deleteIconColor: onSurface,
+          side: BorderSide(color: outline),
+          onDeleted: () {
+            _setFilters(filters.copyWith(
+              primaryCategories:
+                  _removeFromSet(filters.primaryCategories, category),
+            ));
+          },
+        ),
+      );
+    }
+    for (final subCategory in filters.subCategories) {
+      chips.add(
+        InputChip(
+          label: Text(subCategory),
+          labelStyle: TextStyle(color: onSurface, fontWeight: FontWeight.w600),
+          backgroundColor: surfaceContainerHighest,
+          deleteIconColor: onSurface,
+          side: BorderSide(color: outline),
+          onDeleted: () {
+            _setFilters(filters.copyWith(
+              subCategories: _removeFromSet(filters.subCategories, subCategory),
+            ));
+          },
+        ),
+      );
+    }
     for (final focus in filters.bodyFocuses) {
       chips.add(
         InputChip(
           label: Text(focus.displayName),
           labelStyle: TextStyle(color: onSurface, fontWeight: FontWeight.w600),
-          backgroundColor: surfaceVariant,
+          backgroundColor: surfaceContainerHighest,
           deleteIconColor: onSurface,
           side: BorderSide(color: outline),
           onDeleted: () {
-            ref.read(workoutLibraryFiltersProvider.notifier).state =
-                filters.copyWith(
+            _setFilters(filters.copyWith(
               bodyFocuses: _removeFromSet(filters.bodyFocuses, focus),
-            );
+            ));
           },
         ),
       );
@@ -239,14 +476,13 @@ class _EasyPickWorkoutsScreenState
         InputChip(
           label: Text(goal.displayName),
           labelStyle: TextStyle(color: onSurface, fontWeight: FontWeight.w600),
-          backgroundColor: surfaceVariant,
+          backgroundColor: surfaceContainerHighest,
           deleteIconColor: onSurface,
           side: BorderSide(color: outline),
           onDeleted: () {
-            ref.read(workoutLibraryFiltersProvider.notifier).state =
-                filters.copyWith(
+            _setFilters(filters.copyWith(
               goals: _removeFromSet(filters.goals, goal),
-            );
+            ));
           },
         ),
       );
@@ -256,14 +492,13 @@ class _EasyPickWorkoutsScreenState
         InputChip(
           label: Text(range.displayName),
           labelStyle: TextStyle(color: onSurface, fontWeight: FontWeight.w600),
-          backgroundColor: surfaceVariant,
+          backgroundColor: surfaceContainerHighest,
           deleteIconColor: onSurface,
           side: BorderSide(color: outline),
           onDeleted: () {
-            ref.read(workoutLibraryFiltersProvider.notifier).state =
-                filters.copyWith(
-              durationRanges: _removeFromSet(filters.durationRanges, range),
-            );
+            _setFilters(filters.copyWith(
+              durationRanges: _removeFromSet(filters.durationRanges, range),    
+            ));
           },
         ),
       );
@@ -273,14 +508,13 @@ class _EasyPickWorkoutsScreenState
         InputChip(
           label: Text(equipment.displayName),
           labelStyle: TextStyle(color: onSurface, fontWeight: FontWeight.w600),
-          backgroundColor: surfaceVariant,
+          backgroundColor: surfaceContainerHighest,
           deleteIconColor: onSurface,
           side: BorderSide(color: outline),
           onDeleted: () {
-            ref.read(workoutLibraryFiltersProvider.notifier).state =
-                filters.copyWith(
+            _setFilters(filters.copyWith(
               equipments: _removeFromSet(filters.equipments, equipment),
-            );
+            ));
           },
         ),
       );
@@ -290,14 +524,13 @@ class _EasyPickWorkoutsScreenState
         InputChip(
           label: Text(difficulty.displayName),
           labelStyle: TextStyle(color: onSurface, fontWeight: FontWeight.w600),
-          backgroundColor: surfaceVariant,
+          backgroundColor: surfaceContainerHighest,
           deleteIconColor: onSurface,
           side: BorderSide(color: outline),
           onDeleted: () {
-            ref.read(workoutLibraryFiltersProvider.notifier).state =
-                filters.copyWith(
-              difficulties: _removeFromSet(filters.difficulties, difficulty),
-            );
+            _setFilters(filters.copyWith(
+              difficulties: _removeFromSet(filters.difficulties, difficulty),   
+            ));
           },
         ),
       );
@@ -307,14 +540,13 @@ class _EasyPickWorkoutsScreenState
         InputChip(
           label: Text(tag.displayName),
           labelStyle: TextStyle(color: onSurface, fontWeight: FontWeight.w600),
-          backgroundColor: surfaceVariant,
+          backgroundColor: surfaceContainerHighest,
           deleteIconColor: onSurface,
           side: BorderSide(color: outline),
           onDeleted: () {
-            ref.read(workoutLibraryFiltersProvider.notifier).state =
-                filters.copyWith(
-              conditionTags: _removeFromSet(filters.conditionTags, tag),
-            );
+            _setFilters(filters.copyWith(
+              conditionTags: _removeFromSet(filters.conditionTags, tag),        
+            ));
           },
         ),
       );
@@ -324,14 +556,13 @@ class _EasyPickWorkoutsScreenState
         InputChip(
           label: Text(tag.displayName),
           labelStyle: TextStyle(color: onSurface, fontWeight: FontWeight.w600),
-          backgroundColor: surfaceVariant,
+          backgroundColor: surfaceContainerHighest,
           deleteIconColor: onSurface,
           side: BorderSide(color: outline),
           onDeleted: () {
-            ref.read(workoutLibraryFiltersProvider.notifier).state =
-                filters.copyWith(
+            _setFilters(filters.copyWith(
               abilityTags: _removeFromSet(filters.abilityTags, tag),
-            );
+            ));
           },
         ),
       );
@@ -341,15 +572,80 @@ class _EasyPickWorkoutsScreenState
         InputChip(
           label: Text(tag.displayName),
           labelStyle: TextStyle(color: onSurface, fontWeight: FontWeight.w600),
-          backgroundColor: surfaceVariant,
+          backgroundColor: surfaceContainerHighest,
           deleteIconColor: onSurface,
           side: BorderSide(color: outline),
           onDeleted: () {
-            ref.read(workoutLibraryFiltersProvider.notifier).state =
-                filters.copyWith(
+            _setFilters(filters.copyWith(
               accessibilityTags:
                   _removeFromSet(filters.accessibilityTags, tag),
-            );
+            ));
+          },
+        ),
+      );
+    }
+    for (final intensity in filters.intensities) {
+      chips.add(
+        InputChip(
+          label: Text(intensity.displayName),
+          labelStyle: TextStyle(color: onSurface, fontWeight: FontWeight.w600),
+          backgroundColor: surfaceContainerHighest,
+          deleteIconColor: onSurface,
+          side: BorderSide(color: outline),
+          onDeleted: () {
+            _setFilters(filters.copyWith(
+              intensities: _removeFromSet(filters.intensities, intensity),
+            ));
+          },
+        ),
+      );
+    }
+    for (final tag in filters.healthConsiderations) {
+      chips.add(
+        InputChip(
+          label: Text(tag.displayName),
+          labelStyle: TextStyle(color: onSurface, fontWeight: FontWeight.w600),
+          backgroundColor: surfaceContainerHighest,
+          deleteIconColor: onSurface,
+          side: BorderSide(color: outline),
+          onDeleted: () {
+            _setFilters(filters.copyWith(
+              healthConsiderations:
+                  _removeFromSet(filters.healthConsiderations, tag),
+            ));
+          },
+        ),
+      );
+    }
+    for (final space in filters.spaceRequirements) {
+      chips.add(
+        InputChip(
+          label: Text(space.displayName),
+          labelStyle: TextStyle(color: onSurface, fontWeight: FontWeight.w600),
+          backgroundColor: surfaceContainerHighest,
+          deleteIconColor: onSurface,
+          side: BorderSide(color: outline),
+          onDeleted: () {
+            _setFilters(filters.copyWith(
+              spaceRequirements:
+                  _removeFromSet(filters.spaceRequirements, space),
+            ));
+          },
+        ),
+      );
+    }
+    for (final noise in filters.noiseLevels) {
+      chips.add(
+        InputChip(
+          label: Text(noise.displayName),
+          labelStyle: TextStyle(color: onSurface, fontWeight: FontWeight.w600),
+          backgroundColor: surfaceContainerHighest,
+          deleteIconColor: onSurface,
+          side: BorderSide(color: outline),
+          onDeleted: () {
+            _setFilters(filters.copyWith(
+              noiseLevels: _removeFromSet(filters.noiseLevels, noise),
+            ));
           },
         ),
       );
@@ -416,7 +712,7 @@ class _EasyPickWorkoutsScreenState
             ),
             boxShadow: [
               BoxShadow(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -431,7 +727,7 @@ class _EasyPickWorkoutsScreenState
                   color: Theme.of(context)
                       .colorScheme
                       .primary
-                      .withOpacity(0.1),
+                      .withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -458,7 +754,7 @@ class _EasyPickWorkoutsScreenState
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.12),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -476,7 +772,39 @@ class _EasyPickWorkoutsScreenState
     );
   }
 
-  Widget _buildWorkoutCard(BuildContext context, WorkoutLibraryEntry entry) {
+  Widget _buildWorkoutCard(
+    BuildContext context,
+    WorkoutLibraryEntry entry, {
+    bool isGrid = false,
+  }) {
+    final tagWidgets = [
+      _buildTag(
+        context,
+        entry.resolvedSubCategory,
+        Icons.category,
+      ),
+      _buildTag(
+        context,
+        entry.equipment.displayName,
+        Icons.handyman,
+      ),
+      _buildTag(
+        context,
+        '${entry.durationMinutes} min',
+        Icons.access_time,
+      ),
+      _buildTag(
+        context,
+        entry.difficulty.displayName,
+        Icons.bar_chart,
+        color: _difficultyColor(entry.difficulty),
+      ),
+      _buildTag(
+        context,
+        entry.resolvedIntensity.displayName,
+        Icons.local_fire_department,
+      ),
+    ];
     return Semantics(
       label: 'Workout ${entry.name}',
       button: true,
@@ -490,7 +818,7 @@ class _EasyPickWorkoutsScreenState
         },
         borderRadius: BorderRadius.circular(18),
         child: Container(
-          margin: const EdgeInsets.only(bottom: 16),
+          margin: EdgeInsets.only(bottom: isGrid ? 0 : 16),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Theme.of(context).cardColor,
@@ -500,7 +828,7 @@ class _EasyPickWorkoutsScreenState
             ),
             boxShadow: [
               BoxShadow(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -537,6 +865,8 @@ class _EasyPickWorkoutsScreenState
                       children: [
                         Text(
                           entry.name,
+                          maxLines: isGrid ? 2 : 1,
+                          overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
@@ -550,6 +880,8 @@ class _EasyPickWorkoutsScreenState
                                         .colorScheme
                                         .onSurfaceVariant,
                                   ),
+                          maxLines: isGrid ? 2 : 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
@@ -561,23 +893,8 @@ class _EasyPickWorkoutsScreenState
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: [
-                  _buildTag(
-                    context,
-                    entry.equipment.displayName,
-                    Icons.handyman,
-                  ),
-                  _buildTag(
-                    context,
-                    '${entry.durationMinutes} min',
-                    Icons.access_time,
-                  ),
-                  _buildTag(
-                    context,
-                    entry.difficulty.displayName,
-                    Icons.bar_chart,
-                  ),
-                ],
+                children:
+                    (isGrid ? tagWidgets.take(3) : tagWidgets).toList(),
               ),
               const SizedBox(height: 12),
               Text(
@@ -585,6 +902,8 @@ class _EasyPickWorkoutsScreenState
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
+                maxLines: isGrid ? 2 : 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -593,11 +912,92 @@ class _EasyPickWorkoutsScreenState
     );
   }
 
-  Widget _buildTag(BuildContext context, String label, IconData icon) {
+  Widget _buildWorkoutResults(
+    BuildContext context,
+    List<WorkoutLibraryEntry> entries,
+  ) {
+    if (_isGridView) {
+      final width = MediaQuery.of(context).size.width;
+      final crossAxisCount = width >= 900
+          ? 4
+          : width >= 600
+              ? 3
+              : 2;
+      return GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: entries.length,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: crossAxisCount,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: 0.68,
+        ),
+        itemBuilder: (context, index) {
+          return _buildWorkoutCard(
+            context,
+            entries[index],
+            isGrid: true,
+          );
+        },
+      );
+    }
+    return Column(
+      children: entries
+          .map((entry) => _buildWorkoutListTile(context, entry))
+          .toList(),
+    );
+  }
+
+  Widget _buildWorkoutListTile(
+    BuildContext context,
+    WorkoutLibraryEntry entry,
+  ) {
+    final color = Theme.of(context).colorScheme.primary;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: color.withValues(alpha: 0.12),
+          child: Icon(
+            _getEntryIcon(entry),
+            color: color,
+          ),
+        ),
+        title: Text(
+          entry.name,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        subtitle: Text(
+          '${entry.resolvedSubCategory} - ${entry.durationMinutes} min - ${entry.difficulty.displayName} - ${entry.resolvedIntensity.displayName}',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => WorkoutLibraryDetailScreen(entry: entry),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildTag(
+    BuildContext context,
+    String label,
+    IconData icon, {
+    Color? color,
+  }) {
+    final tagColor = color ?? Theme.of(context).colorScheme.primary;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+        color: tagColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -606,19 +1006,30 @@ class _EasyPickWorkoutsScreenState
           Icon(
             icon,
             size: 14,
-            color: Theme.of(context).colorScheme.primary,
+            color: tagColor,
           ),
           const SizedBox(width: 6),
           Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: Theme.of(context).colorScheme.primary,
+                  color: tagColor,
                 ),
           ),
         ],
       ),
     );
+  }
+
+  Color _difficultyColor(WorkoutDifficulty difficulty) {
+    switch (difficulty) {
+      case WorkoutDifficulty.beginner:
+        return Colors.green;
+      case WorkoutDifficulty.intermediate:
+        return Colors.orange;
+      case WorkoutDifficulty.advanced:
+        return Colors.red;
+    }
   }
 
   IconData _getEntryIcon(WorkoutLibraryEntry entry) {
@@ -652,7 +1063,7 @@ class _EasyPickWorkoutsScreenState
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceVariant,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
@@ -690,18 +1101,43 @@ class _EasyPickWorkoutsScreenState
                   'Clear all filters',
                   Icons.refresh,
                   () {
-                    ref.read(workoutLibraryFiltersProvider.notifier).state =
-                        const WorkoutLibraryFilters();
+                    ref.read(workoutLibraryFiltersProvider.notifier).clearAll();
                   },
                 ),
+                if (filters.recommendedOnly)
+                  _buildEmptyActionChip(
+                    context,
+                    'Recommended',
+                    Icons.stars,
+                    () {
+                      _setFilters(filters.copyWith(recommendedOnly: false));
+                    },
+                  ),
+                if (filters.primaryCategories.isNotEmpty)
+                  _buildEmptyActionChip(
+                    context,
+                    'Categories',
+                    Icons.category,
+                    () {
+                      _setFilters(filters.copyWith(primaryCategories: {}));
+                    },
+                  ),
+                if (filters.subCategories.isNotEmpty)
+                  _buildEmptyActionChip(
+                    context,
+                    'Sub-categories',
+                    Icons.view_list,
+                    () {
+                      _setFilters(filters.copyWith(subCategories: {}));
+                    },
+                  ),
                 if (filters.bodyFocuses.isNotEmpty)
                   _buildEmptyActionChip(
                     context,
                     'Body focus',
                     Icons.fitness_center,
                     () {
-                      ref.read(workoutLibraryFiltersProvider.notifier).state =
-                          filters.copyWith(bodyFocuses: {});
+                      _setFilters(filters.copyWith(bodyFocuses: {}));
                     },
                   ),
                 if (filters.goals.isNotEmpty)
@@ -710,8 +1146,7 @@ class _EasyPickWorkoutsScreenState
                     'Goals',
                     Icons.flag,
                     () {
-                      ref.read(workoutLibraryFiltersProvider.notifier).state =
-                          filters.copyWith(goals: {});
+                      _setFilters(filters.copyWith(goals: {}));
                     },
                   ),
                 if (filters.conditionTags.isNotEmpty)
@@ -720,8 +1155,7 @@ class _EasyPickWorkoutsScreenState
                     'Conditions',
                     Icons.healing,
                     () {
-                      ref.read(workoutLibraryFiltersProvider.notifier).state =
-                          filters.copyWith(conditionTags: {});
+                      _setFilters(filters.copyWith(conditionTags: {}));
                     },
                   ),
                 if (filters.abilityTags.isNotEmpty)
@@ -730,8 +1164,7 @@ class _EasyPickWorkoutsScreenState
                     'Ability',
                     Icons.accessible,
                     () {
-                      ref.read(workoutLibraryFiltersProvider.notifier).state =
-                          filters.copyWith(abilityTags: {});
+                      _setFilters(filters.copyWith(abilityTags: {}));
                     },
                   ),
                 if (filters.accessibilityTags.isNotEmpty)
@@ -740,8 +1173,7 @@ class _EasyPickWorkoutsScreenState
                     'Accessibility',
                     Icons.accessibility_new,
                     () {
-                      ref.read(workoutLibraryFiltersProvider.notifier).state =
-                          filters.copyWith(accessibilityTags: {});
+                      _setFilters(filters.copyWith(accessibilityTags: {}));
                     },
                   ),
                 if (filters.equipments.isNotEmpty)
@@ -750,8 +1182,7 @@ class _EasyPickWorkoutsScreenState
                     'Equipment',
                     Icons.handyman,
                     () {
-                      ref.read(workoutLibraryFiltersProvider.notifier).state =
-                          filters.copyWith(equipments: {});
+                      _setFilters(filters.copyWith(equipments: {}));
                     },
                   ),
                 if (filters.difficulties.isNotEmpty)
@@ -760,8 +1191,16 @@ class _EasyPickWorkoutsScreenState
                     'Difficulty',
                     Icons.bar_chart,
                     () {
-                      ref.read(workoutLibraryFiltersProvider.notifier).state =
-                          filters.copyWith(difficulties: {});
+                      _setFilters(filters.copyWith(difficulties: {}));
+                    },
+                  ),
+                if (filters.intensities.isNotEmpty)
+                  _buildEmptyActionChip(
+                    context,
+                    'Intensity',
+                    Icons.local_fire_department,
+                    () {
+                      _setFilters(filters.copyWith(intensities: {}));
                     },
                   ),
                 if (filters.durationRanges.isNotEmpty)
@@ -770,8 +1209,34 @@ class _EasyPickWorkoutsScreenState
                     'Time',
                     Icons.timer,
                     () {
-                      ref.read(workoutLibraryFiltersProvider.notifier).state =
-                          filters.copyWith(durationRanges: {});
+                      _setFilters(filters.copyWith(durationRanges: {}));
+                    },
+                  ),
+                if (filters.healthConsiderations.isNotEmpty)
+                  _buildEmptyActionChip(
+                    context,
+                    'Health',
+                    Icons.healing,
+                    () {
+                      _setFilters(filters.copyWith(healthConsiderations: {}));
+                    },
+                  ),
+                if (filters.spaceRequirements.isNotEmpty)
+                  _buildEmptyActionChip(
+                    context,
+                    'Space',
+                    Icons.open_with,
+                    () {
+                      _setFilters(filters.copyWith(spaceRequirements: {}));
+                    },
+                  ),
+                if (filters.noiseLevels.isNotEmpty)
+                  _buildEmptyActionChip(
+                    context,
+                    'Noise',
+                    Icons.volume_up,
+                    () {
+                      _setFilters(filters.copyWith(noiseLevels: {}));
                     },
                   ),
               ],
@@ -801,7 +1266,7 @@ class _EasyPickWorkoutsScreenState
       ),
       backgroundColor: Theme.of(context).colorScheme.surface,
       side: BorderSide(
-        color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
       ),
       onPressed: onTap,
     );
@@ -815,9 +1280,14 @@ class _EasyPickWorkoutsScreenState
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => Consumer(
-        builder: (context, ref, _) {
-          final filters = ref.watch(workoutLibraryFiltersProvider);
-          return Padding(
+      builder: (context, ref, _) {
+        final filters = ref.watch(workoutLibraryFiltersProvider);
+        final subCategories = workoutLibraryEntries
+            .map((entry) => entry.resolvedSubCategory)
+            .toSet()
+            .toList()
+          ..sort();
+        return Padding(
             padding: EdgeInsets.only(
               left: 20,
               right: 20,
@@ -844,9 +1314,54 @@ class _EasyPickWorkoutsScreenState
                     ],
                   ),
                   const SizedBox(height: 16),
+                  SwitchListTile(
+                    title: const Text('Recommended for You'),
+                    subtitle: const Text('Personalized based on your profile'),
+                    value: filters.recommendedOnly,
+                    onChanged: (value) {
+                      _setFilters(filters.copyWith(recommendedOnly: value));
+                    },
+                  ),
+                  const SizedBox(height: 8),
                   _buildFilterSection(
                     context,
-                    title: 'Body Part',
+                    title: 'Category',
+                    options: WorkoutLibraryPrimaryCategory.values,
+                    selectedValues: filters.primaryCategories,
+                    labelBuilder: (value) => value.displayName,
+                    onToggle: (value, selected) {
+                      final next = Set<WorkoutLibraryPrimaryCategory>.from(
+                        filters.primaryCategories,
+                      );
+                      if (selected) {
+                        next.add(value);
+                      } else {
+                        next.remove(value);
+                      }
+                      _setFilters(filters.copyWith(primaryCategories: next));
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildFilterSection(
+                    context,
+                    title: 'Sub-category',
+                    options: subCategories,
+                    selectedValues: filters.subCategories,
+                    labelBuilder: (value) => value,
+                    onToggle: (value, selected) {
+                      final next = Set<String>.from(filters.subCategories);
+                      if (selected) {
+                        next.add(value);
+                      } else {
+                        next.remove(value);
+                      }
+                      _setFilters(filters.copyWith(subCategories: next));
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildFilterSection(
+                    context,
+                    title: 'Target Area',
                     options: WorkoutBodyFocus.values,
                     selectedValues: filters.bodyFocuses,
                     labelBuilder: (value) => value.displayName,
@@ -859,8 +1374,7 @@ class _EasyPickWorkoutsScreenState
                       } else {
                         next.remove(value);
                       }
-                      ref.read(workoutLibraryFiltersProvider.notifier).state =
-                          filters.copyWith(bodyFocuses: next);
+                      _setFilters(filters.copyWith(bodyFocuses: next));
                     },
                   ),
                   const SizedBox(height: 16),
@@ -877,8 +1391,7 @@ class _EasyPickWorkoutsScreenState
                       } else {
                         next.remove(value);
                       }
-                      ref.read(workoutLibraryFiltersProvider.notifier).state =
-                          filters.copyWith(goals: next);
+                      _setFilters(filters.copyWith(goals: next));
                     },
                   ),
                   const SizedBox(height: 16),
@@ -896,8 +1409,7 @@ class _EasyPickWorkoutsScreenState
                       } else {
                         next.remove(value);
                       }
-                      ref.read(workoutLibraryFiltersProvider.notifier).state =
-                          filters.copyWith(conditionTags: next);
+                      _setFilters(filters.copyWith(conditionTags: next));
                     },
                   ),
                   const SizedBox(height: 16),
@@ -915,8 +1427,7 @@ class _EasyPickWorkoutsScreenState
                       } else {
                         next.remove(value);
                       }
-                      ref.read(workoutLibraryFiltersProvider.notifier).state =
-                          filters.copyWith(abilityTags: next);
+                      _setFilters(filters.copyWith(abilityTags: next));
                     },
                   ),
                   const SizedBox(height: 16),
@@ -934,8 +1445,7 @@ class _EasyPickWorkoutsScreenState
                       } else {
                         next.remove(value);
                       }
-                      ref.read(workoutLibraryFiltersProvider.notifier).state =
-                          filters.copyWith(durationRanges: next);
+                      _setFilters(filters.copyWith(durationRanges: next));
                     },
                   ),
                   const SizedBox(height: 16),
@@ -953,8 +1463,7 @@ class _EasyPickWorkoutsScreenState
                       } else {
                         next.remove(value);
                       }
-                      ref.read(workoutLibraryFiltersProvider.notifier).state =
-                          filters.copyWith(equipments: next);
+                      _setFilters(filters.copyWith(equipments: next));
                     },
                   ),
                   const SizedBox(height: 16),
@@ -972,8 +1481,43 @@ class _EasyPickWorkoutsScreenState
                       } else {
                         next.remove(value);
                       }
-                      ref.read(workoutLibraryFiltersProvider.notifier).state =
-                          filters.copyWith(difficulties: next);
+                      _setFilters(filters.copyWith(difficulties: next));
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildFilterSection(
+                    context,
+                    title: 'Intensity',
+                    options: WorkoutIntensity.values,
+                    selectedValues: filters.intensities,
+                    labelBuilder: (value) => value.displayName,
+                    onToggle: (value, selected) {
+                      final next = Set<WorkoutIntensity>.from(filters.intensities);
+                      if (selected) {
+                        next.add(value);
+                      } else {
+                        next.remove(value);
+                      }
+                      _setFilters(filters.copyWith(intensities: next));
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildFilterSection(
+                    context,
+                    title: 'Health Considerations',
+                    options: WorkoutHealthConsideration.values,
+                    selectedValues: filters.healthConsiderations,
+                    labelBuilder: (value) => value.displayName,
+                    onToggle: (value, selected) {
+                      final next = Set<WorkoutHealthConsideration>.from(
+                        filters.healthConsiderations,
+                      );
+                      if (selected) {
+                        next.add(value);
+                      } else {
+                        next.remove(value);
+                      }
+                      _setFilters(filters.copyWith(healthConsiderations: next));
                     },
                   ),
                   const SizedBox(height: 16),
@@ -1001,8 +1545,43 @@ class _EasyPickWorkoutsScreenState
                       } else {
                         next.remove(value);
                       }
-                      ref.read(workoutLibraryFiltersProvider.notifier).state =
-                          filters.copyWith(accessibilityTags: next);
+                      _setFilters(filters.copyWith(accessibilityTags: next));
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  _buildFilterSection(
+                    context,
+                    title: 'Space Required',
+                    options: WorkoutSpaceRequirement.values,
+                    selectedValues: filters.spaceRequirements,
+                    labelBuilder: (value) => value.displayName,
+                    onToggle: (value, selected) {
+                      final next = Set<WorkoutSpaceRequirement>.from(
+                        filters.spaceRequirements,
+                      );
+                      if (selected) {
+                        next.add(value);
+                      } else {
+                        next.remove(value);
+                      }
+                      _setFilters(filters.copyWith(spaceRequirements: next));
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildFilterSection(
+                    context,
+                    title: 'Noise Level',
+                    options: WorkoutNoiseLevel.values,
+                    selectedValues: filters.noiseLevels,
+                    labelBuilder: (value) => value.displayName,
+                    onToggle: (value, selected) {
+                      final next = Set<WorkoutNoiseLevel>.from(filters.noiseLevels);
+                      if (selected) {
+                        next.add(value);
+                      } else {
+                        next.remove(value);
+                      }
+                      _setFilters(filters.copyWith(noiseLevels: next));
                     },
                   ),
                   const SizedBox(height: 20),
@@ -1011,8 +1590,9 @@ class _EasyPickWorkoutsScreenState
                       Expanded(
                         child: OutlinedButton(
                           onPressed: () {
-                            ref.read(workoutLibraryFiltersProvider.notifier)
-                                .state = const WorkoutLibraryFilters();
+                            ref
+                                .read(workoutLibraryFiltersProvider.notifier)
+                                .clearAll();
                             Navigator.pop(context);
                           },
                           style: OutlinedButton.styleFrom(

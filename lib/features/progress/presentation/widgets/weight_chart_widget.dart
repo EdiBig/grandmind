@@ -37,7 +37,7 @@ class _WeightChartWidgetState extends State<WeightChartWidget> {
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -78,7 +78,7 @@ class _WeightChartWidgetState extends State<WeightChartWidget> {
         horizontalInterval: (effectiveRange + padding * 2) / 4,
         getDrawingHorizontalLine: (value) {
           return FlLine(
-            color: Colors.grey.withOpacity(0.2),
+            color: Colors.grey.withValues(alpha: 0.2),
             strokeWidth: 1,
           );
         },
@@ -135,8 +135,8 @@ class _WeightChartWidgetState extends State<WeightChartWidget> {
       borderData: FlBorderData(
         show: true,
         border: Border(
-          bottom: BorderSide(color: Colors.grey.withOpacity(0.2)),
-          left: BorderSide(color: Colors.grey.withOpacity(0.2)),
+          bottom: BorderSide(color: Colors.grey.withValues(alpha: 0.2)),
+          left: BorderSide(color: Colors.grey.withValues(alpha: 0.2)),
         ),
       ),
       minX: 0,
@@ -165,8 +165,8 @@ class _WeightChartWidgetState extends State<WeightChartWidget> {
             show: true,
             gradient: LinearGradient(
               colors: [
-                colorScheme.primary.withOpacity(0.3),
-                colorScheme.primary.withOpacity(0.0),
+                colorScheme.primary.withValues(alpha: 0.3),
+                colorScheme.primary.withValues(alpha: 0.0),
               ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,

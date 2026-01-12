@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../data/repositories/progress_repository.dart';
@@ -470,7 +471,7 @@ class ProgressOperations extends StateNotifier<AsyncValue<void>> {
       }
     } catch (e) {
       // Silently fail - don't block weight logging if goal update fails
-      print('Error updating weight goals: $e');
+      debugPrint('Error updating weight goals: $e');
     }
   }
 
@@ -494,7 +495,7 @@ class ProgressOperations extends StateNotifier<AsyncValue<void>> {
       }
     } catch (e) {
       // Silently fail
-      print('Error updating measurement goals: $e');
+      debugPrint('Error updating measurement goals: $e');
     }
   }
 }

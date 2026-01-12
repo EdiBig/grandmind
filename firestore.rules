@@ -137,8 +137,33 @@ service cloud.firestore {
       allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
-    // Food items collection - read: all authenticated, write: only owner
+    // Food items collection - read: all authenticated, write: only owner       
     match /food_items/{foodId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // Saved workouts collection - users can only access their own saved items
+    match /user_saved_workouts/{savedWorkoutId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // Community challenges (Unity) collection
+    match /challenges/{challengeId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.createdBy == request.auth.uid;
+      allow update: if isAuthenticated() &&
+        (resource.data.createdBy == request.auth.uid ||
+         request.resource.data.diff(resource.data).changedKeys()
+           .hasOnly(['participantCount']));
+      allow delete: if isAuthenticated() && resource.data.createdBy == request.auth.uid;
+    }
+
+    // Unity challenge participants collection
+    match /challengeParticipants/{participantId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;

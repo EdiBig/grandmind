@@ -21,7 +21,7 @@ class QuickActionChips extends StatelessWidget {
             'Quick Actions',
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.grey[700],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           ),
           const SizedBox(height: 12),
@@ -38,6 +38,7 @@ class QuickActionChips extends StatelessWidget {
   }
 
   Widget _buildActionChip(BuildContext context, QuickAction action) {
+    final colorScheme = Theme.of(context).colorScheme;
     return ActionChip(
       avatar: Text(
         action.icon,
@@ -46,10 +47,11 @@ class QuickActionChips extends StatelessWidget {
       label: Text(action.label),
       tooltip: action.description,
       onPressed: () => onActionTap(action),
-      backgroundColor: Colors.grey[100],
+      backgroundColor: colorScheme.surfaceContainerHighest,
+      labelStyle: TextStyle(color: colorScheme.onSurface),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: Colors.grey[300]!),
+        side: BorderSide(color: colorScheme.outlineVariant),
       ),
     );
   }

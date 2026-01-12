@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,6 +7,7 @@ import '../features/authentication/presentation/screens/splash_screen.dart';
 import '../features/authentication/presentation/screens/login_screen.dart';
 import '../features/authentication/presentation/screens/signup_screen.dart';
 import '../features/authentication/presentation/screens/forgot_password_screen.dart';
+import '../features/authentication/presentation/screens/reset_password_screen.dart';
 import '../features/onboarding/presentation/screens/welcome_screen.dart';
 import '../features/onboarding/presentation/screens/goal_selection_screen.dart';
 import '../features/onboarding/presentation/screens/fitness_level_screen.dart';
@@ -25,12 +27,19 @@ import '../features/settings/presentation/screens/help_center_screen.dart';
 import '../features/settings/presentation/screens/about_screen.dart';
 import '../features/settings/presentation/screens/terms_screen.dart';
 import '../features/settings/presentation/screens/privacy_policy_screen.dart';
+import '../features/settings/presentation/screens/community_guidelines_screen.dart';
 import '../features/ai/presentation/screens/ai_coach_screen.dart';
 import '../features/habits/presentation/screens/create_habit_screen.dart';
 import '../features/habits/presentation/screens/habit_insights_screen.dart';
 import '../features/habits/data/services/habit_insights_service.dart';
 import '../features/health/presentation/screens/health_details_screen.dart';
 import '../features/health/presentation/screens/health_sync_screen.dart';
+import '../features/workouts/presentation/screens/fitness_profile_screen.dart';
+import '../features/workouts/presentation/screens/my_routines_screen.dart';
+import '../features/challenges/presentation/screens/create_challenge_screen.dart';
+import '../features/challenges/presentation/screens/challenge_detail_screen.dart';
+import '../features/challenges/presentation/screens/challenge_rankings_screen.dart';
+import '../features/challenges/presentation/screens/challenge_activity_feed_screen.dart';
 import '../features/progress/presentation/screens/progress_insights_screen.dart';
 import '../features/progress/presentation/screens/progress_dashboard_screen.dart';
 import '../features/notifications/presentation/screens/notification_settings_screen.dart';
@@ -45,8 +54,20 @@ import '../features/nutrition/presentation/screens/barcode_scanner_screen.dart';
 
 /// Provider for the app router
 final appRouterProvider = Provider<GoRouter>((ref) {
+  final basePath = Uri.base.path.isEmpty ? RouteConstants.splash : Uri.base.path;
+  final initialLocation = kIsWeb
+      ? '$basePath${Uri.base.hasQuery ? '?${Uri.base.query}' : ''}'
+      : RouteConstants.splash;
+  void scheduleHomeTab(int index) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (ref.read(selectedIndexProvider) != index) {
+        ref.read(selectedIndexProvider.notifier).state = index;
+      }
+    });
+  }
+
   return GoRouter(
-    initialLocation: RouteConstants.splash,
+    initialLocation: initialLocation,
     debugLogDiagnostics: true,
     routes: [
       // Splash Screen
@@ -71,6 +92,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: RouteConstants.forgotPassword,
         name: 'forgotPassword',
         builder: (context, state) => const ForgotPasswordScreen(),
+      ),
+      GoRoute(
+        path: RouteConstants.resetPassword,
+        name: 'resetPassword',
+        builder: (context, state) {
+          final code = state.uri.queryParameters['oobCode'];
+          return ResetPasswordScreen(oobCode: code);
+        },
       ),
 
       // Onboarding Routes
@@ -109,7 +138,79 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RouteConstants.home,
         name: 'home',
-        builder: (context, state) => const HomeScreen(),
+        builder: (context, state) {
+          scheduleHomeTab(0);
+          return const HomeScreen();
+        },
+      ),
+      GoRoute(
+        path: RouteConstants.workouts,
+        name: 'workouts',
+        builder: (context, state) {
+          scheduleHomeTab(1);
+          return const HomeScreen();
+        },
+      ),
+      GoRoute(
+        path: RouteConstants.together,
+        name: 'together',
+        builder: (context, state) {
+          scheduleHomeTab(2);
+          return const HomeScreen();
+        },
+      ),
+      GoRoute(
+        path: RouteConstants.createChallenge,
+        name: 'createChallenge',
+        builder: (context, state) => const CreateChallengeScreen(),
+      ),
+      GoRoute(
+        path: RouteConstants.challengeDetail,
+        name: 'challengeDetail',
+        builder: (context, state) {
+          final challengeId = state.pathParameters['id'] ?? '';
+          return ChallengeDetailScreen(challengeId: challengeId);
+        },
+      ),
+      GoRoute(
+        path: RouteConstants.challengeRankings,
+        name: 'challengeRankings',
+        builder: (context, state) {
+          final challengeId = state.pathParameters['id'] ?? '';
+          return ChallengeRankingsScreen(challengeId: challengeId);
+        },
+      ),
+      GoRoute(
+        path: RouteConstants.challengeFeed,
+        name: 'challengeFeed',
+        builder: (context, state) {
+          final challengeId = state.pathParameters['id'] ?? '';
+          return ChallengeActivityFeedScreen(challengeId: challengeId);
+        },
+      ),
+      GoRoute(
+        path: RouteConstants.habits,
+        name: 'habits',
+        builder: (context, state) {
+          scheduleHomeTab(3);
+          return const HomeScreen();
+        },
+      ),
+      GoRoute(
+        path: RouteConstants.progress,
+        name: 'progress',
+        builder: (context, state) {
+          scheduleHomeTab(4);
+          return const HomeScreen();
+        },
+      ),
+      GoRoute(
+        path: RouteConstants.nutrition,
+        name: 'nutrition',
+        builder: (context, state) {
+          scheduleHomeTab(5);
+          return const HomeScreen();
+        },
       ),
       GoRoute(
         path: RouteConstants.logActivity,
@@ -142,6 +243,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const HealthSyncScreen(),
       ),
       GoRoute(
+        path: RouteConstants.fitnessProfile,
+        name: 'fitnessProfile',
+        builder: (context, state) => const FitnessProfileScreen(),
+      ),
+      GoRoute(
+        path: RouteConstants.myRoutines,
+        name: 'myRoutines',
+        builder: (context, state) => const MyRoutinesScreen(),
+      ),
+      GoRoute(
         path: RouteConstants.apiKeySetup,
         name: 'apiKeySetup',
         builder: (context, state) => const ApiKeySetupScreen(),
@@ -155,6 +266,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: RouteConstants.privacy,
         name: 'privacy',
         builder: (context, state) => const PrivacyScreen(),
+      ),
+      GoRoute(
+        path: RouteConstants.communityGuidelines,
+        name: 'communityGuidelines',
+        builder: (context, state) => const CommunityGuidelinesScreen(),
       ),
       GoRoute(
         path: RouteConstants.help,

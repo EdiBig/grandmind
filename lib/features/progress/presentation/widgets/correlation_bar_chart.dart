@@ -130,7 +130,7 @@ class CorrelationBarChart extends StatelessWidget {
             verticalInterval: 0.5,
             getDrawingHorizontalLine: (value) {
               return FlLine(
-                color: Colors.grey.withOpacity(0.2),
+                color: Colors.grey.withValues(alpha: 0.2),
                 strokeWidth: 1,
               );
             },
@@ -138,12 +138,12 @@ class CorrelationBarChart extends StatelessWidget {
               // Highlight the zero line
               if (value == 0) {
                 return FlLine(
-                  color: Colors.grey.withOpacity(0.5),
+                  color: Colors.grey.withValues(alpha: 0.5),
                   strokeWidth: 2,
                 );
               }
               return FlLine(
-                color: Colors.grey.withOpacity(0.2),
+                color: Colors.grey.withValues(alpha: 0.2),
                 strokeWidth: 1,
               );
             },
@@ -151,7 +151,7 @@ class CorrelationBarChart extends StatelessWidget {
           borderData: FlBorderData(
             show: true,
             border: Border.all(
-              color: Colors.grey.withOpacity(0.2),
+              color: Colors.grey.withValues(alpha: 0.2),
             ),
           ),
           barGroups: displayCorrelations.asMap().entries.map((entry) {

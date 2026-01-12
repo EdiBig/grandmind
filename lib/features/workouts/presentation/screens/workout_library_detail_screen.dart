@@ -1,19 +1,35 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/workout_library_data.dart';
 import '../../domain/models/workout_library_entry.dart';
 import '../../domain/models/workout.dart';
 import '../../domain/models/exercise.dart';
+import '../../domain/models/user_saved_workout.dart';
 import '../providers/workout_library_favorites_provider.dart';
+import '../providers/saved_workouts_provider.dart';
+import '../../data/repositories/workout_repository.dart';
+import '../utils/workout_share_helper.dart';
 import 'workout_logging_screen.dart';
 
-class WorkoutLibraryDetailScreen extends ConsumerWidget {
+class WorkoutLibraryDetailScreen extends ConsumerStatefulWidget {
   const WorkoutLibraryDetailScreen({super.key, required this.entry});
 
   final WorkoutLibraryEntry entry;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<WorkoutLibraryDetailScreen> createState() =>
+      _WorkoutLibraryDetailScreenState();
+}
+
+class _WorkoutLibraryDetailScreenState
+    extends ConsumerState<WorkoutLibraryDetailScreen> {
+  bool _isSaving = false;
+
+  WorkoutLibraryEntry get entry => widget.entry;
+
+  @override
+  Widget build(BuildContext context) {
     final color = _categoryColor(context, entry.category);
     final favorites = ref.watch(workoutLibraryFavoritesProvider);
     final isFavorite = favorites.contains(entry.id);
@@ -38,7 +54,13 @@ class WorkoutLibraryDetailScreen extends ConsumerWidget {
         children: [
           _buildHeader(context, color),
           const SizedBox(height: 16),
+          _buildDescription(context),
+          const SizedBox(height: 16),
           _buildTags(context),
+          const SizedBox(height: 16),
+          _buildEquipmentRow(context),
+          const SizedBox(height: 16),
+          _buildDifficultyInfo(context),
           const SizedBox(height: 20),
           _buildTargets(context),
           const SizedBox(height: 16),
@@ -48,7 +70,9 @@ class WorkoutLibraryDetailScreen extends ConsumerWidget {
           const SizedBox(height: 20),
           _buildInstructionTiles(context),
           const SizedBox(height: 20),
-          _buildActions(context, ref),
+          _buildAlternatives(context),
+          const SizedBox(height: 20),
+          _buildSecondaryActions(context),
           const SizedBox(height: 20),
         ],
       ),
@@ -65,8 +89,8 @@ class WorkoutLibraryDetailScreen extends ConsumerWidget {
                 ),
               );
             },
-            icon: const Icon(Icons.add_circle_outline),
-            label: const Text('Add Workout'),
+            icon: const Icon(Icons.play_circle_outline),
+            label: const Text('Start Workout'),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
@@ -85,15 +109,15 @@ class WorkoutLibraryDetailScreen extends ConsumerWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            color.withOpacity(0.15),
-            color.withOpacity(0.05),
+            color.withValues(alpha: 0.15),
+            color.withValues(alpha: 0.05),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: color.withOpacity(0.2),
+          color: color.withValues(alpha: 0.2),
         ),
       ),
       child: Row(
@@ -143,9 +167,11 @@ class WorkoutLibraryDetailScreen extends ConsumerWidget {
       spacing: 8,
       runSpacing: 8,
       children: [
-        _buildTag(context, entry.equipment.displayName),
+        _buildTag(context, entry.resolvedPrimaryCategory.displayName),
+        _buildTag(context, entry.resolvedSubCategory),
         _buildTag(context, entry.difficulty.displayName),
         _buildTag(context, '${entry.durationMinutes} min'),
+        _buildTag(context, entry.resolvedIntensity.displayName),
         if (entry.isCompound) _buildTag(context, 'Compound'),
         if (entry.isBodyweight) _buildTag(context, 'Bodyweight'),
         if (entry.abilityTags.isNotEmpty) _buildTag(context, 'Adapted'),
@@ -153,11 +179,152 @@ class WorkoutLibraryDetailScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildDescription(BuildContext context) {
+    final description = entry.previewLabel ??
+        'Builds ${entry.targetSummary.toLowerCase()} while improving form and control.';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'About this workout',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          description,
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEquipmentRow(BuildContext context) {
+    final equipmentOptions = entry.resolvedEquipmentOptions;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Equipment needed',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: equipmentOptions
+              .map(
+                (equipment) => _buildIconTag(
+                  context,
+                  _equipmentIcon(equipment),
+                  equipment.displayName,
+                ),
+              )
+              .toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDifficultyInfo(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.signal_cellular_alt,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  entry.difficulty.displayName,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  entry.difficulty.description,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color:
+                            Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIconTag(BuildContext context, IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 16,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _equipmentIcon(WorkoutEquipment equipment) {
+    switch (equipment) {
+      case WorkoutEquipment.bodyweight:
+        return Icons.accessibility_new;
+      case WorkoutEquipment.dumbbell:
+      case WorkoutEquipment.barbell:
+      case WorkoutEquipment.kettlebell:
+        return Icons.fitness_center;
+      case WorkoutEquipment.resistanceBand:
+        return Icons.linear_scale;
+      case WorkoutEquipment.chair:
+        return Icons.chair_alt;
+      case WorkoutEquipment.gymMachine:
+        return Icons.precision_manufacturing;
+      case WorkoutEquipment.pullUpBar:
+        return Icons.horizontal_rule;
+      case WorkoutEquipment.cardioMachine:
+        return Icons.directions_run;
+      case WorkoutEquipment.yogaMat:
+        return Icons.self_improvement;
+    }
+  }
+
   Widget _buildTag(BuildContext context, String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceVariant,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Text(
@@ -269,10 +436,10 @@ class WorkoutLibraryDetailScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
         ),
       ),
       child: Row(
@@ -329,35 +496,268 @@ class WorkoutLibraryDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildActions(BuildContext context, WidgetRef ref) {
-    final hasVariants = entry.variantIds.isNotEmpty;
-    final isFavorite =
-        ref.watch(workoutLibraryFavoritesProvider).contains(entry.id);
+  Widget _buildAlternatives(BuildContext context) {
+    if (entry.variantIds.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Alternative exercises',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed: () => _showVariantsSheet(context),
+          icon: const Icon(Icons.swap_horizontal_circle_outlined),
+          label: const Text('See alternatives'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSecondaryActions(BuildContext context) {
+    final savedMap = ref.watch(savedWorkoutsByWorkoutIdProvider);
+    final savedEntry = savedMap[entry.id];
+    final isSaved = savedEntry != null;
+
     return Row(
       children: [
         Expanded(
-          child: OutlinedButton.icon(
-            onPressed: () async {
-              await ref
-                  .read(workoutLibraryFavoritesProvider.notifier)
-                  .toggleFavorite(entry.id);
-            },
-            icon: Icon(isFavorite ? Icons.favorite : Icons.favorite_border),
-            label: Text(isFavorite ? 'Favorited' : 'Favorite'),
-          ),
+          child: isSaved
+              ? ElevatedButton.icon(
+                  onPressed: _isSaving
+                      ? null
+                      : () => _handleSavedAction(context, savedEntry!),
+                  icon: _isSaving
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.check_circle_outline),
+                  label: Text(_isSaving ? 'Working...' : 'In My Routines'),
+                )
+              : OutlinedButton.icon(
+                  onPressed: _isSaving ? null : () => _handleSaveAction(context),
+                  icon: _isSaving
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.add),
+                  label: Text(_isSaving ? 'Saving...' : 'Add to My Routines'),
+                ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: OutlinedButton.icon(
-            onPressed: hasVariants
-                ? () => _showVariantsSheet(context)
-                : null,
-            icon: const Icon(Icons.swap_horizontal_circle_outlined),
-            label: const Text('Replace'),
+            onPressed: _isSaving ? null : () => _handleShareAction(context),
+            icon: const Icon(Icons.share_outlined),
+            label: const Text('Share'),
           ),
         ),
       ],
     );
+  }
+
+  Future<void> _handleSaveAction(BuildContext context) async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) {
+      _showMessage('Sign in to save routines.');
+      return;
+    }
+
+    final details = await _showSaveDialog(context);
+    if (details == null) {
+      return;
+    }
+
+    setState(() => _isSaving = true);
+    try {
+      await ref.read(workoutRepositoryProvider).saveWorkoutToRoutines(
+            userId: userId,
+            workoutId: entry.id,
+            folderName: details.folderName,
+            notes: details.notes,
+          );
+      _showMessage('Added to My Routines.');
+    } catch (error) {
+      _showMessage('Try again. ${error.toString()}');
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
+
+  Future<void> _handleSavedAction(
+    BuildContext context,
+    UserSavedWorkout saved,
+  ) async {
+    if (_isSaving) {
+      return;
+    }
+    final result = await showDialog<_SavedRoutineAction>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Already in your routines'),
+        content: const Text('Would you like to remove it or update details?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () =>
+                Navigator.pop(context, _SavedRoutineAction.edit),
+            child: const Text('Edit'),
+          ),
+          TextButton(
+            onPressed: () =>
+                Navigator.pop(context, _SavedRoutineAction.remove),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == null) {
+      return;
+    }
+
+    setState(() => _isSaving = true);
+    try {
+      if (result == _SavedRoutineAction.remove) {
+        await ref
+            .read(workoutRepositoryProvider)
+            .removeSavedWorkout(saved.id);
+        _showMessage('Removed from My Routines.');
+      } else {
+        final details = await _showSaveDialog(
+          context,
+          folderName: saved.folderName,
+          notes: saved.notes,
+        );
+        if (details != null) {
+          await ref.read(workoutRepositoryProvider).updateSavedWorkout(
+                savedWorkoutId: saved.id,
+                folderName: details.folderName,
+                notes: details.notes,
+              );
+          _showMessage('Updated routine details.');
+        }
+      }
+    } catch (error) {
+      _showMessage('Try again. ${error.toString()}');
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
+
+  Future<_SavedRoutineDetails?> _showSaveDialog(
+    BuildContext context, {
+    String? folderName,
+    String? notes,
+  }) async {
+    final folderController = TextEditingController(text: folderName ?? '');
+    final notesController = TextEditingController(text: notes ?? '');
+    final result = await showDialog<_SavedRoutineDetails>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Save to My Routines'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: folderController,
+              decoration: const InputDecoration(
+                labelText: 'Folder (optional)',
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: notesController,
+              decoration: const InputDecoration(
+                labelText: 'Notes (optional)',
+              ),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(
+                context,
+                _SavedRoutineDetails(
+                  folderName: folderController.text.trim(),
+                  notes: notesController.text.trim(),
+                ),
+              );
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    return result;
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  Future<void> _handleShareAction(BuildContext context) async {
+    final note = await _showShareDialog(context);
+    if (note == null) {
+      return;
+    }
+    await WorkoutShareHelper.shareWorkout(entry, note: note);
+    _showMessage('Share sheet opened.');
+  }
+
+  Future<String?> _showShareDialog(BuildContext context) async {
+    final controller = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add a message?'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            hintText: 'Optional note',
+          ),
+          maxLines: 3,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('Share'),
+          ),
+        ],
+      ),
+    );
+    return result;
   }
 
   void _showVariantsSheet(BuildContext context) {
@@ -507,4 +907,19 @@ class WorkoutLibraryDetailScreen extends ConsumerWidget {
       ],
     );
   }
+}
+
+class _SavedRoutineDetails {
+  const _SavedRoutineDetails({
+    required this.folderName,
+    required this.notes,
+  });
+
+  final String folderName;
+  final String notes;
+}
+
+enum _SavedRoutineAction {
+  remove,
+  edit,
 }

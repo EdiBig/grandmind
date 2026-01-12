@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../../../../core/constants/route_constants.dart';
 import '../../../../core/providers/auth_config_provider.dart';
+import '../../../user/data/services/firestore_service.dart';
 import '../providers/auth_provider.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
@@ -22,6 +24,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _agreedToTerms = false;
+  bool _hasNavigated = false;
 
   @override
   void dispose() {
@@ -63,10 +66,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     final appleEnabledAsync = ref.watch(appleSignInEnabledProvider);
 
     ref.listen<AuthState>(authControllerProvider, (previous, next) {
-      if (next.status == AuthStatus.authenticated) {
-        // Navigate to onboarding for new users
-        context.go(RouteConstants.onboarding);
-      } else if (next.status == AuthStatus.error) {
+      if (next.status == AuthStatus.error) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(next.errorMessage ?? 'An error occurred'),
@@ -74,6 +74,41 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           ),
         );
       }
+    });
+
+    ref.listen<AsyncValue<User?>>(authStateProvider, (previous, next) async {
+      if (!mounted || _hasNavigated) return;
+
+      await next.when(
+        data: (user) async {
+          if (user == null || _hasNavigated || !mounted) return;
+
+          _hasNavigated = true;
+
+          try {
+            final firestoreService = ref.read(firestoreServiceProvider);
+            var userData = await firestoreService.getUser(user.uid);
+            userData ??= await ref
+                .read(authRepositoryProvider)
+                .ensureUserProfile(user);
+
+            if (!context.mounted) return;
+
+            final hasCompletedOnboarding = userData.hasCompletedOnboarding;
+
+            if (hasCompletedOnboarding) {
+              context.go(RouteConstants.home);
+            } else {
+              context.go(RouteConstants.onboarding);
+            }
+          } catch (e) {
+            if (!context.mounted) return;
+            context.go(RouteConstants.onboarding);
+          }
+        },
+        loading: () async {},
+        error: (_, __) async {},
+      );
     });
 
     final isAppleSignInSupported = !kIsWeb &&

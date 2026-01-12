@@ -3,7 +3,6 @@ import '../../../../features/ai/data/services/claude_api_service.dart';
 import '../../../../features/ai/presentation/providers/ai_providers.dart';
 import '../../domain/models/habit.dart';
 import '../../domain/models/habit_log.dart';
-import '../repositories/habit_repository.dart';
 
 /// Provider for HabitInsightsService
 final habitInsightsServiceProvider = Provider<HabitInsightsService>((ref) {

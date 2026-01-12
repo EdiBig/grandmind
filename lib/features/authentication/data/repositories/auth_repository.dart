@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'dart:math';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
+import '../../../../core/errors/exceptions.dart';
 import '../../../user/data/models/user_model.dart';
 import '../../../user/data/services/firestore_service.dart';
 
@@ -30,10 +31,15 @@ class AuthRepository {
     String password,
   ) async {
     try {
-      return await _firebaseAuth.signInWithEmailAndPassword(
+      final userCredential = await _firebaseAuth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
+      final user = userCredential.user;
+      if (user != null) {
+        await ensureUserProfile(user);
+      }
+      return userCredential;
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
     }
@@ -57,6 +63,10 @@ class AuthRepository {
           id: userCredential.user!.uid,
           email: email,
           displayName: displayName,
+          signInProvider: userCredential.user!.providerData.isNotEmpty
+              ? userCredential.user!.providerData.first.providerId
+              : null,
+          hasCompletedOnboarding: false,
           onboarding: const {'completed': false},
           createdAt: now,
           updatedAt: now,
@@ -84,7 +94,10 @@ class AuthRepository {
       } else {
         final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
         if (googleUser == null) {
-          throw Exception('Google sign-in aborted');
+          throw const AuthException(
+            message: 'Google sign-in canceled',
+            code: 'sign-in-cancelled',
+          );
         }
 
         final GoogleSignInAuthentication googleAuth =
@@ -101,27 +114,15 @@ class AuthRepository {
 
       // Create or update user profile in Firestore
       if (userCredential.user != null) {
-        final existingUser = await _firestoreService.getUser(userCredential.user!.uid);
-
-        if (existingUser == null) {
-          // New user - create profile
-          final now = DateTime.now();
-          final userModel = UserModel(
-            id: userCredential.user!.uid,
-            email: userCredential.user!.email ?? '',
-            displayName: userCredential.user!.displayName,
-            photoUrl: userCredential.user!.photoURL,
-            onboarding: const {'completed': false},
-            createdAt: now,
-            updatedAt: now,
-          );
-          await _firestoreService.createUser(userModel);
-        }
+        await ensureUserProfile(userCredential.user!);
       }
 
       return userCredential;
     } catch (e) {
-      throw Exception('Google sign-in failed: $e');
+      if (e is AuthException) {
+        rethrow;
+      }
+      throw AuthException(message: 'Google sign-in failed: $e');
     }
   }
 
@@ -147,26 +148,15 @@ class AuthRepository {
           await _firebaseAuth.signInWithCredential(oauthCredential);
 
       if (userCredential.user != null) {
-        final existingUser =
-            await _firestoreService.getUser(userCredential.user!.uid);
+        final displayName = [
+          appleCredential.givenName,
+          appleCredential.familyName,
+        ].where((value) => value?.isNotEmpty ?? false).join(' ').trim();
 
-        if (existingUser == null) {
-          final now = DateTime.now();
-          final displayName = [
-            appleCredential.givenName,
-            appleCredential.familyName,
-          ].where((value) => value != null && value!.isNotEmpty).join(' ').trim();
-
-          final userModel = UserModel(
-            id: userCredential.user!.uid,
-            email: userCredential.user!.email ?? '',
-            displayName: displayName.isEmpty ? null : displayName,
-            onboarding: const {'completed': false},
-            createdAt: now,
-            updatedAt: now,
-          );
-          await _firestoreService.createUser(userModel);
-        }
+        await ensureUserProfile(
+          userCredential.user!,
+          overrideDisplayName: displayName,
+        );
       }
 
       return userCredential;
@@ -202,6 +192,40 @@ class AuthRepository {
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
     }
+  }
+
+  Future<UserModel> ensureUserProfile(
+    User user, {
+    String? overrideDisplayName,
+  }) async {
+    final existingUser = await _firestoreService.getUser(user.uid);
+    if (existingUser != null) {
+      return existingUser;
+    }
+
+    final now = DateTime.now();
+    final displayName =
+        (overrideDisplayName != null && overrideDisplayName.isNotEmpty)
+            ? overrideDisplayName
+            : user.displayName;
+    final providerId = user.providerData.isNotEmpty
+        ? user.providerData.first.providerId
+        : null;
+
+    final userModel = UserModel(
+      id: user.uid,
+      email: user.email ?? '',
+      displayName: displayName,
+      photoUrl: user.photoURL,
+      hasCompletedOnboarding: false,
+      signInProvider: providerId,
+      onboarding: const {'completed': false},
+      createdAt: now,
+      updatedAt: now,
+    );
+
+    await _firestoreService.createUser(userModel);
+    return userModel;
   }
 
   String _handleAuthException(FirebaseAuthException e) {

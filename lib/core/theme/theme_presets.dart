@@ -17,11 +17,11 @@ class ThemePreset {
 class ThemePresets {
   ThemePresets._();
 
-  static const ThemePreset sunrise = ThemePreset(
-    id: 'sunrise',
-    name: 'Sunrise',
-    seedColor: Color(0xFFF97316),
-    accentColor: Color(0xFFFB7185),
+  static const ThemePreset kinesa = ThemePreset(
+    id: 'kinesa',
+    name: 'Kinesa',
+    seedColor: Color(0xFF2F7DD8),
+    accentColor: Color(0xFF5AA5A1),
   );
 
   static const ThemePreset ocean = ThemePreset(
@@ -53,7 +53,7 @@ class ThemePresets {
   );
 
   static const List<ThemePreset> all = [
-    sunrise,
+    kinesa,
     ocean,
     forest,
     canyon,
@@ -61,10 +61,10 @@ class ThemePresets {
   ];
 
   static ThemePreset byId(String? id) {
-    if (id == null) return sunrise;
+    if (id == null || id == 'grandpoint') return kinesa;
     return all.firstWhere(
       (preset) => preset.id == id,
-      orElse: () => sunrise,
+      orElse: () => kinesa,
     );
   }
 }

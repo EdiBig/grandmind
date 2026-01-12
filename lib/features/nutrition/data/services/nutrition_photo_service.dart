@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 
@@ -22,7 +23,7 @@ class NutritionPhotoService {
       if (photo == null) return null;
       return File(photo.path);
     } catch (e) {
-      print('Error taking photo: $e');
+      debugPrint('Error taking photo: $e');
       return null;
     }
   }
@@ -40,7 +41,7 @@ class NutritionPhotoService {
       if (photo == null) return null;
       return File(photo.path);
     } catch (e) {
-      print('Error picking photo: $e');
+      debugPrint('Error picking photo: $e');
       return null;
     }
   }
@@ -81,7 +82,7 @@ class NutritionPhotoService {
       final String downloadUrl = await snapshot.ref.getDownloadURL();
       return downloadUrl;
     } catch (e) {
-      print('Error uploading photo: $e');
+      debugPrint('Error uploading photo: $e');
       return null;
     }
   }
@@ -95,7 +96,7 @@ class NutritionPhotoService {
       await ref.delete();
       return true;
     } catch (e) {
-      print('Error deleting photo: $e');
+      debugPrint('Error deleting photo: $e');
       return false;
     }
   }
@@ -130,7 +131,7 @@ class NutritionPhotoService {
       if (image == null) return null;
       return File(image.path);
     } catch (e) {
-      print('Error getting image: $e');
+      debugPrint('Error getting image: $e');
       return null;
     }
   }

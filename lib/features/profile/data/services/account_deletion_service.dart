@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 /// Service for handling account deletion
@@ -28,7 +29,7 @@ class AccountDeletionService {
       // Step 3: Delete Firebase Auth account
       await user.delete();
 
-      print('Account successfully deleted for user: $userId');
+      debugPrint('Account successfully deleted for user: $userId');
     } catch (e) {
       throw Exception('Failed to delete account: $e');
     }
@@ -97,7 +98,7 @@ class AccountDeletionService {
       // Delete progress photos
       await _deleteStorageFolder('progress_photos/$userId');
     } catch (e) {
-      print('Error deleting storage files: $e');
+      debugPrint('Error deleting storage files: $e');
       // Continue even if storage deletion fails
     }
   }
@@ -118,7 +119,7 @@ class AccountDeletionService {
       }
     } catch (e) {
       // Folder might not exist, which is fine
-      print('Error deleting folder $folderPath: $e');
+      debugPrint('Error deleting folder $folderPath: $e');
     }
   }
 

@@ -1,6 +1,5 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:logger/logger.dart';
 
 /// Configuration class for AI features

@@ -1,6 +1,6 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
 
@@ -63,7 +63,7 @@ class ProfilePhotoService {
       await ref.delete();
     } catch (e) {
       // Silently fail - photo might already be deleted
-      print('Failed to delete profile photo: $e');
+      debugPrint('Failed to delete profile photo: $e');
     }
   }
 

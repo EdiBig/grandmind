@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/route_constants.dart';
 import '../../domain/onboarding_data.dart';
 import '../providers/onboarding_provider.dart';
+import '../widgets/onboarding_shell.dart';
 
 class CoachToneScreen extends ConsumerWidget {
   const CoachToneScreen({super.key});
@@ -15,7 +16,6 @@ class CoachToneScreen extends ConsumerWidget {
 
     ref.listen<OnboardingState>(onboardingProvider, (previous, next) {
       if (next.status == OnboardingStatus.completed) {
-        // Navigate to home after successful onboarding
         context.go(RouteConstants.home);
       } else if (next.status == OnboardingStatus.error) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -28,37 +28,33 @@ class CoachToneScreen extends ConsumerWidget {
     });
 
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
-        ),
-        title: const Text('Step 5 of 5'),
-      ),
-      body: SafeArea(
+      body: OnboardingBackground(
         child: Column(
           children: [
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Choose your coach style',
-                      style:
-                          Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                    OnboardingStepHeader(
+                      step: 5,
+                      totalSteps: 5,
+                      title: 'Choose your coach style',
+                      subtitle: 'Pick the tone that keeps you motivated.',
+                      onBack: () => context.pop(),
+                      eyebrow: 'Make it personal',
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'How would you like us to motivate you?',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: Colors.grey[600],
-                          ),
+                    const SizedBox(height: 24),
+                    _ToneSegmentedControl(
+                      selected: onboardingState.coachTone,
+                      onSelected: (tone) {
+                        ref
+                            .read(onboardingProvider.notifier)
+                            .setCoachTone(tone);
+                      },
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 20),
                     ...CoachTone.values.map((tone) {
                       final isSelected = onboardingState.coachTone == tone;
                       return Padding(
@@ -74,22 +70,25 @@ class CoachToneScreen extends ConsumerWidget {
                         ),
                       );
                     }),
-                    const SizedBox(height: 16),
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: colorScheme.secondaryContainer,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: colorScheme.secondary),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: colorScheme.secondary.withValues(alpha: 0.6),
+                        ),
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.check_circle_outline,
-                              color: colorScheme.onSecondaryContainer),
+                          Icon(
+                            Icons.check_circle_outline,
+                            color: colorScheme.onSecondaryContainer,
+                          ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'You can change this anytime in settings',
+                              'You can change this anytime in settings.',
                               style: TextStyle(
                                 fontSize: 13,
                                 color: colorScheme.onSecondaryContainer,
@@ -103,16 +102,15 @@ class CoachToneScreen extends ConsumerWidget {
                 ),
               ),
             ),
-            // Finish button
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: colorScheme.surface,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, -5),
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 12,
+                    offset: const Offset(0, -6),
                   ),
                 ],
               ),
@@ -130,11 +128,12 @@ class CoachToneScreen extends ConsumerWidget {
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                     backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor: colorScheme.surfaceVariant,
+                    disabledBackgroundColor:
+                        colorScheme.surfaceContainerHighest,
                   ),
                   child: onboardingState.status == OnboardingStatus.saving
                       ? const SizedBox(
@@ -163,6 +162,61 @@ class CoachToneScreen extends ConsumerWidget {
   }
 }
 
+class _ToneSegmentedControl extends StatelessWidget {
+  const _ToneSegmentedControl({
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final CoachTone? selected;
+  final ValueChanged<CoachTone> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.6),
+        ),
+      ),
+      child: Row(
+        children: CoachTone.values.map((tone) {
+          final isSelected = tone == selected;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => onSelected(tone),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? colorScheme.primary
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  tone.displayName,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: isSelected
+                            ? colorScheme.onPrimary
+                            : colorScheme.onSurface,
+                      ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
 class _CoachToneCard extends StatelessWidget {
   final CoachTone tone;
   final bool isSelected;
@@ -181,7 +235,7 @@ class _CoachToneCard extends StatelessWidget {
       case CoachTone.strict:
         return '"You committed to 4 workouts. Let\'s finish strong this week."';
       case CoachTone.clinical:
-        return '"Your consistency rate is 85%. Heart rate zone 3 optimal for your goal."';
+        return '"Your consistency rate is 85%. Zone 3 is optimal for today."';
     }
   }
 
@@ -190,20 +244,27 @@ class _CoachToneCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(18),
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: isSelected
-              ? colorScheme.primary.withOpacity(0.1)
-              : colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
+              ? colorScheme.primary.withValues(alpha: 0.12)
+              : colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: isSelected
                 ? colorScheme.primary
-                : colorScheme.outlineVariant,
+                : colorScheme.outlineVariant.withValues(alpha: 0.6),
             width: isSelected ? 2 : 1,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -212,7 +273,7 @@ class _CoachToneCard extends StatelessWidget {
               children: [
                 Text(
                   tone.emoji,
-                  style: const TextStyle(fontSize: 32),
+                  style: const TextStyle(fontSize: 30),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -223,7 +284,7 @@ class _CoachToneCard extends StatelessWidget {
                         tone.displayName,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 18,
+                          fontSize: 17,
                           color: isSelected
                               ? colorScheme.primary
                               : colorScheme.onSurface,
@@ -242,8 +303,8 @@ class _CoachToneCard extends StatelessWidget {
                 if (isSelected)
                   Icon(
                     Icons.check_circle,
-                    color: Theme.of(context).colorScheme.primary,
-                    size: 28,
+                    color: colorScheme.primary,
+                    size: 26,
                   ),
               ],
             ),
@@ -253,8 +314,11 @@ class _CoachToneCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isSelected
                     ? colorScheme.surface
-                    : colorScheme.surfaceVariant,
-                borderRadius: BorderRadius.circular(8),
+                    : colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+                ),
               ),
               child: Text(
                 _getExample(),

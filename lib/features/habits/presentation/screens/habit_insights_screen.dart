@@ -133,10 +133,10 @@ class HabitInsightsScreen extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.05),
+                          color: Colors.green.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: Colors.green.withOpacity(0.2),
+                            color: Colors.green.withValues(alpha: 0.2),
                           ),
                         ),
                         child: Row(
@@ -145,7 +145,7 @@ class HabitInsightsScreen extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Colors.green.withOpacity(0.2),
+                                color: Colors.green.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
@@ -247,10 +247,10 @@ class HabitInsightsScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: iconColor.withOpacity(0.05),
+        color: iconColor.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: iconColor.withOpacity(0.2),
+          color: iconColor.withValues(alpha: 0.2),
         ),
       ),
       child: Column(

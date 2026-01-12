@@ -129,7 +129,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     final isCompleted = goal.status == GoalStatus.completed;
     final cardColor = isCompleted
-        ? Colors.green.withOpacity(0.1)
+        ? Colors.green.withValues(alpha: 0.1)
         : Theme.of(context).cardColor;
 
     Color progressColor;
@@ -152,8 +152,8 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isCompleted
-              ? Colors.green.withOpacity(0.3)
-              : Colors.grey.withOpacity(0.2),
+              ? Colors.green.withValues(alpha: 0.3)
+              : Colors.grey.withValues(alpha: 0.2),
         ),
       ),
       child: Column(
@@ -165,7 +165,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: progressColor.withOpacity(0.2),
+                  color: progressColor.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -391,22 +391,22 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
               final operations = ref.read(progressOperationsProvider.notifier);
               final success = await operations.deleteGoal(goal.id);
 
-              if (mounted) {
-                if (success) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Goal deleted successfully'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Failed to delete goal'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
+              if (!context.mounted) return;
+
+              if (success) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Goal deleted successfully'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Failed to delete goal'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
               }
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),

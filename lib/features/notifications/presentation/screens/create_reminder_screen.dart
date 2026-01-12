@@ -208,7 +208,7 @@ class _CreateReminderScreenState extends ConsumerState<CreateReminderScreen> {
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor:
-              Theme.of(context).colorScheme.primary.withOpacity(0.2),
+              Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
           child: Icon(
             Icons.schedule,
             color: Theme.of(context).colorScheme.primary,
@@ -322,7 +322,7 @@ class _CreateReminderScreenState extends ConsumerState<CreateReminderScreen> {
             _enabled = value;
           });
         },
-        activeColor: Theme.of(context).colorScheme.primary,
+        activeThumbColor: Theme.of(context).colorScheme.primary,
       ),
     );
   }

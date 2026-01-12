@@ -15,7 +15,7 @@ class BottomNavBar extends ConsumerWidget {
         ref.read(selectedIndexProvider.notifier).state = index;
       },
       backgroundColor: Theme.of(context).colorScheme.surface,
-      indicatorColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+      indicatorColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
       destinations: const [
         NavigationDestination(
           icon: Icon(Icons.home_outlined),
@@ -26,6 +26,11 @@ class BottomNavBar extends ConsumerWidget {
           icon: Icon(Icons.fitness_center_outlined),
           selectedIcon: Icon(Icons.fitness_center),
           label: 'Workouts',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.group_outlined),
+          selectedIcon: Icon(Icons.group),
+          label: 'Unity',
         ),
         NavigationDestination(
           icon: Icon(Icons.track_changes_outlined),

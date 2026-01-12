@@ -5,6 +5,7 @@ import '../../../../core/constants/route_constants.dart';
 import '../../../../core/theme/app_gradients.dart';
 import '../../domain/onboarding_data.dart';
 import '../providers/onboarding_provider.dart';
+import '../widgets/onboarding_shell.dart';
 
 class LimitationsScreen extends ConsumerWidget {
   const LimitationsScreen({super.key});
@@ -15,43 +16,59 @@ class LimitationsScreen extends ConsumerWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
-        ),
-        title: const Text('Step 4 of 5'),
-      ),
-      body: SafeArea(
+      body: OnboardingBackground(
         child: Column(
           children: [
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Any physical limitations?',
-                      style:
-                          Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                    OnboardingStepHeader(
+                      step: 4,
+                      totalSteps: 5,
+                      title: 'Any physical limitations?',
+                      subtitle:
+                          'Select all that apply. We\'ll tailor exercises safely.',
+                      onBack: () => context.pop(),
+                      eyebrow: 'Safety first',
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Select all that apply. We\'ll adjust exercises accordingly.',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: Colors.grey[600],
-                          ),
+                    const SizedBox(height: 20),
+                    _LimitationShortcuts(
+                      hasSelections: onboardingState.limitations.isNotEmpty,
+                      onSelectNone: () {
+                        for (final limitation in PhysicalLimitation
+                            .commonLimitations) {
+                          if (onboardingState.limitations
+                              .contains(limitation.id)) {
+                            ref
+                                .read(onboardingProvider.notifier)
+                                .toggleLimitation(limitation.id);
+                          }
+                        }
+                        ref
+                            .read(onboardingProvider.notifier)
+                            .toggleLimitation('none');
+                      },
+                      onClear: () {
+                        for (final limitation
+                            in List<String>.from(onboardingState.limitations)) {
+                          ref
+                              .read(onboardingProvider.notifier)
+                              .toggleLimitation(limitation);
+                        }
+                      },
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: colorScheme.tertiaryContainer,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: colorScheme.tertiary),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: colorScheme.tertiary.withValues(alpha: 0.6),
+                        ),
                       ),
                       child: Row(
                         children: [
@@ -62,7 +79,7 @@ class LimitationsScreen extends ConsumerWidget {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'Always consult your doctor before starting any new exercise program',
+                              'Always consult your doctor before starting any new exercise program.',
                               style: TextStyle(
                                 fontSize: 13,
                                 color: colorScheme.onTertiaryContainer,
@@ -72,7 +89,7 @@ class LimitationsScreen extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 20),
                     ...PhysicalLimitation.commonLimitations.map((limitation) {
                       final isSelected =
                           onboardingState.limitations.contains(limitation.id);
@@ -93,16 +110,15 @@ class LimitationsScreen extends ConsumerWidget {
                 ),
               ),
             ),
-            // Continue button
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: colorScheme.surface,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, -5),
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 12,
+                    offset: const Offset(0, -6),
                   ),
                 ],
               ),
@@ -114,7 +130,7 @@ class LimitationsScreen extends ConsumerWidget {
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                     backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: Colors.white,
@@ -171,37 +187,47 @@ class _LimitationCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(18),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: isSelected
-              ? colorScheme.primary.withOpacity(0.1)
-              : colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
+              ? colorScheme.primary.withValues(alpha: 0.12)
+              : colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: isSelected
                 ? colorScheme.primary
-                : colorScheme.outlineVariant,
+                : colorScheme.outlineVariant.withValues(alpha: 0.6),
             width: isSelected ? 2 : 1,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  gradient: isSelected
-                      ? Theme.of(context).extension<AppGradients>()!.primary
-                      : LinearGradient(
-                          colors: [Colors.grey[300]!, Colors.grey[400]!],
-                        ),
-                borderRadius: BorderRadius.circular(10),
+              decoration: BoxDecoration(
+                gradient: isSelected
+                    ? Theme.of(context).extension<AppGradients>()!.primary
+                    : LinearGradient(
+                        colors: [
+                          colorScheme.surface,
+                          colorScheme.outlineVariant.withValues(alpha: 0.6),
+                        ],
+                      ),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 _getIcon(),
                 color: Colors.white,
-                size: 24,
+                size: 22,
               ),
             ),
             const SizedBox(width: 16),
@@ -219,6 +245,7 @@ class _LimitationCard extends StatelessWidget {
                           : colorScheme.onSurface,
                     ),
                   ),
+                  const SizedBox(height: 4),
                   Text(
                     limitation.description,
                     style: TextStyle(
@@ -229,15 +256,70 @@ class _LimitationCard extends StatelessWidget {
                 ],
               ),
             ),
-            if (isSelected)
-              Icon(
-                Icons.check_circle,
-                color: Theme.of(context).colorScheme.primary,
-                size: 24,
-              ),
+            Switch.adaptive(
+              value: isSelected,
+              onChanged: (_) => onTap(),
+              activeColor: colorScheme.primary,
+              activeTrackColor: colorScheme.primary.withValues(alpha: 0.25),
+            ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _LimitationShortcuts extends StatelessWidget {
+  const _LimitationShortcuts({
+    required this.hasSelections,
+    required this.onSelectNone,
+    required this.onClear,
+  });
+
+  final bool hasSelections;
+  final VoidCallback onSelectNone;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        ChoiceChip(
+          label: const Text('None'),
+          selected: false,
+          onSelected: (_) => onSelectNone(),
+          labelStyle: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: colorScheme.onSurface,
+          ),
+          backgroundColor: colorScheme.surfaceContainerHighest,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(999),
+            side: BorderSide(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.6),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        ChoiceChip(
+          label: const Text('Clear all'),
+          selected: false,
+          onSelected: hasSelections ? (_) => onClear() : null,
+          labelStyle: TextStyle(
+            fontWeight: FontWeight.w600,
+            color:
+                hasSelections ? colorScheme.onSurface : colorScheme.onSurfaceVariant,
+          ),
+          backgroundColor: colorScheme.surfaceContainerHighest,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(999),
+            side: BorderSide(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.6),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

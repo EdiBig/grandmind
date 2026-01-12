@@ -26,7 +26,7 @@ class HealthDashboardCard extends ConsumerWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: primary.withOpacity(0.3),
+            color: primary.withValues(alpha: 0.3),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -111,7 +111,7 @@ class HealthDashboardCard extends ConsumerWidget {
               Expanded(
                 child: _buildMetric(
                   icon: Icons.straighten,
-                  value: '${summary.distanceKm.toStringAsFixed(1)}',
+                  value: summary.distanceKm.toStringAsFixed(1),
                   label: 'km',
                 ),
               ),
@@ -122,7 +122,7 @@ class HealthDashboardCard extends ConsumerWidget {
                       ? Icons.favorite
                       : Icons.bedtime,
                   value: summary.averageHeartRate != null
-                      ? '${summary.averageHeartRate!.toInt()}'
+                      ? summary.averageHeartRate!.toInt().toString()
                       : summary.sleepHours > 0
                           ? '${summary.sleepHours.toStringAsFixed(1)}h'
                           : '--',
@@ -147,7 +147,7 @@ class HealthDashboardCard extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
+        color: Colors.white.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -166,7 +166,7 @@ class HealthDashboardCard extends ConsumerWidget {
           Text(
             label,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withValues(alpha: 0.9),
               fontSize: 12,
             ),
           ),
@@ -183,14 +183,14 @@ class HealthDashboardCard extends ConsumerWidget {
           children: [
             Icon(
               Icons.info_outline,
-              color: Colors.white.withOpacity(0.7),
+              color: Colors.white.withValues(alpha: 0.7),
               size: 32,
             ),
             const SizedBox(height: 8),
             Text(
               'No health data available yet',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.9),
+                color: Colors.white.withValues(alpha: 0.9),
                 fontSize: 14,
               ),
             ),
@@ -198,7 +198,7 @@ class HealthDashboardCard extends ConsumerWidget {
             Text(
               'Stay active and check back later!',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.7),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 12,
               ),
             ),
@@ -229,7 +229,7 @@ class HealthDashboardCard extends ConsumerWidget {
         Text(
           'Track your daily activity, sleep, and more!',
           style: TextStyle(
-            color: Colors.white.withOpacity(0.9),
+            color: Colors.white.withValues(alpha: 0.9),
             fontSize: 14,
           ),
         ),
@@ -290,7 +290,7 @@ class HealthDashboardCard extends ConsumerWidget {
         Text(
           'Unable to load health data',
           style: TextStyle(
-            color: Colors.white.withOpacity(0.9),
+            color: Colors.white.withValues(alpha: 0.9),
             fontSize: 14,
           ),
         ),

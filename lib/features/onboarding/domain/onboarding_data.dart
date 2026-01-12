@@ -1,4 +1,4 @@
-/// Onboarding data models and enums for Kinesa
+// Onboarding data models and enums for Kinesa
 
 enum FitnessGoal {
   weightLoss('Weight Loss', 'Lose weight and improve body composition'),
