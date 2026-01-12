@@ -8,3 +8,8 @@
 -dontwarn com.google.firebase.**
 -keep class com.google.android.gms.** { *; }
 -dontwarn com.google.android.gms.**
+
+# Play Core deferred components (avoid missing class build errors)
+-dontwarn com.google.android.play.core.tasks.OnFailureListener
+-dontwarn com.google.android.play.core.tasks.OnSuccessListener
+-dontwarn com.google.android.play.core.tasks.Task

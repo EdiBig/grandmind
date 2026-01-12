@@ -47,7 +47,17 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
     final settings = ref.watch(appSettingsProvider);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Kinesa'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              'assets/images/Kinesa_App_logo 2.png',
+              height: 24,
+            ),
+            const SizedBox(width: 8),
+            const Text('Kinesa'),
+          ],
+        ),
         actions: [
           _buildUserStatusChip(context, userAsync, settings.offlineMode),
           IconButton(

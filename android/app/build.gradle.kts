@@ -76,13 +76,9 @@ flutter {
     source = "../.."
 }
 
-configurations.all {
-    exclude(group = "com.google.android.play", module = "core-common")
-}
-
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
-    // Required by Flutter deferred components to satisfy R8 class references.
-    implementation("com.google.android.play:core:1.10.3")
+    // Updated Play libraries for Android 14 compatibility.
+    implementation("com.google.android.play:feature-delivery:2.1.0")
 }
 
