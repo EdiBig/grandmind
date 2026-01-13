@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import '../../../../core/utils/timestamp_converter.dart';
 import 'workout.dart';
 import 'exercise.dart';
 
@@ -13,8 +14,8 @@ class WorkoutLog with _$WorkoutLog {
     required String userId,
     required String workoutId,
     required String workoutName,
-    required DateTime startedAt,
-    DateTime? completedAt,
+    @TimestampConverter() required DateTime startedAt,
+    @NullableTimestampConverter() DateTime? completedAt,
     required int duration, // actual duration in minutes
     required List<ExerciseLog> exercises,
     int? caloriesBurned,

@@ -208,10 +208,14 @@ class NutritionRepository {
       data['date'] ??= Timestamp.fromDate(startOfDay);
       data['loggedAt'] ??= Timestamp.fromDate(DateTime.now());
 
-      return WaterLog.fromJson({
-        ...data,
-        'id': snapshot.docs.first.id,
-      });
+      try {
+        return WaterLog.fromJson({
+          ...data,
+          'id': snapshot.docs.first.id,
+        });
+      } catch (_) {
+        return null;
+      }
     } catch (e) {
       throw Exception('Failed to get water log for date: $e');
     }
@@ -238,10 +242,14 @@ class NutritionRepository {
         data['date'] ??= Timestamp.fromDate(startOfDay);
         data['loggedAt'] ??= Timestamp.fromDate(DateTime.now());
 
-        return WaterLog.fromJson({
-          ...data,
-          'id': snapshot.docs.first.id,
-        });
+        try {
+          return WaterLog.fromJson({
+            ...data,
+            'id': snapshot.docs.first.id,
+          });
+        } catch (_) {
+          return null;
+        }
       });
     } catch (e) {
       throw Exception('Failed to stream water log for date: $e');

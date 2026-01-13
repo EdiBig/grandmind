@@ -1,8 +1,10 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../domain/models/progress_photo.dart';
@@ -195,20 +197,42 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: CachedNetworkImage(
-              imageUrl: photo.thumbnailUrl,
-              fit: BoxFit.cover,
-              placeholder: (context, url) => Container(
-                color: Colors.grey[200],
-                child: const Center(
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              ),
-              errorWidget: (context, url, error) => Container(
-                color: Colors.grey[300],
-                child: const Icon(Icons.error, color: Colors.red),
-              ),
-            ),
+            child: kIsWeb
+                ? Image.network(
+                    photo.thumbnailUrl,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        color: Colors.grey[200],
+                        child: const Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) => Image.network(
+                      photo.imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: Colors.grey[300],
+                        child: const Icon(Icons.error, color: Colors.red),
+                      ),
+                    ),
+                  )
+                : CachedNetworkImage(
+                    imageUrl: photo.thumbnailUrl,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(
+                      color: Colors.grey[200],
+                      child: const Center(
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      color: Colors.grey[300],
+                      child: const Icon(Icons.error, color: Colors.red),
+                    ),
+                  ),
           ),
           // Angle badge
           Positioned(
@@ -340,6 +364,12 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
 
       if (pickedFile == null) return;
 
+      if (kIsWeb) {
+        final bytes = await pickedFile.readAsBytes();
+        _showPhotoMetadataDialogBytes(bytes);
+        return;
+      }
+
       final imageFile = File(pickedFile.path);
       _showPhotoMetadataDialog(imageFile);
     } catch (e) {
@@ -453,6 +483,104 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
     );
   }
 
+  void _showPhotoMetadataDialogBytes(Uint8List imageBytes) {
+    PhotoAngle selectedAngle = PhotoAngle.front;
+    DateTime selectedDate = DateTime.now();
+    final notesController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Photo Details'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Photo Angle',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<PhotoAngle>(
+                initialValue: selectedAngle,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+                items: PhotoAngle.values.map((angle) {
+                  return DropdownMenuItem(
+                    value: angle,
+                    child: Text(_getAngleLabel(angle)),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) selectedAngle = value;
+                },
+              ),
+              const SizedBox(height: 16),
+              const Text('Date',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  side: BorderSide(color: Colors.grey[400]!),
+                ),
+                leading: const Icon(Icons.calendar_today),
+                title: Text(DateFormat('MMM d, yyyy').format(selectedDate)),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: dialogContext,
+                    initialDate: selectedDate,
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime.now(),
+                  );
+                  if (picked != null) {
+                    selectedDate = picked;
+                  }
+                },
+              ),
+              const SizedBox(height: 16),
+              const Text('Notes (optional)',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              TextField(
+                controller: notesController,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: 'Add notes about this photo...',
+                ),
+                maxLines: 3,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              await _uploadPhotoBytes(
+                imageBytes,
+                selectedAngle,
+                selectedDate,
+                notesController.text.trim().isEmpty
+                    ? null
+                    : notesController.text.trim(),
+              );
+            },
+            child: const Text('Upload'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _uploadPhoto(
     File imageFile,
     PhotoAngle angle,
@@ -503,6 +631,79 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
       Navigator.pop(context); // Close loading dialog
 
       if (photoId != null) {
+        setState(() {
+          _selectedAngle = null;
+        });
+        ref.invalidate(progressPhotosProvider);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Photo uploaded successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to upload photo. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _uploadPhotoBytes(
+    Uint8List imageBytes,
+    PhotoAngle angle,
+    DateTime date,
+    String? notes,
+  ) async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('You must be logged in to upload photos')),
+        );
+      }
+      return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: Card(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Uploading photo...'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final operations = ref.read(progressOperationsProvider.notifier);
+    final photoId = await operations.uploadProgressPhotoBytes(
+      userId: userId,
+      imageBytes: imageBytes,
+      angle: angle,
+      date: date,
+      notes: notes,
+    );
+
+    if (mounted) {
+      Navigator.pop(context);
+      if (photoId != null) {
+        setState(() {
+          _selectedAngle = null;
+        });
+        ref.invalidate(progressPhotosProvider);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Photo uploaded successfully!'),

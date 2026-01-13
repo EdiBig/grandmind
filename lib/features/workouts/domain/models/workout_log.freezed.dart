@@ -24,7 +24,9 @@ mixin _$WorkoutLog {
   String get userId => throw _privateConstructorUsedError;
   String get workoutId => throw _privateConstructorUsedError;
   String get workoutName => throw _privateConstructorUsedError;
+  @TimestampConverter()
   DateTime get startedAt => throw _privateConstructorUsedError;
+  @NullableTimestampConverter()
   DateTime? get completedAt => throw _privateConstructorUsedError;
   int get duration =>
       throw _privateConstructorUsedError; // actual duration in minutes
@@ -55,8 +57,8 @@ abstract class $WorkoutLogCopyWith<$Res> {
       String userId,
       String workoutId,
       String workoutName,
-      DateTime startedAt,
-      DateTime? completedAt,
+      @TimestampConverter() DateTime startedAt,
+      @NullableTimestampConverter() DateTime? completedAt,
       int duration,
       List<ExerciseLog> exercises,
       int? caloriesBurned,
@@ -159,8 +161,8 @@ abstract class _$$WorkoutLogImplCopyWith<$Res>
       String userId,
       String workoutId,
       String workoutName,
-      DateTime startedAt,
-      DateTime? completedAt,
+      @TimestampConverter() DateTime startedAt,
+      @NullableTimestampConverter() DateTime? completedAt,
       int duration,
       List<ExerciseLog> exercises,
       int? caloriesBurned,
@@ -256,8 +258,8 @@ class _$WorkoutLogImpl implements _WorkoutLog {
       required this.userId,
       required this.workoutId,
       required this.workoutName,
-      required this.startedAt,
-      this.completedAt,
+      @TimestampConverter() required this.startedAt,
+      @NullableTimestampConverter() this.completedAt,
       required this.duration,
       required final List<ExerciseLog> exercises,
       this.caloriesBurned,
@@ -278,8 +280,10 @@ class _$WorkoutLogImpl implements _WorkoutLog {
   @override
   final String workoutName;
   @override
+  @TimestampConverter()
   final DateTime startedAt;
   @override
+  @NullableTimestampConverter()
   final DateTime? completedAt;
   @override
   final int duration;
@@ -374,8 +378,8 @@ abstract class _WorkoutLog implements WorkoutLog {
       required final String userId,
       required final String workoutId,
       required final String workoutName,
-      required final DateTime startedAt,
-      final DateTime? completedAt,
+      @TimestampConverter() required final DateTime startedAt,
+      @NullableTimestampConverter() final DateTime? completedAt,
       required final int duration,
       required final List<ExerciseLog> exercises,
       final int? caloriesBurned,
@@ -395,8 +399,10 @@ abstract class _WorkoutLog implements WorkoutLog {
   @override
   String get workoutName;
   @override
+  @TimestampConverter()
   DateTime get startedAt;
   @override
+  @NullableTimestampConverter()
   DateTime? get completedAt;
   @override
   int get duration; // actual duration in minutes

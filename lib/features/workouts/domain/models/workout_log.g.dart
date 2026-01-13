@@ -12,10 +12,9 @@ _$WorkoutLogImpl _$$WorkoutLogImplFromJson(Map<String, dynamic> json) =>
       userId: json['userId'] as String,
       workoutId: json['workoutId'] as String,
       workoutName: json['workoutName'] as String,
-      startedAt: DateTime.parse(json['startedAt'] as String),
-      completedAt: json['completedAt'] == null
-          ? null
-          : DateTime.parse(json['completedAt'] as String),
+      startedAt: const TimestampConverter().fromJson(json['startedAt']),
+      completedAt:
+          const NullableTimestampConverter().fromJson(json['completedAt']),
       duration: (json['duration'] as num).toInt(),
       exercises: (json['exercises'] as List<dynamic>)
           .map((e) => ExerciseLog.fromJson(e as Map<String, dynamic>))
@@ -33,8 +32,9 @@ Map<String, dynamic> _$$WorkoutLogImplToJson(_$WorkoutLogImpl instance) =>
       'userId': instance.userId,
       'workoutId': instance.workoutId,
       'workoutName': instance.workoutName,
-      'startedAt': instance.startedAt.toIso8601String(),
-      'completedAt': instance.completedAt?.toIso8601String(),
+      'startedAt': const TimestampConverter().toJson(instance.startedAt),
+      'completedAt':
+          const NullableTimestampConverter().toJson(instance.completedAt),
       'duration': instance.duration,
       'exercises': instance.exercises,
       'caloriesBurned': instance.caloriesBurned,

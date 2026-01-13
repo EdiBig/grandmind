@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -418,6 +419,48 @@ class ProgressOperations extends StateNotifier<AsyncValue<void>> {
       final photoId = await _repository.createProgressPhoto(photo);
 
       // Invalidate providers
+      _ref.invalidate(progressPhotosProvider);
+
+      state = const AsyncValue.data(null);
+      return photoId;
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      return null;
+    }
+  }
+
+  /// Upload a progress photo from raw bytes (web-friendly)
+  Future<String?> uploadProgressPhotoBytes({
+    required String userId,
+    required Uint8List imageBytes,
+    required PhotoAngle angle,
+    DateTime? date,
+    String? notes,
+    double? weight,
+  }) async {
+    state = const AsyncValue.loading();
+    try {
+      final imageService = _ref.read(imageUploadServiceProvider);
+      final uploadResult = await imageService.uploadProgressPhotoBytes(
+        userId: userId,
+        imageBytes: imageBytes,
+        angle: angle,
+      );
+
+      final photo = ProgressPhoto(
+        id: '',
+        userId: userId,
+        imageUrl: uploadResult.imageUrl,
+        thumbnailUrl: uploadResult.thumbnailUrl,
+        angle: angle,
+        date: date ?? DateTime.now(),
+        createdAt: DateTime.now(),
+        notes: notes,
+        weight: weight,
+        metadata: uploadResult.metadata,
+      );
+
+      final photoId = await _repository.createProgressPhoto(photo);
       _ref.invalidate(progressPhotosProvider);
 
       state = const AsyncValue.data(null);

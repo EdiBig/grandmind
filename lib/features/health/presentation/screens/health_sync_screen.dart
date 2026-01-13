@@ -62,6 +62,7 @@ class _HealthSyncScreenState extends ConsumerState<HealthSyncScreen> {
         !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
     final healthConnectStatus = healthConnectStatusAsync.asData?.value;
     final canRequest = !_isRequesting;
+    final isWeb = kIsWeb;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -80,7 +81,11 @@ class _HealthSyncScreenState extends ConsumerState<HealthSyncScreen> {
               ),
               const SizedBox(width: 8),
               Text(
-                hasPermissions ? 'Health access granted' : 'Health access required',
+                hasPermissions
+                    ? 'Health access granted'
+                    : isWeb
+                        ? 'Health sync unavailable on web'
+                        : 'Health access required',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -91,11 +96,14 @@ class _HealthSyncScreenState extends ConsumerState<HealthSyncScreen> {
           Text(
             hasPermissions
                 ? _connectedCopy()
-                : _disconnectedCopy(),
+                : isWeb
+                    ? 'Health Connect and Apple Health require a mobile device. '
+                        'Open this screen on Android or iOS to connect.'
+                    : _disconnectedCopy(),
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 16),
-          if (!hasPermissions)
+          if (!hasPermissions && !isWeb)
             ElevatedButton.icon(
               onPressed: canRequest
                   ? () => _handleGrantAccess(
@@ -117,7 +125,7 @@ class _HealthSyncScreenState extends ConsumerState<HealthSyncScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               ),
             )
-          else
+          else if (hasPermissions)
             ElevatedButton.icon(
               onPressed: () async {
                 await ref.read(healthSyncProvider.future);

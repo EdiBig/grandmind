@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
@@ -23,6 +24,49 @@ class ImageUploadResult {
 /// Service for uploading and managing progress photos
 class ImageUploadService {
   final FirebaseStorage _storage = FirebaseStorage.instance;
+
+  /// Upload a progress photo from raw bytes (web-friendly).
+  Future<ImageUploadResult> uploadProgressPhotoBytes({
+    required String userId,
+    required Uint8List imageBytes,
+    required PhotoAngle angle,
+  }) async {
+    try {
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final angleName = angle.name;
+
+      final compressedBytes = _compressBytes(imageBytes);
+      final thumbnailBytes = _generateThumbnailBytes(compressedBytes);
+      final metadata = _getImageMetadataFromBytes(compressedBytes);
+
+      final fullImagePath =
+          '${FirebaseConstants.progressPhotosPath}/$userId/${timestamp}_${angleName}_full.jpg';
+      final fullImageRef = _storage.ref().child(fullImagePath);
+      await fullImageRef.putData(
+        compressedBytes,
+        SettableMetadata(contentType: 'image/jpeg'),
+      );
+      final fullImageUrl = await fullImageRef.getDownloadURL();
+
+      final thumbnailPath =
+          '${FirebaseConstants.progressPhotosPath}/$userId/${timestamp}_${angleName}_thumb.jpg';
+      final thumbnailRef = _storage.ref().child(thumbnailPath);
+      await thumbnailRef.putData(
+        thumbnailBytes,
+        SettableMetadata(contentType: 'image/jpeg'),
+      );
+      final thumbnailUrl = await thumbnailRef.getDownloadURL();
+
+      return ImageUploadResult(
+        imageUrl: fullImageUrl,
+        thumbnailUrl: thumbnailUrl,
+        storagePath: fullImagePath,
+        metadata: metadata,
+      );
+    } catch (e) {
+      throw Exception('Failed to upload progress photo: $e');
+    }
+  }
 
   /// Upload a progress photo with compression and thumbnail generation
   Future<ImageUploadResult> uploadProgressPhoto({
@@ -104,6 +148,16 @@ class ImageUploadService {
     }
   }
 
+  Uint8List _compressBytes(Uint8List imageBytes, {int quality = 85}) {
+    final image = img.decodeImage(imageBytes);
+    if (image == null) {
+      throw Exception('Failed to decode image');
+    }
+    final resized =
+        image.width > 1920 ? img.copyResize(image, width: 1920) : image;
+    return Uint8List.fromList(img.encodeJpg(resized, quality: quality));
+  }
+
   /// Generate a thumbnail (max width: 300px)
   Future<File> _generateThumbnail(File originalImage, {int maxWidth = 300, int quality = 80}) async {
     try {
@@ -132,6 +186,19 @@ class ImageUploadService {
     }
   }
 
+  Uint8List _generateThumbnailBytes(
+    Uint8List imageBytes, {
+    int maxWidth = 300,
+    int quality = 80,
+  }) {
+    final image = img.decodeImage(imageBytes);
+    if (image == null) {
+      throw Exception('Failed to decode image for thumbnail');
+    }
+    final thumbnail = img.copyResize(image, width: maxWidth);
+    return Uint8List.fromList(img.encodeJpg(thumbnail, quality: quality));
+  }
+
   /// Get image metadata (dimensions, file size)
   Future<Map<String, dynamic>> _getImageMetadata(File imageFile) async {
     try {
@@ -151,6 +218,23 @@ class ImageUploadService {
         'aspectRatio': image.width / image.height,
       };
     } catch (e) {
+      return {};
+    }
+  }
+
+  Map<String, dynamic> _getImageMetadataFromBytes(Uint8List imageBytes) {
+    try {
+      final image = img.decodeImage(imageBytes);
+      if (image == null) {
+        return {};
+      }
+      return {
+        'width': image.width,
+        'height': image.height,
+        'fileSize': imageBytes.length,
+        'aspectRatio': image.width / image.height,
+      };
+    } catch (_) {
       return {};
     }
   }
