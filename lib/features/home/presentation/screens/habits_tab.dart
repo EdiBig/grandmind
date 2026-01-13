@@ -105,7 +105,7 @@ class HabitsTab extends ConsumerWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            Icons.track_changes,
+            Icons.checklist,
             size: 80,
             color: Colors.grey[300],
           ),
@@ -119,7 +119,7 @@ class HabitsTab extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Start building healthy habits today!',
+            'Build consistency by tracking daily habits',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Colors.grey[500],
                 ),
@@ -130,7 +130,7 @@ class HabitsTab extends ConsumerWidget {
               context.push('/habits/create');
             },
             icon: const Icon(Icons.add),
-            label: const Text('Create Your First Habit'),
+            label: const Text('Add Your First Habit'),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),

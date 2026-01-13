@@ -138,7 +138,12 @@ class NutritionTab extends ConsumerWidget {
               const SizedBox(height: 16),
 
               // Visual glasses representation
-              _buildWaterGlasses(glassesConsumed, targetGlasses),
+              _buildWaterGlasses(
+                context,
+                ref,
+                glassesConsumed,
+                targetGlasses,
+              ),
 
               const SizedBox(height: 16),
 
@@ -180,19 +185,35 @@ class NutritionTab extends ConsumerWidget {
 
               const SizedBox(height: 16),
 
-              // Add glass button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () => _addWaterGlass(context, ref),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add Glass (250ml)'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.blue.shade600,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+              // Add / Reset actions
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () => _addWaterGlass(context, ref),
+                      icon: const Icon(Icons.add),
+                      label: const Text('Add Glass (250ml)'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.blue.shade600,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 12),
+                  OutlinedButton(
+                    onPressed: () => _resetWater(context, ref),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: const BorderSide(color: Colors.white),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 12,
+                        horizontal: 16,
+                      ),
+                    ),
+                    child: const Text('Reset'),
+                  ),
+                ],
               ),
             ],
           ),
@@ -208,16 +229,25 @@ class NutritionTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildWaterGlasses(int consumed, int target) {
+  Widget _buildWaterGlasses(
+    BuildContext context,
+    WidgetRef ref,
+    int consumed,
+    int target,
+  ) {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       children: List.generate(target, (index) {
         final isFilled = index < consumed;
-        return Icon(
-          isFilled ? Icons.local_drink : Icons.local_drink_outlined,
-          color: Colors.white.withValues(alpha: isFilled ? 1.0 : 0.3),
-          size: 32,
+        return InkWell(
+          onTap: () => _setWaterGlasses(context, ref, consumed, index, target),
+          borderRadius: BorderRadius.circular(20),
+          child: Icon(
+            isFilled ? Icons.local_drink : Icons.local_drink_outlined,
+            color: Colors.white.withValues(alpha: isFilled ? 1.0 : 0.3),
+            size: 32,
+          ),
         );
       }),
     );
@@ -241,6 +271,62 @@ class NutritionTab extends ConsumerWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Added 1 glass of water!'),
+          duration: Duration(seconds: 1),
+        ),
+      );
+    }
+  }
+
+  Future<void> _setWaterGlasses(
+    BuildContext context,
+    WidgetRef ref,
+    int current,
+    int index,
+    int target,
+  ) async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please sign in to track water')),
+        );
+      }
+      return;
+    }
+
+    final nextCount = index < current ? index : index + 1;
+    final clamped = nextCount.clamp(0, target);
+    final operations = ref.read(nutritionOperationsProvider.notifier);
+    final success = await operations.setWaterCount(userId, clamped);
+
+    if (context.mounted && success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Water updated to $clamped glass${clamped == 1 ? '' : 'es'}'),
+          duration: const Duration(seconds: 1),
+        ),
+      );
+    }
+  }
+
+  Future<void> _resetWater(BuildContext context, WidgetRef ref) async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please sign in to track water')),
+        );
+      }
+      return;
+    }
+
+    final operations = ref.read(nutritionOperationsProvider.notifier);
+    final success = await operations.resetWater(userId);
+
+    if (context.mounted && success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Water intake reset for today'),
           duration: Duration(seconds: 1),
         ),
       );

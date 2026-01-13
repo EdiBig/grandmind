@@ -1,4 +1,5 @@
 import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -12,9 +13,20 @@ import 'core/providers/shared_preferences_provider.dart';
 import 'features/notifications/data/services/notification_service.dart';
 import 'features/ai/presentation/providers/ai_providers.dart';
 import 'features/ai/presentation/providers/ai_coach_provider.dart';
+import 'features/authentication/data/repositories/auth_repository.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  if (kIsWeb) {
+    FlutterError.onError = (details) {
+      final message = details.exceptionAsString();
+      if (message.contains('AssetManifest.bin.json')) {
+        return;
+      }
+      FlutterError.presentError(details);
+    };
+  }
 
   // Initialize Firebase (handle duplicate app error for hot restart)
   try {
@@ -29,6 +41,11 @@ void main() async {
       // Re-throw other errors
       rethrow;
     }
+  }
+
+  if (kIsWeb) {
+    await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
+    await AuthRepository().handleWebRedirectResult();
   }
 
   if (!kIsWeb) {

@@ -1,9 +1,13 @@
 import 'package:health/health.dart';
 import 'package:flutter/foundation.dart';
+import 'package:android_intent_plus/android_intent.dart';
 
 /// Service for managing health data integration with HealthKit (iOS) and Health Connect (Android)
 class HealthService {
   final Health _health = Health();
+  late final Future<void> _configureFuture = _health.configure();
+  static const String _healthConnectPackage =
+      'com.google.android.apps.healthdata';
 
   // Health data types we want to access
   static const List<HealthDataType> _types = [
@@ -17,13 +21,41 @@ class HealthService {
     HealthDataType.WORKOUT,
   ];
 
+  static const List<HealthDataType> _writeTypes = [
+    HealthDataType.WEIGHT,
+    HealthDataType.WORKOUT,
+  ];
+
+  List<HealthDataType> _requestedTypes() {
+    if (kIsWeb) {
+      return _types;
+    }
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return _types.where((type) => type != HealthDataType.SLEEP_IN_BED).toList();
+    }
+    return _types;
+  }
+
   /// Request permissions for health data access
   Future<bool> requestAuthorization() async {
-    final permissions = _types.map((type) => HealthDataAccess.READ_WRITE).toList();
+    final types = _requestedTypes();
+    final permissions = types
+        .map(
+          (type) => _writeTypes.contains(type)
+              ? HealthDataAccess.READ_WRITE
+              : HealthDataAccess.READ,
+        )
+        .toList();
 
     try {
+      await _configureFuture;
+      final healthConnectReady = await _ensureHealthConnectAvailable();
+      if (!healthConnectReady) {
+        return false;
+      }
+
       final granted =
-          await _health.requestAuthorization(_types, permissions: permissions);
+          await _health.requestAuthorization(types, permissions: permissions);
       if (kDebugMode) {
         debugPrint('Health authorization: $granted');
       }
@@ -36,10 +68,106 @@ class HealthService {
     }
   }
 
+  Future<bool> _ensureHealthConnectAvailable() async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
+      return true;
+    }
+
+    try {
+      final status = await _health.getHealthConnectSdkStatus();
+      if (status == HealthConnectSdkStatus.sdkAvailable) {
+        return true;
+      }
+      if (kDebugMode) {
+        debugPrint('Health Connect not available: $status');
+      }
+      await _health.installHealthConnect();
+      return false;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Health Connect check failed: $e');
+      }
+      return false;
+    }
+  }
+
+  Future<HealthConnectSdkStatus?> getHealthConnectStatus() async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
+      return null;
+    }
+    try {
+      return await _health.getHealthConnectSdkStatus();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Health Connect status error: $e');
+      }
+      return null;
+    }
+  }
+
+  Future<void> installHealthConnect() async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;      
+    try {
+      await _health.installHealthConnect();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Health Connect install failed: $e');
+      }
+    }
+  }
+
+  Future<bool> openHealthConnectSettings() async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
+      return false;
+    }
+    final settingsIntent = AndroidIntent(
+      action: 'androidx.health.connect.client.action.HEALTH_CONNECT_SETTINGS',
+    );
+    if (await _tryLaunch(settingsIntent)) {
+      return true;
+    }
+
+    final appIntent = AndroidIntent(
+      action: 'android.intent.action.MAIN',
+      category: 'android.intent.category.LAUNCHER',
+      package: _healthConnectPackage,
+    );
+    if (await _tryLaunch(appIntent)) {
+      return true;
+    }
+
+    final appSettingsIntent = AndroidIntent(
+      action: 'android.settings.APPLICATION_DETAILS_SETTINGS',
+      data: 'package:$_healthConnectPackage',
+    );
+    if (await _tryLaunch(appSettingsIntent)) {
+      return true;
+    }
+
+    await installHealthConnect();
+    return false;
+  }
+
+  Future<bool> _tryLaunch(AndroidIntent intent) async {
+    try {
+      final canResolve = await intent.canResolveActivity();
+      if (canResolve == true) {
+        await intent.launch();
+        return true;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Health Connect intent launch failed: $e');
+      }
+    }
+    return false;
+  }
+
   /// Check if we have authorization
   Future<bool> hasPermissions() async {
     try {
-      for (var type in _types) {
+      await _configureFuture;
+      for (var type in _requestedTypes()) {
         final status = await _health.hasPermissions([type]);
         if (status == null || !status) {
           return false;
@@ -57,6 +185,7 @@ class HealthService {
     final midnight = DateTime(now.year, now.month, now.day);
 
     try {
+      await _configureFuture;
       final steps = await _health.getTotalStepsInInterval(midnight, now);
       return steps;
     } catch (e) {
@@ -70,6 +199,7 @@ class HealthService {
   /// Get total steps for a date range
   Future<int> getSteps(DateTime startDate, DateTime endDate) async {
     try {
+      await _configureFuture;
       final steps = await _health.getTotalStepsInInterval(startDate, endDate);
       return steps ?? 0;
     } catch (e) {
@@ -80,6 +210,7 @@ class HealthService {
   /// Get distance for a date range (in meters)
   Future<double> getDistance(DateTime startDate, DateTime endDate) async {
     try {
+      await _configureFuture;
       final healthData = await _health.getHealthDataFromTypes(
         types: [HealthDataType.DISTANCE_DELTA],
         startTime: startDate,
@@ -101,6 +232,7 @@ class HealthService {
   /// Get calories burned for a date range
   Future<double> getCaloriesBurned(DateTime startDate, DateTime endDate) async {
     try {
+      await _configureFuture;
       final healthData = await _health.getHealthDataFromTypes(
         types: [HealthDataType.ACTIVE_ENERGY_BURNED],
         startTime: startDate,
@@ -122,6 +254,7 @@ class HealthService {
   /// Get average heart rate for a date range
   Future<double?> getAverageHeartRate(DateTime startDate, DateTime endDate) async {
     try {
+      await _configureFuture;
       final healthData = await _health.getHealthDataFromTypes(
         types: [HealthDataType.HEART_RATE],
         startTime: startDate,
@@ -147,8 +280,12 @@ class HealthService {
   /// Get sleep duration for a date range (in hours)
   Future<double> getSleepHours(DateTime startDate, DateTime endDate) async {
     try {
+      await _configureFuture;
+      final sleepTypes = defaultTargetPlatform == TargetPlatform.android
+          ? [HealthDataType.SLEEP_ASLEEP]
+          : [HealthDataType.SLEEP_ASLEEP, HealthDataType.SLEEP_IN_BED];
       final healthData = await _health.getHealthDataFromTypes(
-        types: [HealthDataType.SLEEP_ASLEEP, HealthDataType.SLEEP_IN_BED],
+        types: sleepTypes,
         startTime: startDate,
         endTime: endDate,
       );
@@ -175,6 +312,7 @@ class HealthService {
     double? totalDistance,
   }) async {
     try {
+      await _configureFuture;
       final success = await _health.writeWorkoutData(
         activityType: activityType,
         start: startTime,
@@ -194,6 +332,7 @@ class HealthService {
   /// Write weight to health data
   Future<bool> writeWeight(double weightKg, DateTime date) async {
     try {
+      await _configureFuture;
       final success = await _health.writeHealthData(
         value: weightKg,
         type: HealthDataType.WEIGHT,
@@ -239,6 +378,7 @@ class HealthService {
     required List<HealthDataType> types,
   }) async {
     try {
+      await _configureFuture;
       final healthData = await _health.getHealthDataFromTypes(
         startTime: startTime,
         endTime: endTime,
@@ -257,6 +397,7 @@ class HealthService {
     required DateTime endTime,
   }) async {
     try {
+      await _configureFuture;
       final success = await _health.writeHealthData(
         value: value,
         type: type,

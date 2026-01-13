@@ -116,18 +116,39 @@ class WorkoutsTab extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Icon(
+                Icons.self_improvement,
+                size: 48,
+                color: colorScheme.primary,
+              ),
+              const SizedBox(height: 12),
               Text(
-                'Start your workout journey',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                'No workouts logged yet',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(        
                       fontWeight: FontWeight.bold,
                     ),
               ),
               const SizedBox(height: 8),
               Text(
-                'Log a quick session, explore curated plans, or create your own routine.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                'Tap the + button to log your first workout.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(        
                       color: colorScheme.onSurfaceVariant,
                     ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const WorkoutLoggingScreen(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.add),
+                  label: const Text('Log Workout'),
+                ),
               ),
               const SizedBox(height: 16),
               SizedBox(

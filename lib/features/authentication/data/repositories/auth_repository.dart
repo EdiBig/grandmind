@@ -85,12 +85,11 @@ class AuthRepository {
     }
   }
 
-  Future<UserCredential> signInWithGoogle() async {
+  Future<void> signInWithGoogle() async {
     try {
-      UserCredential userCredential;
       if (kIsWeb) {
         final provider = GoogleAuthProvider();
-        userCredential = await _firebaseAuth.signInWithPopup(provider);
+        await _firebaseAuth.signInWithRedirect(provider);
       } else {
         final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
         if (googleUser == null) {
@@ -108,21 +107,30 @@ class AuthRepository {
           idToken: googleAuth.idToken,
         );
 
-        userCredential =
+        final userCredential =
             await _firebaseAuth.signInWithCredential(credential);
-      }
 
-      // Create or update user profile in Firestore
-      if (userCredential.user != null) {
-        await ensureUserProfile(userCredential.user!);
+        if (userCredential.user != null) {
+          await ensureUserProfile(userCredential.user!);
+        }
       }
-
-      return userCredential;
     } catch (e) {
       if (e is AuthException) {
         rethrow;
       }
       throw AuthException(message: 'Google sign-in failed: $e');
+    }
+  }
+
+  Future<void> handleWebRedirectResult() async {
+    if (!kIsWeb) return;
+    try {
+      final result = await _firebaseAuth.getRedirectResult();
+      if (result.user != null) {
+        await ensureUserProfile(result.user!);
+      }
+    } catch (_) {
+      // Ignore redirect result errors to avoid blocking app load.
     }
   }
 

@@ -226,6 +226,25 @@ class NutritionOperations extends StateNotifier<AsyncValue<void>> {
     }
   }
 
+  /// Set water intake to a specific count
+  Future<bool> setWaterCount(String userId, int glasses) async {
+    state = const AsyncValue.loading();
+    try {
+      final today = DateTime.now();
+      await _repository.setWaterCount(userId, today, glasses);
+      state = const AsyncValue.data(null);
+      return true;
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      return false;
+    }
+  }
+
+  /// Reset water intake for today
+  Future<bool> resetWater(String userId) async {
+    return setWaterCount(userId, 0);
+  }
+
   /// Create a custom food item
   Future<String?> createFoodItem(FoodItem foodItem) async {
     state = const AsyncValue.loading();

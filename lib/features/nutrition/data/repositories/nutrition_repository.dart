@@ -204,8 +204,12 @@ class NutritionRepository {
 
       if (snapshot.docs.isEmpty) return null;
 
+      final data = Map<String, dynamic>.from(snapshot.docs.first.data());
+      data['date'] ??= Timestamp.fromDate(startOfDay);
+      data['loggedAt'] ??= Timestamp.fromDate(DateTime.now());
+
       return WaterLog.fromJson({
-        ...snapshot.docs.first.data(),
+        ...data,
         'id': snapshot.docs.first.id,
       });
     } catch (e) {
@@ -230,8 +234,12 @@ class NutritionRepository {
           .map((snapshot) {
         if (snapshot.docs.isEmpty) return null;
 
+        final data = Map<String, dynamic>.from(snapshot.docs.first.data());
+        data['date'] ??= Timestamp.fromDate(startOfDay);
+        data['loggedAt'] ??= Timestamp.fromDate(DateTime.now());
+
         return WaterLog.fromJson({
-          ...snapshot.docs.first.data(),
+          ...data,
           'id': snapshot.docs.first.id,
         });
       });
@@ -242,7 +250,7 @@ class NutritionRepository {
 
   /// Increment water intake for a specific date
   Future<void> incrementWater(
-      String userId, DateTime date, int glasses) async {
+    String userId, DateTime date, int glasses) async {
     try {
       final startOfDay = DateTime(date.year, date.month, date.day);
 
@@ -270,6 +278,37 @@ class NutritionRepository {
       }
     } catch (e) {
       throw Exception('Failed to increment water: $e');
+    }
+  }
+
+  /// Set water intake for a specific date
+  Future<void> setWaterCount(
+    String userId,
+    DateTime date,
+    int glassesConsumed,
+  ) async {
+    try {
+      final existingLog = await getWaterLogForDate(userId, date);
+      final sanitized = glassesConsumed < 0 ? 0 : glassesConsumed;
+
+      if (existingLog != null) {
+        await updateWaterLog(existingLog.id, sanitized);
+        return;
+      }
+
+      final goal = await getUserNutritionGoal(userId);
+      final startOfDay = DateTime(date.year, date.month, date.day);
+      final waterLog = WaterLog(
+        id: '',
+        userId: userId,
+        date: startOfDay,
+        loggedAt: DateTime.now(),
+        glassesConsumed: sanitized,
+        targetGlasses: goal?.dailyWaterGlasses ?? 8,
+      );
+      await logWater(waterLog);
+    } catch (e) {
+      throw Exception('Failed to set water count: $e');
     }
   }
 

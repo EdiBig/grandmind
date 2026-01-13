@@ -42,11 +42,17 @@ class WeeklySummaryScreen extends ConsumerWidget {
           Text(
             rangeLabel,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,        
                   fontWeight: FontWeight.w600,
                 ),
           ),
           const SizedBox(height: 16),
+          _NoDataCard(
+            range: range,
+            workoutLogsAsync: workoutLogsAsync,
+            habitLogsAsync: habitLogsAsync,
+            onLogActivity: () => context.go(RouteConstants.logActivity),
+          ),
           workoutLogsAsync.when(
             loading: () => const _SectionLoadingCard(),
             error: (_, __) => _SectionErrorCard(
@@ -314,6 +320,78 @@ class _EnergySummary {
     required this.previousAverage,
     required this.tagCounts,
   });
+}
+
+class _NoDataCard extends StatelessWidget {
+  final WeeklySummaryRange range;
+  final AsyncValue<List<WorkoutLog>> workoutLogsAsync;
+  final AsyncValue<List<HabitLog>> habitLogsAsync;
+  final VoidCallback onLogActivity;
+
+  const _NoDataCard({
+    required this.range,
+    required this.workoutLogsAsync,
+    required this.habitLogsAsync,
+    required this.onLogActivity,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return workoutLogsAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (workoutLogs) {
+        final workoutSummary =
+            WeeklySummaryScreen._buildWorkoutSummary(workoutLogs, range);
+        return habitLogsAsync.when(
+          loading: () => const SizedBox.shrink(),
+          error: (_, __) => const SizedBox.shrink(),
+          data: (habitLogs) {
+            if (workoutSummary.count > 0 || habitLogs.isNotEmpty) {
+              return const SizedBox.shrink();
+            }
+
+            final colorScheme = Theme.of(context).colorScheme;
+            return Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Life happens. This week is a fresh start.',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'No workouts this week. That\'s okay - rest matters too.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                  const SizedBox(height: 12),
+                  ElevatedButton.icon(
+                    onPressed: onLogActivity,
+                    icon: const Icon(Icons.add_task),
+                    label: const Text('Log Today\'s Activity'),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 }
 
 class _WorkoutSummaryCard extends StatelessWidget {

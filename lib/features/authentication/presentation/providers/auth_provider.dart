@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../data/repositories/auth_repository.dart';
@@ -53,6 +54,10 @@ class AuthController extends StateNotifier<AuthState> {
     state = const AuthState.loading();
     try {
       await _authRepository.signInWithGoogle();
+      if (kIsWeb && FirebaseAuth.instance.currentUser == null) {
+        state = const AuthState.initial();
+        return;
+      }
       state = const AuthState.authenticated();
     } catch (e) {
       if (e is AuthException && e.code == 'sign-in-cancelled') {

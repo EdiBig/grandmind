@@ -34,6 +34,11 @@ final healthAuthorizationProvider = FutureProvider<bool>((ref) async {
   return await healthService.requestAuthorization();
 });
 
+final healthConnectStatusProvider = FutureProvider<HealthConnectSdkStatus?>((ref) async {
+  final healthService = ref.watch(healthServiceProvider);
+  return await healthService.getHealthConnectStatus();
+});
+
 // ========== HEALTH DATA PROVIDERS ==========
 
 /// Provider for today's health summary
@@ -206,9 +211,38 @@ class HealthOperations extends StateNotifier<AsyncValue<void>> {
 
   /// Map workout type string to HealthWorkoutActivityType
   HealthWorkoutActivityType _mapWorkoutType(String type) {
-    // For now, return a generic workout type
-    // TODO: Update with correct enum values from health package v10.0.0
-    return HealthWorkoutActivityType.WALKING;
+    final normalized = type.toLowerCase();
+    if (normalized.contains('yoga')) {
+      return HealthWorkoutActivityType.YOGA;
+    }
+    if (normalized.contains('walk')) {
+      return HealthWorkoutActivityType.WALKING;
+    }
+    if (normalized.contains('run')) {
+      return HealthWorkoutActivityType.RUNNING;
+    }
+    if (normalized.contains('bike') || normalized.contains('cycle')) {
+      return HealthWorkoutActivityType.BIKING;
+    }
+    if (normalized.contains('swim')) {
+      return HealthWorkoutActivityType.SWIMMING;
+    }
+    if (normalized.contains('row')) {
+      return HealthWorkoutActivityType.ROWING;
+    }
+    if (normalized.contains('hiit') || normalized.contains('interval')) {
+      return HealthWorkoutActivityType.HIGH_INTENSITY_INTERVAL_TRAINING;
+    }
+    if (normalized.contains('strength') ||
+        normalized.contains('weights') ||
+        normalized.contains('weight') ||
+        normalized.contains('resistance')) {
+      return HealthWorkoutActivityType.STRENGTH_TRAINING;
+    }
+    if (normalized.contains('sport')) {
+      return HealthWorkoutActivityType.OTHER;
+    }
+    return HealthWorkoutActivityType.OTHER;
   }
 }
 

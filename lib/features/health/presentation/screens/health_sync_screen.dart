@@ -1,13 +1,23 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:health/health.dart';
 import '../providers/health_providers.dart';
 
-class HealthSyncScreen extends ConsumerWidget {
+class HealthSyncScreen extends ConsumerStatefulWidget {
   const HealthSyncScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HealthSyncScreen> createState() => _HealthSyncScreenState();
+}
+
+class _HealthSyncScreenState extends ConsumerState<HealthSyncScreen> {
+  bool _isRequesting = false;
+
+  @override
+  Widget build(BuildContext context) {
     final permissionsAsync = ref.watch(healthPermissionsProvider);
+    final healthConnectStatusAsync = ref.watch(healthConnectStatusProvider);
     final lastSyncAsync = ref.watch(lastHealthSyncProvider);
 
     return Scaffold(
@@ -18,9 +28,17 @@ class HealthSyncScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(16),
         children: [
           permissionsAsync.when(
-            data: (hasPermissions) => _buildStatusCard(context, ref, hasPermissions),
+            data: (hasPermissions) => _buildStatusCard(
+              context,
+              hasPermissions,
+              healthConnectStatusAsync,
+            ),
             loading: () => _buildLoadingCard(),
-            error: (_, __) => _buildStatusCard(context, ref, false),
+            error: (_, __) => _buildStatusCard(
+              context,
+              false,
+              healthConnectStatusAsync,
+            ),
           ),
           const SizedBox(height: 16),
           _buildLastSyncCard(context, lastSyncAsync),
@@ -33,9 +51,17 @@ class HealthSyncScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatusCard(BuildContext context, WidgetRef ref, bool hasPermissions) {
+  Widget _buildStatusCard(
+    BuildContext context,
+    bool hasPermissions,
+    AsyncValue<HealthConnectSdkStatus?> healthConnectStatusAsync,
+  ) {
     final surface = Theme.of(context).colorScheme.surface;
     final outline = Theme.of(context).colorScheme.outlineVariant;
+    final showHealthConnectCTA =
+        !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+    final healthConnectStatus = healthConnectStatusAsync.asData?.value;
+    final canRequest = !_isRequesting;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -64,35 +90,27 @@ class HealthSyncScreen extends ConsumerWidget {
           const SizedBox(height: 8),
           Text(
             hasPermissions
-                ? 'We can read your health data to keep your dashboard updated.'
-                : 'Grant access to sync steps, sleep, heart rate, and workouts.',
+                ? _connectedCopy()
+                : _disconnectedCopy(),
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 16),
           if (!hasPermissions)
             ElevatedButton.icon(
-              onPressed: () async {
-                final healthService = ref.read(healthServiceProvider);
-                final granted = await healthService.requestAuthorization();
-                if (!context.mounted) return;
-                if (granted) {
-                  ref.invalidate(healthPermissionsProvider);
-                  ref.invalidate(todayHealthSummaryProvider);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Health access granted')),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Health access not granted. Make sure Health Connect is installed and permissions are enabled.',
-                      ),
-                    ),
-                  );
-                }
-              },
-              icon: const Icon(Icons.lock_open),
-              label: const Text('Grant Access'),
+              onPressed: canRequest
+                  ? () => _handleGrantAccess(
+                        context,
+                        showHealthConnectCTA,
+                      )
+                  : null,
+              icon: _isRequesting
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.lock_open),
+              label: Text(_isRequesting ? 'Requesting...' : 'Grant Access'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Colors.white,
@@ -116,6 +134,60 @@ class HealthSyncScreen extends ConsumerWidget {
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              ),
+            ),
+          if (showHealthConnectCTA && healthConnectStatus != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                healthConnectStatus == HealthConnectSdkStatus.sdkAvailable
+                    ? 'Health Connect is ready.'
+                    : healthConnectStatus ==
+                            HealthConnectSdkStatus
+                                .sdkUnavailableProviderUpdateRequired
+                        ? 'Health Connect needs an update.'
+                        : 'Health Connect is unavailable on this device.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+            ),
+          if (showHealthConnectCTA)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: healthConnectStatusAsync.when(
+                data: (status) {
+                  if (status == null ||
+                      status == HealthConnectSdkStatus.sdkAvailable) {
+                    return OutlinedButton.icon(
+                      onPressed: () async {
+                        final opened = await ref
+                            .read(healthServiceProvider)
+                            .openHealthConnectSettings();
+                        if (!opened && context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Unable to open Health Connect settings. Opened Play Store instead.',
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.settings),
+                      label: const Text('Manage Permissions'),
+                    );
+                  }
+                  return OutlinedButton.icon(
+                    onPressed: () async {
+                      await ref.read(healthServiceProvider).installHealthConnect();
+                    },
+                    icon: const Icon(Icons.download),
+                    label: const Text('Install Health Connect'),
+                  );
+                },
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
               ),
             ),
         ],
@@ -176,6 +248,13 @@ class HealthSyncScreen extends ConsumerWidget {
                   fontWeight: FontWeight.bold,
                 ),
           ),
+          const SizedBox(height: 6),
+          Text(
+            'Read: steps, distance, calories, heart rate, sleep, workouts. Write: workouts, weight.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
           const SizedBox(height: 12),
           const _DataTypeRow(icon: Icons.directions_walk, label: 'Steps'),
           const _DataTypeRow(icon: Icons.straighten, label: 'Distance'),
@@ -232,6 +311,99 @@ class HealthSyncScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _handleGrantAccess(
+    BuildContext context,
+    bool showHealthConnectCTA,
+  ) async {
+    setState(() => _isRequesting = true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Requesting health access...'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+    final healthService = ref.read(healthServiceProvider);
+    try {
+      if (showHealthConnectCTA) {
+        final status = await healthService.getHealthConnectStatus();
+        if (status == HealthConnectSdkStatus.sdkUnavailable) {
+          await healthService.installHealthConnect();
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Health Connect is unavailable on this device.'),
+            ),
+          );
+          return;
+        }
+        if (status ==
+            HealthConnectSdkStatus.sdkUnavailableProviderUpdateRequired) {
+          await healthService.installHealthConnect();
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Health Connect needs an update. Update it and try again.',
+              ),
+            ),
+          );
+          return;
+        }
+      }
+
+      final granted = await healthService.requestAuthorization();
+      if (!context.mounted) return;
+      if (granted) {
+        ref.invalidate(healthPermissionsProvider);
+        ref.invalidate(todayHealthSummaryProvider);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Health access granted')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Health access not granted. Make sure Health Connect is installed and permissions are enabled.',
+            ),
+          ),
+        );
+      }
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to request health permissions. Try again.'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isRequesting = false);
+      }
+    }
+  }
+
+  String _connectedCopy() {
+    final platform = defaultTargetPlatform;
+    if (platform == TargetPlatform.iOS) {
+      return 'Connected to Apple Health. We read your data and can write back workouts and weight.';
+    }
+    if (platform == TargetPlatform.android) {
+      return 'Connected to Health Connect. We read your data and can write back workouts and weight.';
+    }
+    return 'Health sync connected.';
+  }
+
+  String _disconnectedCopy() {
+    final platform = defaultTargetPlatform;
+    if (platform == TargetPlatform.iOS) {
+      return 'Connect Apple Health to sync steps, sleep, heart rate, and workouts.';
+    }
+    if (platform == TargetPlatform.android) {
+      return 'Connect Health Connect to sync steps, sleep, heart rate, and workouts.';
+    }
+    return 'Connect your health data to sync steps, sleep, heart rate, and workouts.';
   }
 
   String _formatTimestamp(DateTime timestamp) {
