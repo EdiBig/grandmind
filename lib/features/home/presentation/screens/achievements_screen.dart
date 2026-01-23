@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../workouts/presentation/providers/workout_providers.dart';
 import '../../../habits/presentation/providers/habit_providers.dart';
 import '../../../profile/presentation/providers/profile_providers.dart';
@@ -35,7 +36,7 @@ class AchievementsScreen extends ConsumerWidget {
           Text(
             'Unlock achievements by completing workouts, habits, and goals.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey,
+                  color: AppColors.grey,
                 ),
           ),
           const SizedBox(height: 16),

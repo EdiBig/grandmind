@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/route_constants.dart';
+import '../../../../core/theme/app_colors.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   const ResetPasswordScreen({super.key, required this.oobCode});
@@ -111,7 +112,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () => context.go(RouteConstants.login),
         ),
         title: const Text('Reset Password'),
@@ -133,7 +134,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.check_circle, size: 64, color: Colors.green),
+          Icon(Icons.check_circle, size: 64, color: AppColors.success),
           const SizedBox(height: 16),
           Text(
             'Password updated',
@@ -162,7 +163,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.error_outline, size: 64, color: Colors.red),
+          Icon(Icons.error_outline, size: 64, color: AppColors.error),
           const SizedBox(height: 16),
           Text(
             _errorMessage!,

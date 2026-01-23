@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../domain/models/progress_photo.dart';
 import '../providers/progress_providers.dart';
 
@@ -14,7 +15,7 @@ class PhotoDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppColors.black,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -29,9 +30,9 @@ class PhotoDetailScreen extends ConsumerWidget {
                 value: 'delete',
                 child: Row(
                   children: [
-                    Icon(Icons.delete, size: 20, color: Colors.red),
+                    Icon(Icons.delete, size: 20, color: AppColors.error),
                     SizedBox(width: 8),
-                    Text('Delete', style: TextStyle(color: Colors.red)),
+                    Text('Delete', style: TextStyle(color: AppColors.error)),
                   ],
                 ),
               ),
@@ -57,7 +58,7 @@ class PhotoDetailScreen extends ConsumerWidget {
                     return const Center(child: CircularProgressIndicator());
                   },
                   errorBuilder: (context, error, stackTrace) => const Center(
-                    child: Icon(Icons.error, color: Colors.red, size: 48),
+                    child: Icon(Icons.error, color: AppColors.error, size: 48),
                   ),
                 )
               : CachedNetworkImage(
@@ -67,13 +68,13 @@ class PhotoDetailScreen extends ConsumerWidget {
                     child: CircularProgressIndicator(),
                   ),
                   errorWidget: (context, url, error) => const Center(
-                    child: Icon(Icons.error, color: Colors.red, size: 48),
+                    child: Icon(Icons.error, color: AppColors.error, size: 48),
                   ),
                 ),
         ),
       ),
       bottomNavigationBar: Container(
-        color: Colors.black87,
+        color: AppColors.black.withValues(alpha: 0.87),
         padding: const EdgeInsets.all(16),
         child: SafeArea(
           child: Column(
@@ -88,13 +89,13 @@ class PhotoDetailScreen extends ConsumerWidget {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
+                      color: AppColors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Text(
                       _getAngleLabel(photo.angle),
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: AppColors.white,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -102,8 +103,8 @@ class PhotoDetailScreen extends ConsumerWidget {
                   const SizedBox(width: 12),
                   Text(
                     DateFormat('MMM d, yyyy').format(photo.date),
-                    style: const TextStyle(
-                      color: Colors.white70,
+                    style: TextStyle(
+                      color: AppColors.white.withValues(alpha: 0.7),
                       fontSize: 14,
                     ),
                   ),
@@ -111,8 +112,8 @@ class PhotoDetailScreen extends ConsumerWidget {
                   if (photo.weight != null)
                     Text(
                       '${photo.weight!.toStringAsFixed(1)} kg',
-                      style: const TextStyle(
-                        color: Colors.white70,
+                      style: TextStyle(
+                        color: AppColors.white.withValues(alpha: 0.7),
                         fontSize: 14,
                       ),
                     ),
@@ -123,7 +124,7 @@ class PhotoDetailScreen extends ConsumerWidget {
                 Text(
                   photo.notes!,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: AppColors.white,
                     fontSize: 14,
                   ),
                 ),
@@ -197,7 +198,7 @@ class PhotoDetailScreen extends ConsumerWidget {
               label,
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
-                color: Colors.grey,
+                color: AppColors.grey,
               ),
             ),
           ),
@@ -243,21 +244,21 @@ class PhotoDetailScreen extends ConsumerWidget {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Photo deleted successfully'),
-                      backgroundColor: Colors.green,
+                      backgroundColor: AppColors.success,
                     ),
                   );
                   Navigator.pop(context); // Go back to photos screen
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Failed to delete photo'),
-                      backgroundColor: Colors.red,
+                    SnackBar(
+                      content: const Text('Failed to delete photo'),
+                      backgroundColor: AppColors.error,
                     ),
                   );
                 }
               }
             },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: const Text('Delete', style: TextStyle(color: AppColors.error)),
           ),
         ],
       ),

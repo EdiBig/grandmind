@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
 
 /// General helper utilities
 class Helpers {
@@ -31,7 +32,7 @@ class Helpers {
     showSnackBar(
       context,
       message,
-      backgroundColor: Colors.green,
+      backgroundColor: AppColors.success,
     );
   }
 
@@ -40,7 +41,7 @@ class Helpers {
     showSnackBar(
       context,
       message,
-      backgroundColor: Colors.red,
+      backgroundColor: AppColors.error,
     );
   }
 
@@ -67,7 +68,7 @@ class Helpers {
             onPressed: () => Navigator.of(context).pop(true),
             style: isDangerous
                 ? ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
+                    backgroundColor: AppColors.error,
                   )
                 : null,
             child: Text(confirmText),

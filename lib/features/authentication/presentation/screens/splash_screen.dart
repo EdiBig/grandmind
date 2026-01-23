@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/route_constants.dart';
 import '../../../../core/theme/app_gradients.dart';
 import '../../../user/data/services/firestore_service.dart';
@@ -53,6 +54,15 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
           return;
         }
 
+        if (user.isAnonymous ||
+            ((user.email == null || user.email!.trim().isEmpty) &&
+                (user.phoneNumber == null ||
+                    user.phoneNumber!.trim().isEmpty))) {
+          _hasNavigated = true;
+          context.go(RouteConstants.login);
+          return;
+        }
+
         _hasNavigated = true;
 
         // Check if user has completed onboarding
@@ -74,7 +84,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
           }
         } catch (e) {
           if (!mounted) return;
-          context.go(RouteConstants.onboarding);
+          context.go(RouteConstants.login);
         }
       },
       loading: () {},
@@ -108,7 +118,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                   borderRadius: BorderRadius.circular(AppConstants.radiusXLarge),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
+                      color: AppColors.black.withValues(alpha: 0.1),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),

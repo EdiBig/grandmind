@@ -1,13 +1,17 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../core/navigation/app_navigator.dart';
+import '../core/theme/app_colors.dart';
 import '../core/constants/route_constants.dart';
 import '../features/authentication/presentation/screens/splash_screen.dart';
 import '../features/authentication/presentation/screens/login_screen.dart';
 import '../features/authentication/presentation/screens/signup_screen.dart';
 import '../features/authentication/presentation/screens/forgot_password_screen.dart';
 import '../features/authentication/presentation/screens/reset_password_screen.dart';
+import '../features/authentication/presentation/providers/auth_provider.dart';
 import '../features/onboarding/presentation/screens/welcome_screen.dart';
 import '../features/onboarding/presentation/screens/goal_selection_screen.dart';
 import '../features/onboarding/presentation/screens/fitness_level_screen.dart';
@@ -15,12 +19,13 @@ import '../features/onboarding/presentation/screens/time_availability_screen.dar
 import '../features/onboarding/presentation/screens/limitations_screen.dart';
 import '../features/onboarding/presentation/screens/coach_tone_screen.dart';
 import '../features/home/presentation/screens/home_screen.dart';
+import '../features/home/presentation/providers/home_nav_provider.dart';
 import '../features/home/presentation/screens/log_activity_screen.dart';
 import '../features/home/presentation/screens/achievements_screen.dart';
+import '../features/home/presentation/providers/dashboard_provider.dart';
 import '../features/profile/presentation/screens/profile_screen.dart';
 import '../features/profile/presentation/screens/edit_profile_enhanced_screen.dart';
 import '../features/settings/presentation/screens/settings_screen.dart';
-import '../features/settings/presentation/screens/api_key_setup_screen.dart';
 import '../features/settings/presentation/screens/data_management_screen.dart';
 import '../features/settings/presentation/screens/privacy_screen.dart';
 import '../features/settings/presentation/screens/help_center_screen.dart';
@@ -31,11 +36,15 @@ import '../features/settings/presentation/screens/community_guidelines_screen.da
 import '../features/ai/presentation/screens/ai_coach_screen.dart';
 import '../features/habits/presentation/screens/create_habit_screen.dart';
 import '../features/habits/presentation/screens/habit_insights_screen.dart';
+import '../features/habits/presentation/screens/habit_calendar_screen.dart';
+import '../features/habits/presentation/screens/habit_history_screen.dart';
 import '../features/habits/data/services/habit_insights_service.dart';
 import '../features/health/presentation/screens/health_details_screen.dart';
 import '../features/health/presentation/screens/health_sync_screen.dart';
 import '../features/workouts/presentation/screens/fitness_profile_screen.dart';
 import '../features/workouts/presentation/screens/my_routines_screen.dart';
+import '../features/workouts/presentation/screens/workout_admin_screen.dart';
+import '../features/workouts/presentation/screens/wger_exercises_screen.dart';
 import '../features/challenges/presentation/screens/create_challenge_screen.dart';
 import '../features/challenges/presentation/screens/challenge_detail_screen.dart';
 import '../features/challenges/presentation/screens/challenge_rankings_screen.dart';
@@ -52,6 +61,11 @@ import '../features/nutrition/presentation/screens/nutrition_history_screen.dart
 import '../features/nutrition/presentation/screens/meal_details_screen.dart';
 import '../features/nutrition/presentation/screens/nutrition_insights_screen.dart';
 import '../features/nutrition/presentation/screens/barcode_scanner_screen.dart';
+import '../features/mood_energy/presentation/screens/log_mood_energy_screen.dart';
+import '../features/mood_energy/presentation/screens/mood_energy_history_screen.dart';
+import '../features/mood_energy/presentation/screens/mood_energy_insights_screen.dart';
+import '../features/mood_energy/data/services/mood_energy_insights_service.dart';
+import '../features/mood_energy/domain/models/energy_log.dart';
 
 /// Provider for the app router
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -67,9 +81,62 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     });
   }
 
+  final authState = ref.watch(authStateProvider);
+  final userAsync = ref.watch(currentUserProvider);
+  final refreshNotifier = ValueNotifier<int>(0);
+  ref.listen<AsyncValue<User?>>(authStateProvider, (_, __) {
+    refreshNotifier.value++;
+  });
+  ref.onDispose(refreshNotifier.dispose);
+
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: initialLocation,
     debugLogDiagnostics: true,
+    refreshListenable: refreshNotifier,
+    redirect: (context, state) {
+      final location = state.matchedLocation;
+      final isAuthRoute = location == RouteConstants.login ||
+          location == RouteConstants.signup ||
+          location == RouteConstants.forgotPassword ||
+          location == RouteConstants.resetPassword;
+      final isOnboardingRoute = location == RouteConstants.onboarding ||
+          location.startsWith('${RouteConstants.onboarding}/');
+
+      if (authState.isLoading) {
+        return null;
+      }
+
+      final firebaseUser = authState.asData?.value;
+      if (firebaseUser == null ||
+          firebaseUser.isAnonymous ||
+          ((firebaseUser.email == null || firebaseUser.email!.trim().isEmpty) &&
+              (firebaseUser.phoneNumber == null ||
+                  firebaseUser.phoneNumber!.trim().isEmpty))) {
+        return isAuthRoute ? null : RouteConstants.login;
+      }
+
+      if (userAsync.isLoading) {
+        return null;
+      }
+
+      final hasCompletedOnboarding =
+          userAsync.asData?.value?.hasCompletedOnboarding ?? false;
+
+      if (!hasCompletedOnboarding && !isOnboardingRoute) {
+        return RouteConstants.onboarding;
+      }
+
+      if (hasCompletedOnboarding && isOnboardingRoute) {
+        return RouteConstants.home;
+      }
+
+      if (isAuthRoute) {
+        return RouteConstants.home;
+      }
+
+      return null;
+    },
     routes: [
       // Splash Screen
       GoRoute(
@@ -254,9 +321,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const MyRoutinesScreen(),
       ),
       GoRoute(
-        path: RouteConstants.apiKeySetup,
-        name: 'apiKeySetup',
-        builder: (context, state) => const ApiKeySetupScreen(),
+        path: RouteConstants.workoutAdmin,
+        name: 'workoutAdmin',
+        builder: (context, state) => const WorkoutAdminScreen(),
+      ),
+      GoRoute(
+        path: RouteConstants.wgerExercises,
+        name: 'wgerExercises',
+        builder: (context, state) => const WgerExercisesScreen(),
       ),
       GoRoute(
         path: RouteConstants.dataManagement,
@@ -321,6 +393,53 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final insights = state.extra as HabitInsights;
           return HabitInsightsScreen(insights: insights);
+        },
+      ),
+      GoRoute(
+        path: RouteConstants.habitCalendar,
+        name: 'habitCalendar',
+        builder: (context, state) {
+          final habitId = state.extra as String?;
+          return HabitCalendarScreen(habitId: habitId);
+        },
+      ),
+      GoRoute(
+        path: RouteConstants.habitHistory,
+        name: 'habitHistory',
+        builder: (context, state) {
+          final selectedDate = state.extra as DateTime?;
+          return HabitHistoryScreen(selectedDate: selectedDate);
+        },
+      ),
+      GoRoute(
+        path: RouteConstants.habitDetailHistory,
+        name: 'habitDetailHistory',
+        builder: (context, state) {
+          final habitId = state.pathParameters['id'] ?? '';
+          return HabitHistoryScreen(habitId: habitId);
+        },
+      ),
+
+      // Mood & Energy Routes
+      GoRoute(
+        path: RouteConstants.logMoodEnergy,
+        name: 'logMoodEnergy',
+        builder: (context, state) {
+          final existingLog = state.extra as EnergyLog?;
+          return LogMoodEnergyScreen(existingLog: existingLog);
+        },
+      ),
+      GoRoute(
+        path: RouteConstants.moodEnergyHistory,
+        name: 'moodEnergyHistory',
+        builder: (context, state) => const MoodEnergyHistoryScreen(),
+      ),
+      GoRoute(
+        path: RouteConstants.moodEnergyInsights,
+        name: 'moodEnergyInsights',
+        builder: (context, state) {
+          final insights = state.extra as MoodEnergyInsights;
+          return MoodEnergyInsightsScreen(insights: insights);
         },
       ),
 
@@ -413,10 +532,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               Icons.error_outline,
               size: 64,
-              color: Colors.red,
+              color: AppColors.error,
             ),
             const SizedBox(height: 16),
             Text(

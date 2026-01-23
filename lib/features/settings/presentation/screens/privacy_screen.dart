@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../providers/privacy_settings_provider.dart';
 
 class PrivacyScreen extends ConsumerWidget {
@@ -22,7 +23,7 @@ class PrivacyScreen extends ConsumerWidget {
               Text(
                 'Control how your data is shared and used.',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey,
+                      color: AppColors.grey,
                     ),
               ),
               const SizedBox(height: 16),

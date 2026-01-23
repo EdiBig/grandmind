@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_gradients.dart';
 import '../../domain/models/progress_goal.dart';
 import '../../domain/models/weight_entry.dart';
@@ -38,7 +39,7 @@ class _ProgressDashboardScreenState
         title: const Text('Progress Dashboard'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.calendar_today),
+            icon: Icon(Icons.calendar_today),
             onPressed: () => _showDateRangePicker(),
           ),
         ],
@@ -245,7 +246,7 @@ class _ProgressDashboardScreenState
           Text(
             'Your Progress Summary',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: Colors.white,
+                  color: AppColors.white,
                   fontWeight: FontWeight.bold,
                 ),
           ),
@@ -361,12 +362,12 @@ class _ProgressDashboardScreenState
   ) {
     return Column(
       children: [
-        Icon(icon, color: Colors.white, size: 28),
+        Icon(icon, color: AppColors.white, size: 28),
         const SizedBox(height: 8),
         Text(
           value,
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: Colors.white,
+                color: AppColors.white,
                 fontWeight: FontWeight.bold,
               ),
         ),
@@ -374,7 +375,7 @@ class _ProgressDashboardScreenState
         Text(
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.white.withValues(alpha: 0.9),
+                color: AppColors.white.withValues(alpha: 0.9),
               ),
           textAlign: TextAlign.center,
         ),
@@ -397,17 +398,17 @@ class _ProgressDashboardScreenState
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isLoss ? Colors.green.shade50 : Colors.orange.shade50,
+        color: isLoss ? AppColors.success.withValues(alpha: 0.1) : AppColors.warning.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isLoss ? Colors.green.shade200 : Colors.orange.shade200,
+          color: isLoss ? AppColors.success.withValues(alpha: 0.3) : AppColors.warning.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
         children: [
           Icon(
             isLoss ? Icons.trending_down : Icons.trending_up,
-            color: isLoss ? Colors.green : Colors.orange,
+            color: isLoss ? AppColors.success : AppColors.warning,
             size: 32,
           ),
           const SizedBox(width: 12),
@@ -420,15 +421,15 @@ class _ProgressDashboardScreenState
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: isLoss
-                            ? Colors.green.shade900
-                            : Colors.orange.shade900,
+                            ? AppColors.success
+                            : AppColors.warning,
                       ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Over the last $daysBetween days',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[700],
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                 ),
               ],
@@ -451,7 +452,7 @@ class _ProgressDashboardScreenState
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+        border: Border.all(color: AppColors.grey.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -459,7 +460,7 @@ class _ProgressDashboardScreenState
           Text(
             'Latest: ${DateFormat('MMM d, yyyy').format(latest.date)}',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[600],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           ),
           const SizedBox(height: 12),
@@ -508,7 +509,7 @@ class _ProgressDashboardScreenState
                 label,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       fontSize: 10,
-                      color: Colors.grey[600],
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
               ),
               Text(
@@ -546,9 +547,9 @@ class _ProgressDashboardScreenState
                   color: colorScheme.secondary,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.psychology,
-                  color: Colors.white,
+                  color: AppColors.white,
                   size: 24,
                 ),
               ),
@@ -566,7 +567,7 @@ class _ProgressDashboardScreenState
             'Discover correlations between your habits and progress ($rangeLabel). '
             'See which habits help you achieve your goals!',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[700],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           ),
           const SizedBox(height: 12),
@@ -574,11 +575,11 @@ class _ProgressDashboardScreenState
             onPressed: () {
               context.push(RouteConstants.progressInsights);
             },
-            icon: const Icon(Icons.insights),
+            icon: Icon(Icons.insights),
             label: const Text('View Insights'),
             style: ElevatedButton.styleFrom(
               backgroundColor: colorScheme.secondary,
-              foregroundColor: Colors.white,
+              foregroundColor: AppColors.white,
             ),
           ),
         ],
@@ -590,26 +591,26 @@ class _ProgressDashboardScreenState
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         children: [
           Icon(Icons.monitor_weight_outlined,
-              size: 48, color: Colors.grey[400]),
+              size: 48, color: Theme.of(context).colorScheme.outline),
           const SizedBox(height: 12),
           Text(
             'No Weight Data',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.grey[600],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           ),
           const SizedBox(height: 8),
           Text(
             subtitle ?? 'Start tracking your weight to see trends',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[500],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
             textAlign: TextAlign.center,
           ),
@@ -622,7 +623,7 @@ class _ProgressDashboardScreenState
                 ),
               );
             },
-            icon: const Icon(Icons.add),
+            icon: Icon(Icons.add),
             label: const Text('Start Tracking'),
           ),
         ],
@@ -634,25 +635,25 @@ class _ProgressDashboardScreenState
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         children: [
-          Icon(Icons.straighten, size: 48, color: Colors.grey[400]),
+          Icon(Icons.straighten, size: 48, color: Theme.of(context).colorScheme.outline),
           const SizedBox(height: 12),
           Text(
             'No Measurement Data',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.grey[600],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           ),
           const SizedBox(height: 8),
           Text(
             subtitle ?? 'Track body measurements to monitor changes',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[500],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
             textAlign: TextAlign.center,
           ),
@@ -665,7 +666,7 @@ class _ProgressDashboardScreenState
                 ),
               );
             },
-            icon: const Icon(Icons.add),
+            icon: Icon(Icons.add),
             label: const Text('Start Tracking'),
           ),
         ],
@@ -690,7 +691,7 @@ class _ProgressDashboardScreenState
             ),
             const SizedBox(height: 16),
             ListTile(
-              leading: const Icon(Icons.calendar_today),
+              leading: Icon(Icons.calendar_today),
               title: const Text('Last 7 Days'),
               selected: _selectedRange == DateRange.last7Days,
               onTap: () {
