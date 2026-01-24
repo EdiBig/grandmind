@@ -57,6 +57,12 @@
             android:value="2" />
 
 
+        <!-- Image Cropper Activity - Required by image_cropper package -->
+        <activity
+            android:name="com.yalantis.ucrop.UCropActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Ucrop.CropTheme"/>
+
         <!-- Health Connect Activity -->
         <activity-alias
             android:name="ViewPermissionUsageActivity"
