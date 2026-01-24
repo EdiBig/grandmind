@@ -15,4 +15,12 @@
     <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
         <item name="android:windowBackground">?android:colorBackground</item>
     </style>
+
+    <!-- UCrop Activity Theme with toolbar for save button -->
+    <style name="UCropTheme" parent="Theme.AppCompat.Light">
+        <item name="colorPrimary">#FF9800</item>
+        <item name="colorPrimaryDark">#F57C00</item>
+        <item name="colorAccent">#FF9800</item>
+        <item name="android:statusBarColor">#F57C00</item>
+    </style>
 </resources>
