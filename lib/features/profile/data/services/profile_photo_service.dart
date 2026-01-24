@@ -3,34 +3,47 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
+import '../../../../core/errors/exceptions.dart';
 
 /// Service for uploading and managing profile photos
 class ProfilePhotoService {
   final FirebaseStorage _storage = FirebaseStorage.instance;
+  static const int _maxProfilePhotoBytes = 5 * 1024 * 1024;
 
   /// Upload a profile photo with compression
   Future<String> uploadProfilePhoto({
     required String userId,
     required File imageFile,
   }) async {
+    File? compressedImage;
     try {
       // Compress image
-      final compressedImage = await _compressImageFile(imageFile);
+      compressedImage = await _compressImageFile(imageFile);
 
       // Upload to Firebase Storage
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final path = 'profile_photos/$userId/profile_$timestamp.jpg';
+      final path = 'public_profiles/$userId/profile_$timestamp.jpg';
       final ref = _storage.ref().child(path);
 
-      await ref.putFile(compressedImage);
+      await ref.putFile(
+        compressedImage,
+        SettableMetadata(contentType: 'image/jpeg'),
+      );
       final downloadUrl = await ref.getDownloadURL();
 
-      // Clean up temp file
-      await compressedImage.delete();
-
       return downloadUrl;
+    } on FirebaseException catch (e) {
+      throw ImageException.uploadError('Profile photo upload failed: ${e.message}');
     } catch (e) {
-      throw Exception('Failed to upload profile photo: $e');
+      if (e is ImageException) rethrow;
+      throw ImageException.uploadError('Failed to upload profile photo: $e');
+    } finally {
+      // Clean up temp file
+      if (compressedImage != null) {
+        try {
+          await compressedImage.delete();
+        } catch (_) {}
+      }
     }
   }
 
@@ -42,7 +55,7 @@ class ProfilePhotoService {
     try {
       final compressedBytes = _compressImageBytes(bytes);
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final path = 'profile_photos/$userId/profile_$timestamp.jpg';
+      final path = 'public_profiles/$userId/profile_$timestamp.jpg';
       final ref = _storage.ref().child(path);
 
       await ref.putData(
@@ -50,8 +63,11 @@ class ProfilePhotoService {
         SettableMetadata(contentType: 'image/jpeg'),
       );
       return await ref.getDownloadURL();
+    } on FirebaseException catch (e) {
+      throw ImageException.uploadError('Profile photo upload failed: ${e.message}');
     } catch (e) {
-      throw Exception('Failed to upload profile photo: $e');
+      if (e is ImageException) rethrow;
+      throw ImageException.uploadError('Failed to upload profile photo: $e');
     }
   }
 
@@ -63,8 +79,57 @@ class ProfilePhotoService {
       await ref.delete();
     } catch (e) {
       // Silently fail - photo might already be deleted
-      debugPrint('Failed to delete profile photo: $e');
+      if (kDebugMode) {
+        debugPrint('Failed to delete profile photo: $e');
+      }
     }
+  }
+
+  /// Migrate legacy profile photo from private path to public path.
+  /// Returns the new URL if migration occurred, otherwise null.
+  Future<String?> migrateLegacyProfilePhoto({
+    required String userId,
+    required String? photoUrl,
+  }) async {
+    if (photoUrl == null || photoUrl.trim().isEmpty) return null;
+    final trimmedUrl = photoUrl.trim();
+
+    if (!_isLegacyProfilePhotoUrl(trimmedUrl)) return null;
+
+    try {
+      final oldRef = _storage.refFromURL(trimmedUrl);
+      if (!oldRef.fullPath.startsWith('profile_photos/$userId/')) {
+        return null;
+      }
+
+      final metadata = await oldRef.getMetadata();
+      final bytes = await oldRef.getData(_maxProfilePhotoBytes);
+      if (bytes == null || bytes.isEmpty) return null;
+
+      final newRef =
+          _storage.ref().child('public_profiles/$userId/${oldRef.name}');
+      await newRef.putData(
+        bytes,
+        SettableMetadata(
+          contentType: metadata.contentType ?? 'image/jpeg',
+        ),
+      );
+
+      final newUrl = await newRef.getDownloadURL();
+      try {
+        await oldRef.delete();
+      } catch (_) {
+        // Best-effort cleanup; ignore deletion failures.
+      }
+      return newUrl;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  bool _isLegacyProfilePhotoUrl(String url) {
+    if (url.contains('public_profiles')) return false;
+    return url.contains('/profile_photos/') || url.contains('profile_photos%2F');
   }
 
   /// Compress image to reduce file size
@@ -84,16 +149,20 @@ class ProfilePhotoService {
 
       return tempFile;
     } catch (e) {
-      throw Exception('Failed to compress image: $e');
+      if (e is ImageException) rethrow;
+      throw ImageException.compressionError('Failed to compress profile photo: $e');
     }
   }
 
   Uint8List _compressImageBytes(Uint8List imageBytes, {int quality = 90}) {
-    final image = img.decodeImage(imageBytes);
+    var image = img.decodeImage(imageBytes);
 
     if (image == null) {
-      throw Exception('Failed to decode image');
+      throw ImageException.decodeError();
     }
+
+    // Apply EXIF orientation to fix rotated images (especially from iOS)
+    image = img.bakeOrientation(image);
 
     // Resize to square (512x512) - crop to center
     final size = 512;

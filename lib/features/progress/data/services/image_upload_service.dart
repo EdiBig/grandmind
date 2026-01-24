@@ -4,7 +4,13 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
 import '../../../../core/constants/firebase_constants.dart';
+import '../../../../core/errors/exceptions.dart';
 import '../../domain/models/progress_photo.dart';
+
+/// Callback for upload progress updates
+/// [progress] is a value between 0.0 and 1.0
+/// [status] describes the current upload stage
+typedef UploadProgressCallback = void Function(double progress, String status);
 
 /// Result of an image upload operation
 class ImageUploadResult {
@@ -30,8 +36,10 @@ class ImageUploadService {
     required String userId,
     required Uint8List imageBytes,
     required PhotoAngle angle,
+    UploadProgressCallback? onProgress,
   }) async {
     try {
+      onProgress?.call(0.0, 'Compressing image...');
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final angleName = angle.name;
 
@@ -39,23 +47,49 @@ class ImageUploadService {
       final thumbnailBytes = _generateThumbnailBytes(compressedBytes);
       final metadata = _getImageMetadataFromBytes(compressedBytes);
 
+      onProgress?.call(0.1, 'Uploading photo...');
+
       final fullImagePath =
           '${FirebaseConstants.progressPhotosPath}/$userId/${timestamp}_${angleName}_full.jpg';
       final fullImageRef = _storage.ref().child(fullImagePath);
-      await fullImageRef.putData(
+
+      // Upload with progress tracking
+      final fullImageTask = fullImageRef.putData(
         compressedBytes,
         SettableMetadata(contentType: 'image/jpeg'),
       );
+
+      // Listen to progress
+      fullImageTask.snapshotEvents.listen((snapshot) {
+        final progress = snapshot.bytesTransferred / snapshot.totalBytes;
+        // Full image upload is 10% to 70% of total progress
+        onProgress?.call(0.1 + (progress * 0.6), 'Uploading photo...');
+      });
+
+      await fullImageTask;
       final fullImageUrl = await fullImageRef.getDownloadURL();
+
+      onProgress?.call(0.75, 'Uploading thumbnail...');
 
       final thumbnailPath =
           '${FirebaseConstants.progressPhotosPath}/$userId/${timestamp}_${angleName}_thumb.jpg';
       final thumbnailRef = _storage.ref().child(thumbnailPath);
-      await thumbnailRef.putData(
+
+      final thumbTask = thumbnailRef.putData(
         thumbnailBytes,
         SettableMetadata(contentType: 'image/jpeg'),
       );
+
+      thumbTask.snapshotEvents.listen((snapshot) {
+        final progress = snapshot.bytesTransferred / snapshot.totalBytes;
+        // Thumbnail upload is 75% to 95% of total progress
+        onProgress?.call(0.75 + (progress * 0.2), 'Uploading thumbnail...');
+      });
+
+      await thumbTask;
       final thumbnailUrl = await thumbnailRef.getDownloadURL();
+
+      onProgress?.call(1.0, 'Complete!');
 
       return ImageUploadResult(
         imageUrl: fullImageUrl,
@@ -63,8 +97,11 @@ class ImageUploadService {
         storagePath: fullImagePath,
         metadata: metadata,
       );
+    } on FirebaseException catch (e) {
+      throw ImageException.uploadError('Upload failed: ${e.message}');
     } catch (e) {
-      throw Exception('Failed to upload progress photo: $e');
+      if (e is ImageException) rethrow;
+      throw ImageException.uploadError('Failed to upload progress photo: $e');
     }
   }
 
@@ -73,38 +110,63 @@ class ImageUploadService {
     required String userId,
     required File imageFile,
     required PhotoAngle angle,
+    UploadProgressCallback? onProgress,
   }) async {
+    File? compressedImage;
+    File? thumbnail;
     try {
+      onProgress?.call(0.0, 'Compressing image...');
+
       // Generate unique timestamp for file naming
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final angleName = angle.name;
 
       // Compress original image
-      final compressedImage = await _compressImage(imageFile);
+      compressedImage = await _compressImage(imageFile);
+      onProgress?.call(0.05, 'Generating thumbnail...');
 
       // Generate thumbnail
-      final thumbnail = await _generateThumbnail(compressedImage);
+      thumbnail = await _generateThumbnail(compressedImage);
+      onProgress?.call(0.1, 'Uploading photo...');
 
       // Get image metadata
       final metadata = await _getImageMetadata(compressedImage);
 
-      // Upload full image
+      // Upload full image with progress tracking
       final fullImagePath =
           '${FirebaseConstants.progressPhotosPath}/$userId/${timestamp}_${angleName}_full.jpg';
       final fullImageRef = _storage.ref().child(fullImagePath);
-      await fullImageRef.putFile(compressedImage);
+
+      final fullImageTask = fullImageRef.putFile(compressedImage);
+
+      fullImageTask.snapshotEvents.listen((snapshot) {
+        final progress = snapshot.bytesTransferred / snapshot.totalBytes;
+        // Full image upload is 10% to 70% of total progress
+        onProgress?.call(0.1 + (progress * 0.6), 'Uploading photo...');
+      });
+
+      await fullImageTask;
       final fullImageUrl = await fullImageRef.getDownloadURL();
 
-      // Upload thumbnail
+      onProgress?.call(0.75, 'Uploading thumbnail...');
+
+      // Upload thumbnail with progress tracking
       final thumbnailPath =
           '${FirebaseConstants.progressPhotosPath}/$userId/${timestamp}_${angleName}_thumb.jpg';
       final thumbnailRef = _storage.ref().child(thumbnailPath);
-      await thumbnailRef.putFile(thumbnail);
+
+      final thumbTask = thumbnailRef.putFile(thumbnail);
+
+      thumbTask.snapshotEvents.listen((snapshot) {
+        final progress = snapshot.bytesTransferred / snapshot.totalBytes;
+        // Thumbnail upload is 75% to 95% of total progress
+        onProgress?.call(0.75 + (progress * 0.2), 'Uploading thumbnail...');
+      });
+
+      await thumbTask;
       final thumbnailUrl = await thumbnailRef.getDownloadURL();
 
-      // Clean up temporary files
-      await compressedImage.delete();
-      await thumbnail.delete();
+      onProgress?.call(1.0, 'Complete!');
 
       return ImageUploadResult(
         imageUrl: fullImageUrl,
@@ -112,8 +174,17 @@ class ImageUploadService {
         storagePath: fullImagePath,
         metadata: metadata,
       );
+    } on FirebaseException catch (e) {
+      throw ImageException.uploadError('Upload failed: ${e.message}');
     } catch (e) {
-      throw Exception('Failed to upload progress photo: $e');
+      if (e is ImageException) rethrow;
+      throw ImageException.uploadError('Failed to upload progress photo: $e');
+    } finally {
+      // Clean up temporary files
+      try {
+        await compressedImage?.delete();
+        await thumbnail?.delete();
+      } catch (_) {}
     }
   }
 
@@ -123,11 +194,14 @@ class ImageUploadService {
     try {
       // Read image
       final imageBytes = await imageFile.readAsBytes();
-      final image = img.decodeImage(imageBytes);
+      var image = img.decodeImage(imageBytes);
 
       if (image == null) {
-        throw Exception('Failed to decode image');
+        throw ImageException.decodeError();
       }
+
+      // Apply EXIF orientation to fix rotated images (especially from iOS)
+      image = img.bakeOrientation(image);
 
       // Resize if needed (max width 1920px)
       final resized = image.width > 1920
@@ -144,15 +218,18 @@ class ImageUploadService {
 
       return tempFile;
     } catch (e) {
-      throw Exception('Failed to compress image: $e');
+      if (e is ImageException) rethrow;
+      throw ImageException.compressionError('Failed to compress image: $e');
     }
   }
 
   Uint8List _compressBytes(Uint8List imageBytes, {int quality = 85}) {
-    final image = img.decodeImage(imageBytes);
+    var image = img.decodeImage(imageBytes);
     if (image == null) {
-      throw Exception('Failed to decode image');
+      throw ImageException.decodeError();
     }
+    // Apply EXIF orientation to fix rotated images (especially from iOS)
+    image = img.bakeOrientation(image);
     final resized =
         image.width > 1920 ? img.copyResize(image, width: 1920) : image;
     return Uint8List.fromList(img.encodeJpg(resized, quality: quality));
@@ -163,11 +240,14 @@ class ImageUploadService {
     try {
       // Read image
       final imageBytes = await originalImage.readAsBytes();
-      final image = img.decodeImage(imageBytes);
+      var image = img.decodeImage(imageBytes);
 
       if (image == null) {
-        throw Exception('Failed to decode image for thumbnail');
+        throw ImageException.decodeError('Failed to decode image for thumbnail generation');
       }
+
+      // Apply EXIF orientation to fix rotated images
+      image = img.bakeOrientation(image);
 
       // Resize to thumbnail size
       final thumbnail = img.copyResize(image, width: maxWidth);
@@ -182,7 +262,8 @@ class ImageUploadService {
 
       return tempFile;
     } catch (e) {
-      throw Exception('Failed to generate thumbnail: $e');
+      if (e is ImageException) rethrow;
+      throw ImageException.compressionError('Failed to generate thumbnail: $e');
     }
   }
 
@@ -191,10 +272,12 @@ class ImageUploadService {
     int maxWidth = 300,
     int quality = 80,
   }) {
-    final image = img.decodeImage(imageBytes);
+    var image = img.decodeImage(imageBytes);
     if (image == null) {
-      throw Exception('Failed to decode image for thumbnail');
+      throw ImageException.decodeError('Failed to decode image for thumbnail generation');
     }
+    // Apply EXIF orientation to fix rotated images
+    image = img.bakeOrientation(image);
     final thumbnail = img.copyResize(image, width: maxWidth);
     return Uint8List.fromList(img.encodeJpg(thumbnail, quality: quality));
   }
@@ -203,11 +286,14 @@ class ImageUploadService {
   Future<Map<String, dynamic>> _getImageMetadata(File imageFile) async {
     try {
       final imageBytes = await imageFile.readAsBytes();
-      final image = img.decodeImage(imageBytes);
+      var image = img.decodeImage(imageBytes);
 
       if (image == null) {
         return {};
       }
+
+      // Apply EXIF orientation to get correct dimensions
+      image = img.bakeOrientation(image);
 
       final fileSize = await imageFile.length();
 
@@ -224,10 +310,12 @@ class ImageUploadService {
 
   Map<String, dynamic> _getImageMetadataFromBytes(Uint8List imageBytes) {
     try {
-      final image = img.decodeImage(imageBytes);
+      var image = img.decodeImage(imageBytes);
       if (image == null) {
         return {};
       }
+      // Apply EXIF orientation to get correct dimensions
+      image = img.bakeOrientation(image);
       return {
         'width': image.width,
         'height': image.height,
@@ -254,8 +342,11 @@ class ImageUploadService {
       } catch (_) {
         // Thumbnail deletion failed, but continue
       }
+    } on FirebaseException catch (e) {
+      throw ImageException.uploadError('Failed to delete photo: ${e.message}');
     } catch (e) {
-      throw Exception('Failed to delete progress photo: $e');
+      if (e is ImageException) rethrow;
+      throw ImageException.uploadError('Failed to delete progress photo: $e');
     }
   }
 

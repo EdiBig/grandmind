@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/formatters.dart';
 import '../providers/nutrition_providers.dart';
 
@@ -41,9 +42,9 @@ class NutritionHistoryDayCard extends ConsumerWidget {
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.grey.shade50,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(color: Theme.of(context).colorScheme.surfaceContainerHigh),
           ),
           child: Row(
             children: [
@@ -51,10 +52,10 @@ class NutritionHistoryDayCard extends ConsumerWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: Colors.orange.shade100,
+                  color: AppColors.warning.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.calendar_today, color: Colors.orange),
+                child: Icon(Icons.calendar_today, color: AppColors.warning),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -63,7 +64,7 @@ class NutritionHistoryDayCard extends ConsumerWidget {
                   children: [
                     Text(
                       Formatters.formatDayOfWeek(date),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
@@ -71,7 +72,7 @@ class NutritionHistoryDayCard extends ConsumerWidget {
                     const SizedBox(height: 4),
                     Text(
                       Formatters.formatDate(date),
-                      style: TextStyle(color: Colors.grey.shade600),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
                   ],
                 ),
@@ -81,14 +82,14 @@ class NutritionHistoryDayCard extends ConsumerWidget {
                 children: [
                   Text(
                     '${summary.totalCalories.toStringAsFixed(0)} cal',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+                    style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     summary.progressSummary,
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey.shade600,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -100,18 +101,18 @@ class NutritionHistoryDayCard extends ConsumerWidget {
       loading: () => Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.grey.shade50,
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(color: Theme.of(context).colorScheme.surfaceContainerHigh),
         ),
         child: const Center(child: CircularProgressIndicator()),
       ),
       error: (error, stack) => Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.red.shade50,
+          color: AppColors.error.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.red.shade200),
+          border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
         ),
         child: Text('Failed to load: $error'),
       ),

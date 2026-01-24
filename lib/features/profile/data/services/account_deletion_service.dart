@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 /// Service for handling account deletion
 class AccountDeletionService {
@@ -29,7 +31,9 @@ class AccountDeletionService {
       // Step 3: Delete Firebase Auth account
       await user.delete();
 
-      debugPrint('Account successfully deleted for user: $userId');
+      if (kDebugMode) {
+        debugPrint('Account successfully deleted for user: $userId');
+      }
     } catch (e) {
       throw Exception('Failed to delete account: $e');
     }
@@ -94,11 +98,14 @@ class AccountDeletionService {
     try {
       // Delete profile photos
       await _deleteStorageFolder('profile_photos/$userId');
+      await _deleteStorageFolder('public_profiles/$userId');
 
       // Delete progress photos
       await _deleteStorageFolder('progress_photos/$userId');
     } catch (e) {
-      debugPrint('Error deleting storage files: $e');
+      if (kDebugMode) {
+        debugPrint('Error deleting storage files: $e');
+      }
       // Continue even if storage deletion fails
     }
   }
@@ -119,7 +126,9 @@ class AccountDeletionService {
       }
     } catch (e) {
       // Folder might not exist, which is fine
-      debugPrint('Error deleting folder $folderPath: $e');
+      if (kDebugMode) {
+        debugPrint('Error deleting folder $folderPath: $e');
+      }
     }
   }
 
@@ -133,6 +142,48 @@ class AccountDeletionService {
     final credential = EmailAuthProvider.credential(
       email: email,
       password: password,
+    );
+
+    await user.reauthenticateWithCredential(credential);
+  }
+
+  Future<void> reauthenticateWithGoogle() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw Exception('No user is currently signed in');
+    }
+
+    final googleUser = await GoogleSignIn().signIn();
+    if (googleUser == null) {
+      throw Exception('Google sign-in cancelled');
+    }
+
+    final googleAuth = await googleUser.authentication;
+    final credential = GoogleAuthProvider.credential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
+
+    await user.reauthenticateWithCredential(credential);
+  }
+
+  Future<void> reauthenticateWithApple() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw Exception('No user is currently signed in');
+    }
+
+    final appleCredential = await SignInWithApple.getAppleIDCredential(
+      scopes: [
+        AppleIDAuthorizationScopes.email,
+        AppleIDAuthorizationScopes.fullName,
+      ],
+    );
+
+    final provider = OAuthProvider('apple.com');
+    final credential = provider.credential(
+      idToken: appleCredential.identityToken,
+      accessToken: appleCredential.authorizationCode,
     );
 
     await user.reauthenticateWithCredential(credential);

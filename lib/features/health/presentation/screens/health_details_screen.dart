@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/constants/route_constants.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_gradients.dart';
 import '../providers/health_providers.dart';
 
@@ -17,11 +20,17 @@ class _HealthDetailsScreenState extends ConsumerState<HealthDetailsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   int _selectedDays = 7; // Default to 7 days
+  bool _isSyncing = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _runHealthSync();
+      ref.invalidate(weeklyHealthStatsProvider);
+      ref.invalidate(dailyHealthPointsProvider);
+    });
   }
 
   @override
@@ -35,14 +44,21 @@ class _HealthDetailsScreenState extends ConsumerState<HealthDetailsScreen>
     final weeklyStatsAsync = ref.watch(weeklyHealthStatsProvider);
     final dailyPointsAsync = ref.watch(dailyHealthPointsProvider(_selectedDays));
     final permissionsAsync = ref.watch(healthPermissionsProvider);
+    final lastSyncAsync = ref.watch(lastHealthSyncProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Health Details'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.auto_awesome),
+            onPressed: () => context.push(RouteConstants.healthInsights),
+            tooltip: 'View Insights',
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () {
+            onPressed: () async {
+              await _runHealthSync();
               ref.invalidate(weeklyHealthStatsProvider);
               ref.invalidate(dailyHealthPointsProvider);
               ref.invalidate(syncedTodayHealthDataProvider);
@@ -62,12 +78,18 @@ class _HealthDetailsScreenState extends ConsumerState<HealthDetailsScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                _buildSyncStatusCard(context, lastSyncAsync),
+                const SizedBox(height: 16),
                 // Weekly Stats Card
                 weeklyStatsAsync.when(
                   data: (stats) => _buildWeeklyStatsCard(stats),
                   loading: () => const Center(child: CircularProgressIndicator()),
                   error: (_, __) => _buildErrorCard('Failed to load weekly stats'),
                 ),
+                const SizedBox(height: 16),
+
+                // View Insights Button
+                _buildInsightsButton(context),
                 const SizedBox(height: 24),
 
                 // Time Range Selector
@@ -107,12 +129,12 @@ class _HealthDetailsScreenState extends ConsumerState<HealthDetailsScreen>
         children: [
           Row(
             children: [
-              const Icon(Icons.calendar_today, color: Colors.white, size: 20),
+              Icon(Icons.calendar_today, color: AppColors.white, size: 20),
               const SizedBox(width: 8),
               Text(
                 'This Week',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: Colors.white,
+                      color: AppColors.white,
                       fontWeight: FontWeight.bold,
                     ),
               ),
@@ -176,12 +198,12 @@ class _HealthDetailsScreenState extends ConsumerState<HealthDetailsScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: Colors.white.withValues(alpha: 0.9), size: 20),
+        Icon(icon, color: AppColors.white.withValues(alpha: 0.9), size: 20),
         const SizedBox(height: 8),
         Text(
           value,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: AppColors.white,
             fontSize: 22,
             fontWeight: FontWeight.bold,
           ),
@@ -190,7 +212,7 @@ class _HealthDetailsScreenState extends ConsumerState<HealthDetailsScreen>
         Text(
           label,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.9),
+            color: AppColors.white.withValues(alpha: 0.9),
             fontSize: 12,
             fontWeight: FontWeight.w600,
           ),
@@ -198,7 +220,7 @@ class _HealthDetailsScreenState extends ConsumerState<HealthDetailsScreen>
         Text(
           subtitle,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.7),
+            color: AppColors.white.withValues(alpha: 0.7),
             fontSize: 10,
           ),
         ),
@@ -236,8 +258,8 @@ class _HealthDetailsScreenState extends ConsumerState<HealthDetailsScreen>
       style: ElevatedButton.styleFrom(
         backgroundColor: isSelected
             ? Theme.of(context).colorScheme.primary
-            : Colors.grey.shade200,
-        foregroundColor: isSelected ? Colors.white : Colors.black87,
+            : Theme.of(context).colorScheme.surfaceContainerHigh,
+        foregroundColor: isSelected ? AppColors.white : AppColors.black.withValues(alpha: 0.87),
         elevation: isSelected ? 2 : 0,
         padding: const EdgeInsets.symmetric(vertical: 12),
       ),
@@ -248,11 +270,11 @@ class _HealthDetailsScreenState extends ConsumerState<HealthDetailsScreen>
   Widget _buildChartsSection(AsyncValue<List<dynamic>> dailyPointsAsync) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
+            color: AppColors.grey.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -263,7 +285,7 @@ class _HealthDetailsScreenState extends ConsumerState<HealthDetailsScreen>
           TabBar(
             controller: _tabController,
             labelColor: Theme.of(context).colorScheme.primary,
-            unselectedLabelColor: Colors.grey,
+            unselectedLabelColor: AppColors.grey,
             indicatorColor: Theme.of(context).colorScheme.primary,
             tabs: const [
               Tab(text: 'Steps'),
@@ -330,7 +352,7 @@ class _HealthDetailsScreenState extends ConsumerState<HealthDetailsScreen>
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
                         DateFormat('MM/dd').format(point.date),
-                        style: const TextStyle(fontSize: 10),
+                        style: TextStyle(fontSize: 10),
                       ),
                     );
                   }
@@ -385,7 +407,7 @@ class _HealthDetailsScreenState extends ConsumerState<HealthDetailsScreen>
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
                         DateFormat('MM/dd').format(point.date),
-                        style: const TextStyle(fontSize: 10),
+                        style: TextStyle(fontSize: 10),
                       ),
                     );
                   }
@@ -405,12 +427,12 @@ class _HealthDetailsScreenState extends ConsumerState<HealthDetailsScreen>
                   .map((e) => FlSpot(e.key.toDouble(), e.value.calories))
                   .toList(),
               isCurved: true,
-              color: Colors.orange,
+              color: AppColors.warning,
               barWidth: 3,
               dotData: FlDotData(show: true),
               belowBarData: BarAreaData(
                 show: true,
-                color: Colors.orange.withValues(alpha: 0.1),
+                color: AppColors.warning.withValues(alpha: 0.1),
               ),
             ),
           ],
@@ -495,7 +517,7 @@ class _HealthDetailsScreenState extends ConsumerState<HealthDetailsScreen>
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
                         DateFormat('MM/dd').format(point.date),
-                        style: const TextStyle(fontSize: 10),
+                        style: TextStyle(fontSize: 10),
                       ),
                     );
                   }
@@ -539,7 +561,7 @@ class _HealthDetailsScreenState extends ConsumerState<HealthDetailsScreen>
             Icon(
               Icons.health_and_safety,
               size: 80,
-              color: Colors.grey.shade400,
+              color: Theme.of(context).colorScheme.outline,
             ),
             const SizedBox(height: 24),
             Text(
@@ -563,15 +585,20 @@ class _HealthDetailsScreenState extends ConsumerState<HealthDetailsScreen>
 
                 if (granted && context.mounted) {
                   ref.invalidate(healthPermissionsProvider);
+                  await _runHealthSync();
                   ref.invalidate(weeklyHealthStatsProvider);
                   ref.invalidate(syncedTodayHealthDataProvider);
+                  ref.invalidate(dailyHealthPointsProvider);
+                  ref
+                      .read(healthSummaryProvider.notifier)
+                      .refresh(force: true);
                 }
               },
-              icon: const Icon(Icons.lock_open),
+              icon: Icon(Icons.lock_open),
               label: const Text('Grant Access'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               ),
             ),
@@ -585,18 +612,18 @@ class _HealthDetailsScreenState extends ConsumerState<HealthDetailsScreen>
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.red.shade50,
+        color: AppColors.error.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.red.shade200),
+        border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
       ),
       child: Row(
         children: [
-          Icon(Icons.error_outline, color: Colors.red.shade700),
+          Icon(Icons.error_outline, color: AppColors.error),
           const SizedBox(width: 16),
           Expanded(
             child: Text(
               message,
-              style: TextStyle(color: Colors.red.shade700),
+              style: TextStyle(color: AppColors.error),
             ),
           ),
         ],
@@ -609,5 +636,141 @@ class _HealthDetailsScreenState extends ConsumerState<HealthDetailsScreen>
       return '${(number / 1000).toStringAsFixed(1)}k';
     }
     return number.toString();
+  }
+
+  Future<void> _runHealthSync() async {
+    if (_isSyncing) return;
+    setState(() => _isSyncing = true);
+    try {
+      await ref.read(healthSyncProvider.future);
+      ref.invalidate(lastHealthSyncProvider);
+    } finally {
+      if (mounted) {
+        setState(() => _isSyncing = false);
+      }
+    }
+  }
+
+  Widget _buildSyncStatusCard(
+    BuildContext context,
+    AsyncValue<DateTime?> lastSyncAsync,
+  ) {
+    final surface = Theme.of(context).colorScheme.surface;
+    final outline = Theme.of(context).colorScheme.outlineVariant;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: outline),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            _isSyncing ? Icons.sync : Icons.schedule,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: lastSyncAsync.when(
+              data: (timestamp) => Text(
+                _isSyncing
+                    ? 'Syncing health data...'
+                    : _formatLastSync(timestamp),
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              loading: () => const Text('Checking last sync...'),
+              error: (_, __) => const Text('Unable to read last sync time'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatLastSync(DateTime? timestamp) {
+    if (timestamp == null) {
+      return 'Last synced: never';
+    }
+
+    final now = DateTime.now();
+    final difference = now.difference(timestamp);
+
+    if (difference.inMinutes < 1) {
+      return 'Last synced: just now';
+    }
+    if (difference.inMinutes < 60) {
+      return 'Last synced: ${difference.inMinutes}m ago';
+    }
+    if (difference.inHours < 24) {
+      return 'Last synced: ${difference.inHours}h ago';
+    }
+    return 'Last synced: ${timestamp.year}-${timestamp.month.toString().padLeft(2, '0')}-${timestamp.day.toString().padLeft(2, '0')}';
+  }
+
+  Widget _buildInsightsButton(BuildContext context) {
+    return InkWell(
+      onTap: () => context.push(RouteConstants.healthInsights),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Theme.of(context).colorScheme.primaryContainer,
+              Theme.of(context).colorScheme.secondaryContainer,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                Icons.auto_awesome,
+                color: Theme.of(context).colorScheme.primary,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'View AI Insights',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Get personalised health analysis and recommendations',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              color: Theme.of(context).colorScheme.primary,
+              size: 16,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

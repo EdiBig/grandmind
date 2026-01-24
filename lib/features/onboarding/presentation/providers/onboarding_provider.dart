@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/providers/analytics_provider.dart';
 import '../../../../features/user/data/services/firestore_service.dart';
+import '../../../../shared/services/analytics_service.dart';
 import '../../../authentication/data/repositories/auth_repository.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../domain/onboarding_data.dart';
@@ -15,15 +17,20 @@ final onboardingProvider =
   return OnboardingNotifier(
     ref.watch(authRepositoryProvider),
     ref.watch(firestoreServiceProvider),
+    ref.watch(analyticsProvider),
   );
 });
 
 class OnboardingNotifier extends StateNotifier<OnboardingState> {
   final AuthRepository _authRepository;
   final FirestoreService _firestoreService;
+  final AnalyticsService _analytics;
 
-  OnboardingNotifier(this._authRepository, this._firestoreService)
-      : super(const OnboardingState.initial());
+  OnboardingNotifier(
+    this._authRepository,
+    this._firestoreService,
+    this._analytics,
+  ) : super(const OnboardingState.initial());
 
   // Update goal
   void setGoal(FitnessGoal goal) {
@@ -96,6 +103,18 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
           'limitations': state.limitations,
         },
       });
+
+      final updatedUser = await _firestoreService.getUser(user.uid);
+      if (updatedUser == null || !updatedUser.hasCompletedOnboarding) {
+        throw Exception('Onboarding save failed. Please try again.');
+      }
+
+      // Track analytics
+      await _analytics.logOnboardingCompleted(
+        goalType: state.goal!.name,
+        fitnessLevel: state.fitnessLevel!.name,
+        coachTone: state.coachTone!.name,
+      );
 
       state = state.copyWith(status: OnboardingStatus.completed);
     } catch (e) {

@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
 import 'package:intl/intl.dart';
 import '../../domain/models/weight_entry.dart';
 
@@ -37,7 +38,7 @@ class _WeightChartWidgetState extends State<WeightChartWidget> {
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+        border: Border.all(color: AppColors.grey.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -78,7 +79,7 @@ class _WeightChartWidgetState extends State<WeightChartWidget> {
         horizontalInterval: (effectiveRange + padding * 2) / 4,
         getDrawingHorizontalLine: (value) {
           return FlLine(
-            color: Colors.grey.withValues(alpha: 0.2),
+            color: AppColors.grey.withValues(alpha: 0.2),
             strokeWidth: 1,
           );
         },
@@ -92,7 +93,7 @@ class _WeightChartWidgetState extends State<WeightChartWidget> {
               return Text(
                 value.toStringAsFixed(1),
                 style: TextStyle(
-                  color: Colors.grey[600],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontSize: 12,
                 ),
               );
@@ -123,7 +124,7 @@ class _WeightChartWidgetState extends State<WeightChartWidget> {
                 child: Text(
                   dateStr,
                   style: TextStyle(
-                    color: Colors.grey[600],
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontSize: 10,
                   ),
                 ),
@@ -135,8 +136,8 @@ class _WeightChartWidgetState extends State<WeightChartWidget> {
       borderData: FlBorderData(
         show: true,
         border: Border(
-          bottom: BorderSide(color: Colors.grey.withValues(alpha: 0.2)),
-          left: BorderSide(color: Colors.grey.withValues(alpha: 0.2)),
+          bottom: BorderSide(color: AppColors.grey.withValues(alpha: 0.2)),
+          left: BorderSide(color: AppColors.grey.withValues(alpha: 0.2)),
         ),
       ),
       minX: 0,
@@ -157,7 +158,7 @@ class _WeightChartWidgetState extends State<WeightChartWidget> {
                 radius: touchedIndex == index ? 6 : 4,
                 color: colorScheme.primary,
                 strokeWidth: touchedIndex == index ? 2 : 0,
-                strokeColor: Colors.white,
+                strokeColor: AppColors.white,
               );
             },
           ),
@@ -199,8 +200,8 @@ class _WeightChartWidgetState extends State<WeightChartWidget> {
 
               return LineTooltipItem(
                 '${displayWeight.toStringAsFixed(1)} $unit\n$dateStr',
-                const TextStyle(
-                  color: Colors.white,
+                TextStyle(
+                  color: AppColors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
                 ),
@@ -266,19 +267,19 @@ class _WeightChartWidgetState extends State<WeightChartWidget> {
       height: 250,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.show_chart, size: 48, color: Colors.grey[400]),
+          Icon(Icons.show_chart, size: 48, color: Theme.of(context).colorScheme.outline),
           const SizedBox(height: 12),
           Text(
             'No Weight Data',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.grey[600],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w600,
                 ),
           ),
@@ -286,7 +287,7 @@ class _WeightChartWidgetState extends State<WeightChartWidget> {
           Text(
             'Log your weight to see the chart',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[500],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           ),
         ],
@@ -306,19 +307,19 @@ class _WeightChartWidgetState extends State<WeightChartWidget> {
       height: 250,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.show_chart, size: 48, color: Colors.grey[400]),
+          Icon(Icons.show_chart, size: 48, color: Theme.of(context).colorScheme.outline),
           const SizedBox(height: 12),
           Text(
             'Single Entry',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.grey[600],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w600,
                 ),
           ),
@@ -334,7 +335,7 @@ class _WeightChartWidgetState extends State<WeightChartWidget> {
           Text(
             'Log more weights to see trends',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[500],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           ),
         ],

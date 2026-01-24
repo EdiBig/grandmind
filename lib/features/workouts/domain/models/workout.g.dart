@@ -34,7 +34,7 @@ Map<String, dynamic> _$$WorkoutImplToJson(_$WorkoutImpl instance) =>
       'description': instance.description,
       'difficulty': _$WorkoutDifficultyEnumMap[instance.difficulty]!,
       'estimatedDuration': instance.estimatedDuration,
-      'exercises': instance.exercises,
+      'exercises': instance.exercises.map((e) => e.toJson()).toList(),
       'category': _$WorkoutCategoryEnumMap[instance.category]!,
       'imageUrl': instance.imageUrl,
       'tags': instance.tags,

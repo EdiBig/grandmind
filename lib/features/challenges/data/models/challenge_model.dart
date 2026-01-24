@@ -83,7 +83,7 @@ class ChallengeModel {
       startDate: _parseTimestampOrNow(data['startDate']),
       endDate: _parseTimestampOrNow(data['endDate']),
       visibility: _parseEnum(data['visibility'], ChallengeVisibility.values,
-          fallback: ChallengeVisibility.public),
+          fallback: ChallengeVisibility.inviteOnly),
       hasRankings: data['hasRankings'] as bool? ?? true,
       hasActivityFeed: data['hasActivityFeed'] as bool? ?? false,
       allowMemberInvites: data['allowMemberInvites'] as bool? ?? true,

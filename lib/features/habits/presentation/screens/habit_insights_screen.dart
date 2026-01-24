@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_gradients.dart';
 import '../../data/services/habit_insights_service.dart';
 
@@ -17,7 +18,7 @@ class HabitInsightsScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Habit Insights'),
         leading: IconButton(
-          icon: const Icon(Icons.close),
+          icon: Icon(Icons.close),
           onPressed: () => context.pop(),
         ),
       ),
@@ -32,10 +33,10 @@ class HabitInsightsScreen extends StatelessWidget {
                 gradient: Theme.of(context).extension<AppGradients>()!.primary,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.psychology,
                 size: 48,
-                color: Colors.white,
+                color: AppColors.white,
               ),
             ),
           ),
@@ -56,7 +57,7 @@ class HabitInsightsScreen extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[600],
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 32),
@@ -66,11 +67,11 @@ class HabitInsightsScreen extends StatelessWidget {
             context,
             icon: Icons.star,
             title: 'Summary',
-            iconColor: Colors.amber,
+            iconColor: AppColors.warning,
             children: [
               Text(
                 insights.summary,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   height: 1.5,
                 ),
@@ -85,7 +86,7 @@ class HabitInsightsScreen extends StatelessWidget {
             context,
             icon: Icons.lightbulb,
             title: 'Key Insights',
-            iconColor: Colors.orange,
+            iconColor: AppColors.warning,
             children: insights.keyInsights
                 .map((insight) => Padding(
                       padding: const EdgeInsets.only(bottom: 12),
@@ -105,7 +106,7 @@ class HabitInsightsScreen extends StatelessWidget {
                           Expanded(
                             child: Text(
                               insight,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 15,
                                 height: 1.4,
                               ),
@@ -124,7 +125,7 @@ class HabitInsightsScreen extends StatelessWidget {
             context,
             icon: Icons.tips_and_updates,
             title: 'Actionable Suggestions',
-            iconColor: Colors.green,
+            iconColor: AppColors.success,
             children: insights.suggestions
                 .asMap()
                 .entries
@@ -133,10 +134,10 @@ class HabitInsightsScreen extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.green.withValues(alpha: 0.05),
+                          color: AppColors.success.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: Colors.green.withValues(alpha: 0.2),
+                            color: AppColors.success.withValues(alpha: 0.2),
                           ),
                         ),
                         child: Row(
@@ -145,14 +146,14 @@ class HabitInsightsScreen extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Colors.green.withValues(alpha: 0.2),
+                                color: AppColors.success.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
                                 '${entry.key + 1}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.green,
+                                  color: AppColors.success,
                                 ),
                               ),
                             ),
@@ -181,7 +182,7 @@ class HabitInsightsScreen extends StatelessWidget {
               context,
               icon: Icons.analytics,
               title: 'Your Numbers',
-              iconColor: Colors.blue,
+              iconColor: AppColors.info,
               children: [
                 _buildStatRow(
                   context,
@@ -213,19 +214,19 @@ class HabitInsightsScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
               children: [
-                Icon(Icons.info_outline, color: Colors.grey[600], size: 20),
+                Icon(Icons.info_outline, color: Theme.of(context).colorScheme.onSurfaceVariant, size: 20),
                 const SizedBox(height: 8),
                 Text(
                   'These insights are AI-generated based on your habit tracking data. They are not medical advice. Consult a healthcare professional for health-related concerns.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey[600],
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     height: 1.4,
                   ),
                 ),
@@ -287,7 +288,7 @@ class HabitInsightsScreen extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 15,
-              color: Colors.grey[700],
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           Text(

@@ -2,13 +2,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/repositories/workout_repository.dart';
-import '../../data/workout_library_data.dart';
 import '../../domain/models/user_saved_workout.dart';
-import '../../domain/models/workout_library_entry.dart';
 import '../../domain/models/workout.dart';
-import '../../domain/models/exercise.dart';
 import '../providers/saved_workouts_provider.dart';
+import '../providers/workout_providers.dart';
 import '../utils/workout_share_helper.dart';
+import 'workout_detail_screen.dart';
 import 'workout_logging_screen.dart';
 
 class MyRoutinesScreen extends ConsumerStatefulWidget {
@@ -26,6 +25,20 @@ class _MyRoutinesScreenState extends ConsumerState<MyRoutinesScreen> {
   @override
   Widget build(BuildContext context) {
     final savedAsync = ref.watch(savedWorkoutsStreamProvider);
+    final templatesAsync = ref.watch(userWorkoutTemplatesProvider);
+    final saved = savedAsync.value ?? const <UserSavedWorkout>[];
+    final workoutIds = saved.map((item) => item.workoutId).toList();
+    final detailsAsync = workoutIds.isEmpty
+        ? const AsyncValue<Map<String, Workout>>.data({})
+        : ref.watch(workoutsByIdsProvider(workoutIds));
+    final workoutsById = detailsAsync.value ?? const <String, Workout>{};
+    final templates = templatesAsync.value ?? const <Workout>[];
+    final hasError = savedAsync.hasError ||
+        templatesAsync.hasError ||
+        detailsAsync.hasError;
+    final isLoading = savedAsync.isLoading ||
+        templatesAsync.isLoading ||
+        detailsAsync.isLoading;
 
     return Scaffold(
       appBar: AppBar(
@@ -41,35 +54,49 @@ class _MyRoutinesScreenState extends ConsumerState<MyRoutinesScreen> {
                   ),
                 )
                 .toList(),
-            icon: const Icon(Icons.sort),
+            icon: Icon(Icons.sort),
           ),
         ],
       ),
-      body: savedAsync.when(
-        data: (saved) => _buildContent(context, saved),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(
-          child: Text('Unable to load routines: $error'),
-        ),
-      ),
+      body: hasError
+          ? Center(
+              child: Text(
+                'Unable to load routines: '
+                '${savedAsync.error ?? detailsAsync.error ?? templatesAsync.error}',
+              ),
+            )
+          : Stack(
+              children: [
+                _buildContent(
+                  context,
+                  saved,
+                  workoutsById,
+                  templates,
+                ),
+                if (isLoading)
+                  const Align(
+                    alignment: Alignment.topCenter,
+                    child: LinearProgressIndicator(minHeight: 2),
+                  ),
+              ],
+            ),
     );
   }
 
-  Widget _buildContent(BuildContext context, List<UserSavedWorkout> saved) {
-    if (saved.isEmpty) {
-      return _buildEmptyState(context);
-    }
-
-    final entriesById = {
-      for (final entry in workoutLibraryEntries) entry.id: entry,
-    };
-    final items = <_RoutineItem>[];
-    for (final savedWorkout in saved) {
-      final entry = entriesById[savedWorkout.workoutId];
-      if (entry != null) {
-        items.add(_RoutineItem(entry: entry, saved: savedWorkout));
-      }
-    }
+  Widget _buildContent(
+    BuildContext context,
+    List<UserSavedWorkout> saved,
+    Map<String, Workout> workoutsById,
+    List<Workout> templates,
+  ) {
+    final items = saved
+        .map(
+          (savedWorkout) => _RoutineItem(
+            workout: workoutsById[savedWorkout.workoutId],
+            saved: savedWorkout,
+          ),
+        )
+        .toList();
 
     final folderOptions = saved
         .map((item) => item.folderName)
@@ -90,11 +117,12 @@ class _MyRoutinesScreenState extends ConsumerState<MyRoutinesScreen> {
     final query = _query.trim().toLowerCase();
     if (query.isNotEmpty) {
       filtered = filtered.where((item) {
+        final workout = item.workout;
         final haystack = [
-          item.entry.name,
-          item.entry.resolvedPrimaryCategory.displayName,
-          item.entry.resolvedSubCategory,
-          item.entry.equipment.displayName,
+          workout?.name ?? '',
+          workout?.category.displayName ?? '',
+          workout?.difficulty.displayName ?? '',
+          workout?.equipment ?? '',
           item.saved.folderName ?? '',
         ].join(' ').toLowerCase();
         return haystack.contains(query);
@@ -103,13 +131,21 @@ class _MyRoutinesScreenState extends ConsumerState<MyRoutinesScreen> {
 
     _sortItems(filtered);
 
+    final filteredTemplates = _filterTemplates(templates, query);
+
+    if (filtered.isEmpty && filteredTemplates.isEmpty) {
+      return _buildEmptyState(context);
+    }
+
+    final totalCount = filtered.length + filteredTemplates.length;
+
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: TextField(
             onChanged: (value) => setState(() => _query = value),
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               hintText: 'Search saved workouts',
               prefixIcon: Icon(Icons.search),
               border: OutlineInputBorder(),
@@ -147,7 +183,7 @@ class _MyRoutinesScreenState extends ConsumerState<MyRoutinesScreen> {
           child: Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              'Showing ${filtered.length} workouts',
+              'Showing $totalCount workouts',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -155,18 +191,61 @@ class _MyRoutinesScreenState extends ConsumerState<MyRoutinesScreen> {
           ),
         ),
         Expanded(
-          child: GridView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              childAspectRatio: 0.78,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-            ),
-            itemCount: filtered.length,
-            itemBuilder: (context, index) {
-              return _buildRoutineCard(context, filtered[index]);
-            },
+          child: ListView(
+            children: [
+              if (filtered.isNotEmpty) ...[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  child: Text(
+                    'Saved routines',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                ),
+                GridView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.68,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                  ),
+                  itemCount: filtered.length,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemBuilder: (context, index) {
+                    return _buildRoutineCard(context, filtered[index]);
+                  },
+                ),
+              ],
+              if (filteredTemplates.isNotEmpty) ...[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Text(
+                    'My templates',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                ),
+                GridView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.68,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                  ),
+                  itemCount: filteredTemplates.length,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemBuilder: (context, index) {
+                    return _buildTemplateCard(context, filteredTemplates[index]);
+                  },
+                ),
+              ],
+            ],
           ),
         ),
       ],
@@ -174,7 +253,7 @@ class _MyRoutinesScreenState extends ConsumerState<MyRoutinesScreen> {
   }
 
   Widget _buildRoutineCard(BuildContext context, _RoutineItem item) {
-    final entry = item.entry;
+    final workout = item.workout;
     final saved = item.saved;
     return Card(
       elevation: 1,
@@ -185,7 +264,7 @@ class _MyRoutinesScreenState extends ConsumerState<MyRoutinesScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              entry.name,
+              workout?.name ?? 'Workout unavailable',
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -194,7 +273,7 @@ class _MyRoutinesScreenState extends ConsumerState<MyRoutinesScreen> {
             ),
             const SizedBox(height: 6),
             Text(
-              entry.resolvedSubCategory,
+              workout?.category.displayName ?? 'Unknown category',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -206,8 +285,16 @@ class _MyRoutinesScreenState extends ConsumerState<MyRoutinesScreen> {
               spacing: 6,
               runSpacing: 6,
               children: [
-                _buildTag(context, entry.difficulty.displayName),
-                _buildTag(context, '${entry.durationMinutes} min'),
+                _buildTag(
+                  context,
+                  workout?.difficulty.displayName ?? 'Unknown',
+                ),
+                _buildTag(
+                  context,
+                  workout != null
+                      ? '${workout.estimatedDuration} min'
+                      : '-- min',
+                ),
               ],
             ),
             if (saved.folderName != null && saved.folderName!.isNotEmpty) ...[
@@ -222,24 +309,101 @@ class _MyRoutinesScreenState extends ConsumerState<MyRoutinesScreen> {
                   ),
             ),
             const Spacer(),
+            Row(
+              children: [
+                TextButton.icon(
+                  onPressed: workout == null
+                      ? null
+                      : () => _startWorkout(context, workout),
+                  icon: const Icon(Icons.play_arrow, size: 18),
+                  label: const Text('Start'),
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                  ),
+                ),
+                const Spacer(),
+                PopupMenuButton<_RoutineAction>(
+                  onSelected: (action) =>
+                      _handleRoutineAction(context, action, saved, workout),
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: _RoutineAction.remove,
+                      child: Text('Remove'),
+                    ),
+                    const PopupMenuItem(
+                      value: _RoutineAction.share,
+                      child: Text('Share'),
+                    ),
+                  ],
+                  icon: const Icon(Icons.more_vert),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTemplateCard(BuildContext context, Workout workout) {
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              workout.name,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              workout.category.displayName,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 8),
             Wrap(
               spacing: 6,
               runSpacing: 6,
               children: [
+                _buildTag(context, workout.difficulty.displayName),
+                _buildTag(context, '${workout.estimatedDuration} min'),
+              ],
+            ),
+            const Spacer(),
+            Row(
+              children: [
                 TextButton.icon(
-                  onPressed: () => _startWorkout(context, entry),
+                  onPressed: () => _startWorkout(context, workout),
                   icon: const Icon(Icons.play_arrow, size: 18),
                   label: const Text('Start'),
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                  ),
                 ),
-                TextButton.icon(
-                  onPressed: () => _removeSavedWorkout(context, saved),
-                  icon: const Icon(Icons.delete_outline, size: 18),
-                  label: const Text('Remove'),
-                ),
-                TextButton.icon(
-                  onPressed: () => _shareRoutine(context, entry),
-                  icon: const Icon(Icons.share_outlined, size: 18),
-                  label: const Text('Share'),
+                const Spacer(),
+                PopupMenuButton<_TemplateAction>(
+                  onSelected: (action) =>
+                      _handleTemplateAction(context, action, workout),
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: _TemplateAction.open,
+                      child: Text('Open'),
+                    ),
+                  ],
+                  icon: const Icon(Icons.more_vert),
                 ),
               ],
             ),
@@ -304,16 +468,22 @@ class _MyRoutinesScreenState extends ConsumerState<MyRoutinesScreen> {
         items.sort((a, b) => b.saved.savedAt.compareTo(a.saved.savedAt));
         break;
       case SavedWorkoutSort.name:
-        items.sort((a, b) => a.entry.name.compareTo(b.entry.name));
+        items.sort((a, b) {
+          final nameA = a.workout?.name ?? '';
+          final nameB = b.workout?.name ?? '';
+          return nameA.compareTo(nameB);
+        });
         break;
       case SavedWorkoutSort.duration:
         items.sort(
-          (a, b) => a.entry.durationMinutes.compareTo(b.entry.durationMinutes),
+          (a, b) => (a.workout?.estimatedDuration ?? 0)
+              .compareTo(b.workout?.estimatedDuration ?? 0),
         );
         break;
       case SavedWorkoutSort.difficulty:
         items.sort(
-          (a, b) => a.entry.difficulty.index.compareTo(b.entry.difficulty.index),
+          (a, b) => (a.workout?.difficulty.index ?? 0)
+              .compareTo(b.workout?.difficulty.index ?? 0),
         );
         break;
     }
@@ -334,11 +504,11 @@ class _MyRoutinesScreenState extends ConsumerState<MyRoutinesScreen> {
     }
   }
 
-  void _startWorkout(BuildContext context, WorkoutLibraryEntry entry) {
+  void _startWorkout(BuildContext context, Workout workout) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => WorkoutLoggingScreen(
-          workout: _toWorkout(entry),
+          workout: workout,
         ),
       ),
     );
@@ -355,15 +525,57 @@ class _MyRoutinesScreenState extends ConsumerState<MyRoutinesScreen> {
     }
     try {
       await ref.read(workoutRepositoryProvider).removeSavedWorkout(saved.id);
+      if (!context.mounted) return;
       _showMessage(context, 'Removed from My Routines.');
     } catch (error) {
+      if (!context.mounted) return;
       _showMessage(context, 'Try again. ${error.toString()}');
     }
   }
 
-  void _shareRoutine(BuildContext context, WorkoutLibraryEntry entry) {
-    WorkoutShareHelper.shareWorkout(entry);
+  void _shareRoutine(BuildContext context, Workout workout) {
+    WorkoutShareHelper.shareWorkoutFromTemplate(workout);
     _showMessage(context, 'Share sheet opened.');
+  }
+
+  void _openTemplate(BuildContext context, Workout workout) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => WorkoutDetailScreen(workoutId: workout.id),
+      ),
+    );
+  }
+
+  void _handleRoutineAction(
+    BuildContext context,
+    _RoutineAction action,
+    UserSavedWorkout saved,
+    Workout? workout,
+  ) {
+    switch (action) {
+      case _RoutineAction.remove:
+        _removeSavedWorkout(context, saved);
+        break;
+      case _RoutineAction.share:
+        if (workout == null) {
+          _showMessage(context, 'Workout unavailable.');
+          return;
+        }
+        _shareRoutine(context, workout);
+        break;
+    }
+  }
+
+  void _handleTemplateAction(
+    BuildContext context,
+    _TemplateAction action,
+    Workout workout,
+  ) {
+    switch (action) {
+      case _TemplateAction.open:
+        _openTemplate(context, workout);
+        break;
+    }
   }
 
   void _showMessage(BuildContext context, String message) {
@@ -372,50 +584,30 @@ class _MyRoutinesScreenState extends ConsumerState<MyRoutinesScreen> {
     );
   }
 
-  Workout _toWorkout(WorkoutLibraryEntry entry) {
-    final metrics = ExerciseMetrics(
-      sets: entry.recommendedSets,
-      reps: entry.recommendedReps,
-      duration: entry.recommendedDurationSeconds,
-    );
-    final exerciseType = entry.recommendedDurationSeconds != null
-        ? ExerciseType.duration
-        : ExerciseType.reps;
-
-    return Workout(
-      id: 'library-${entry.id}',
-      name: entry.name,
-      description: entry.targetSummary,
-      difficulty: entry.difficulty,
-      estimatedDuration: entry.durationMinutes,
-      category: entry.category,
-      exercises: [
-        Exercise(
-          id: entry.id,
-          name: entry.name,
-          description: entry.instructions.join(' '),
-          type: exerciseType,
-          muscleGroups: [
-            ...entry.primaryTargets,
-            ...entry.secondaryTargets,
-          ],
-          equipment: entry.equipment.displayName,
-          metrics: metrics,
-        ),
-      ],
-      tags: [
-        ...entry.goals.map((goal) => goal.displayName),
-        if (entry.isBodyweight) 'Bodyweight',
-        if (entry.isCompound) 'Compound',
-      ],
-    );
+  List<Workout> _filterTemplates(List<Workout> templates, String query) {
+    if (templates.isEmpty) return [];
+    if (query.isEmpty) return templates;
+    return templates.where((workout) {
+      final haystack = [
+        workout.name,
+        workout.category.displayName,
+        workout.difficulty.displayName,
+        workout.equipment ?? '',
+      ].join(' ').toLowerCase();
+      return haystack.contains(query);
+    }).toList();
   }
+
 }
 
-class _RoutineItem {
-  const _RoutineItem({required this.entry, required this.saved});
+enum _RoutineAction { remove, share }
 
-  final WorkoutLibraryEntry entry;
+enum _TemplateAction { open }
+
+class _RoutineItem {
+  const _RoutineItem({required this.workout, required this.saved});
+
+  final Workout? workout;
   final UserSavedWorkout saved;
 }
 

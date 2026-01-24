@@ -4,12 +4,14 @@ import 'package:go_router/go_router.dart';
 import '../../../home/presentation/providers/dashboard_provider.dart';
 import '../../data/models/challenge_model.dart';
 import '../../data/models/challenge_participant_model.dart';
-import '../../data/repositories/challenge_repository.dart';
 import '../providers/challenge_providers.dart';
 import '../../../../core/constants/route_constants.dart';
 
-class TogetherHubScreen extends ConsumerWidget {
-  const TogetherHubScreen({super.key});
+class UnityHubScreen extends ConsumerWidget {
+  const UnityHubScreen({super.key});
+
+  // Feature is now live
+  static const bool _isComingSoon = false;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -18,33 +20,125 @@ class TogetherHubScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Unity'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Unity'),
+            if (_isComingSoon) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.tertiaryContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Preview',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onTertiaryContainer,
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+              ),
+            ],
+          ],
+        ),
         actions: [
           IconButton(
-            onPressed: () => context.push(RouteConstants.createChallenge),
-            icon: const Icon(Icons.add_circle_outline),
+            onPressed: _isComingSoon
+                ? () => _showComingSoonDialog(context)
+                : () => context.push(RouteConstants.createChallenge),
+            icon: Icon(Icons.add_circle_outline),
             tooltip: 'Create challenge',
           ),
         ],
       ),
-      body: challengesAsync.when(
-        data: (challenges) => participantsAsync.when(
-          data: (participants) => _buildContent(
-            context,
-            ref,
-            challenges,
-            participants,
+      body: Column(
+        children: [
+          if (_isComingSoon) _buildComingSoonBanner(context),
+          Expanded(
+            child: challengesAsync.when(
+              data: (challenges) => participantsAsync.when(
+                data: (participants) => _buildContent(
+                  context,
+                  ref,
+                  challenges,
+                  participants,
+                ),
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, _) => _buildError(context, error),
+              ),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, _) => _buildError(context, error),
+            ),
           ),
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => _buildError(context, error),
-        ),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => _buildError(context, error),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push(RouteConstants.createChallenge),
+        onPressed: _isComingSoon
+            ? () => _showComingSoonDialog(context)
+            : () => context.push(RouteConstants.createChallenge),
         label: const Text('Create Challenge'),
         icon: const Icon(Icons.flag_outlined),
+      ),
+    );
+  }
+
+  Widget _buildComingSoonBanner(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      color: Theme.of(context).colorScheme.tertiaryContainer,
+      child: Row(
+        children: [
+          Icon(
+            Icons.construction_rounded,
+            size: 20,
+            color: Theme.of(context).colorScheme.onTertiaryContainer,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Coming Soon',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onTertiaryContainer,
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                Text(
+                  'Group challenges are in development. Preview the feature below!',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onTertiaryContainer,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showComingSoonDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: const Icon(Icons.construction_rounded, size: 48),
+        title: const Text('Coming Soon'),
+        content: const Text(
+          'Group challenges are currently in development. '
+          'This feature will allow you to create and join challenges with friends and the community.\n\n'
+          'Stay tuned for updates!',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Got it'),
+          ),
+        ],
       ),
     );
   }
@@ -85,7 +179,10 @@ class TogetherHubScreen extends ConsumerWidget {
         _buildSectionHeader(context, 'Discover Challenges', discoverChallenges.length),
         const SizedBox(height: 8),
         if (discoverChallenges.isEmpty)
-          _buildEmptyState(context, 'No public challenges available right now.'),
+          _buildEmptyState(
+            context,
+            'No invite-only challenges available right now.',
+          ),
         ...discoverChallenges.map((challenge) => _buildChallengeCard(
               context,
               challenge,
@@ -108,15 +205,10 @@ class TogetherHubScreen extends ConsumerWidget {
               CircleAvatar(
                 radius: 24,
                 backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                child: Text(
-                  (user?.displayName ?? 'You')
-                      .trim()
-                      .characters
-                      .first
-                      .toUpperCase(),
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
-                      ),
+                child: Icon(
+                  Icons.groups_rounded,
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  size: 28,
                 ),
               ),
               const SizedBox(width: 12),
@@ -185,9 +277,11 @@ class TogetherHubScreen extends ConsumerWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () => context.push(
-          RouteConstants.challengeDetail.replaceFirst(':id', challenge.id),
-        ),
+        onTap: _isComingSoon
+            ? () => _showComingSoonDialog(context)
+            : () => context.push(
+                  RouteConstants.challengeDetail.replaceFirst(':id', challenge.id),
+                ),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(

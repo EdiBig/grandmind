@@ -53,7 +53,7 @@ Map<String, dynamic> _$$AIConversationImplToJson(
       'id': instance.id,
       'userId': instance.userId,
       'conversationType': instance.conversationType,
-      'messages': instance.messages,
+      'messages': instance.messages.map((e) => e.toJson()).toList(),
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),
       'title': instance.title,

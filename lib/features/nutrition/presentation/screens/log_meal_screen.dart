@@ -1,11 +1,16 @@
 import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/constants/route_constants.dart';
+import '../../../../core/errors/exceptions.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/utils/validators.dart';
+import '../../../../shared/services/image_cropper_service.dart';
 import '../../domain/models/food_item.dart';
 import '../../domain/models/meal.dart';
 import '../providers/nutrition_providers.dart';
@@ -41,6 +46,8 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
   String? _existingPhotoUrl;
   File? _newPhotoFile;
   bool _isUploadingPhoto = false;
+  double _photoUploadProgress = 0.0;
+  String _photoUploadStatus = '';
 
   @override
   void initState() {
@@ -71,11 +78,12 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
   }
 
   Future<void> _selectDate() async {
+    final now = DateTime.now();
     final selected = await showDatePicker(
       context: context,
       initialDate: _mealDate,
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      firstDate: now.subtract(const Duration(days: 365)), // Max 1 year ago
+      lastDate: now, // Cannot log future meals
     );
     if (selected != null && mounted) {
       setState(() => _mealDate = selected);
@@ -84,18 +92,28 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
 
   Future<double?> _promptServings({double initial = 1}) async {
     final controller = TextEditingController(text: initial.toStringAsFixed(1));
+    final formKey = GlobalKey<FormState>();
     final result = await showDialog<double>(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: const Text('Servings'),
-          content: TextField(
-            controller: controller,
-            keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-              labelText: 'Number of servings',
-              border: OutlineInputBorder(),
+          content: Form(
+            key: formKey,
+            child: TextFormField(
+              controller: controller,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,1}')),
+              ],
+              decoration: InputDecoration(
+                labelText: 'Number of servings',
+                hintText: '0.1 - 100',
+                border: OutlineInputBorder(),
+              ),
+              validator: Validators.validateServings,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
             ),
           ),
           actions: [
@@ -105,8 +123,10 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
             ),
             ElevatedButton(
               onPressed: () {
-                final value = double.tryParse(controller.text.trim());
-                Navigator.of(context).pop(value);
+                if (formKey.currentState?.validate() ?? false) {
+                  final value = double.tryParse(controller.text.trim());
+                  Navigator.of(context).pop(value);
+                }
               },
               child: const Text('Save'),
             ),
@@ -167,7 +187,7 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.camera_alt),
+                leading: Icon(Icons.camera_alt),
                 title: const Text('Take Photo'),
                 onTap: () => Navigator.pop(context, ImageSource.camera),
               ),
@@ -178,7 +198,7 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
               ),
               if (_newPhotoFile != null || _existingPhotoUrl != null)
                 ListTile(
-                  leading: const Icon(Icons.delete, color: Colors.red),
+                  leading: Icon(Icons.delete, color: AppColors.error),
                   title: const Text('Remove Photo'),
                   onTap: () => Navigator.pop(context, null),
                 ),
@@ -204,9 +224,19 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
 
   Future<void> _takePhoto() async {
     final file = await _photoService.getImage(source: ImageSource.camera);
-    if (file != null && mounted) {
+    if (file == null || !mounted) return;
+
+    // Show crop option dialog
+    final cropperService = ImageCropperService();
+    final croppedFile = await cropperService.showCropOptionDialog(
+      imageFile: file,
+      context: context,
+      config: CropConfig.mealPhoto,
+    );
+
+    if (croppedFile != null && mounted) {
       setState(() {
-        _newPhotoFile = file;
+        _newPhotoFile = croppedFile;
         _existingPhotoUrl = null; // Clear existing photo URL if uploading new
       });
     }
@@ -214,9 +244,19 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
 
   Future<void> _pickPhotoFromGallery() async {
     final file = await _photoService.getImage(source: ImageSource.gallery);
-    if (file != null && mounted) {
+    if (file == null || !mounted) return;
+
+    // Show crop option dialog
+    final cropperService = ImageCropperService();
+    final croppedFile = await cropperService.showCropOptionDialog(
+      imageFile: file,
+      context: context,
+      config: CropConfig.mealPhoto,
+    );
+
+    if (croppedFile != null && mounted) {
       setState(() {
-        _newPhotoFile = file;
+        _newPhotoFile = croppedFile;
         _existingPhotoUrl = null; // Clear existing photo URL if uploading new
       });
     }
@@ -246,15 +286,44 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
       // Upload new photo if selected
       String? photoUrl = _existingPhotoUrl;
       if (_newPhotoFile != null) {
-        setState(() => _isUploadingPhoto = true);
-        photoUrl = await _photoService.uploadMealPhoto(_newPhotoFile!, userId);
-        setState(() => _isUploadingPhoto = false);
-
-        if (photoUrl == null && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to upload photo')),
+        setState(() {
+          _isUploadingPhoto = true;
+          _photoUploadProgress = 0.0;
+          _photoUploadStatus = 'Preparing...';
+        });
+        try {
+          photoUrl = await _photoService.uploadMealPhoto(
+            _newPhotoFile!,
+            userId,
+            onProgress: (progress, status) {
+              if (mounted) {
+                setState(() {
+                  _photoUploadProgress = progress;
+                  _photoUploadStatus = status;
+                });
+              }
+            },
           );
+        } on ImageException catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(e.message)),
+            );
+          }
           // Continue anyway, don't block meal creation
+          photoUrl = null;
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Failed to upload photo')),
+            );
+          }
+          // Continue anyway, don't block meal creation
+          photoUrl = null;
+        } finally {
+          if (mounted) {
+            setState(() => _isUploadingPhoto = false);
+          }
         }
       }
 
@@ -327,21 +396,21 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
         child: Container(
           height: 120,
           decoration: BoxDecoration(
-            color: Colors.grey.shade100,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade300, width: 2),
+            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant, width: 2),
           ),
           child: Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.add_a_photo, size: 40, color: Colors.grey.shade600),
+                Icon(Icons.add_a_photo, size: 40, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 const SizedBox(height: 8),
                 Text(
                   'Add Photo',
                   style: TextStyle(
                     fontSize: 16,
-                    color: Colors.grey.shade600,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -372,15 +441,15 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
                     if (loadingProgress == null) return child;
                     return Container(
                       height: 200,
-                      color: Colors.grey.shade200,
+                      color: Theme.of(context).colorScheme.surfaceContainerHigh,
                       child: const Center(child: CircularProgressIndicator()),
                     );
                   },
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
                       height: 200,
-                      color: Colors.grey.shade200,
-                      child: const Icon(Icons.error, size: 48),
+                      color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                      child: Icon(Icons.error, size: 48),
                     );
                   },
                 ),
@@ -394,8 +463,8 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
                 onPressed: _showPhotoSourcePicker,
                 icon: const Icon(Icons.edit),
                 style: IconButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.black87,
+                  backgroundColor: AppColors.white,
+                  foregroundColor: AppColors.black.withValues(alpha: 0.87),
                 ),
               ),
               const SizedBox(width: 8),
@@ -408,8 +477,8 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
                 },
                 icon: const Icon(Icons.delete),
                 style: IconButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.red,
+                  backgroundColor: AppColors.white,
+                  foregroundColor: AppColors.error,
                 ),
               ),
             ],
@@ -419,18 +488,33 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.5),
+                color: AppColors.black.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Center(
+              child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircularProgressIndicator(color: Colors.white),
-                    SizedBox(height: 8),
+                    SizedBox(
+                      width: 150,
+                      child: LinearProgressIndicator(
+                        value: _photoUploadProgress,
+                        backgroundColor: AppColors.white.withValues(alpha: 0.24),
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.white),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     Text(
-                      'Uploading photo...',
-                      style: TextStyle(color: Colors.white),
+                      '${(_photoUploadProgress * 100).toInt()}%',
+                      style: TextStyle(
+                        color: AppColors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _photoUploadStatus,
+                      style: TextStyle(color: AppColors.white.withValues(alpha: 0.7), fontSize: 12),
                     ),
                   ],
                 ),
@@ -446,17 +530,17 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.grey.shade50,
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(color: Theme.of(context).colorScheme.surfaceContainerHigh),
         ),
         child: Row(
           children: [
-            Icon(Icons.restaurant, color: Colors.grey.shade500),
+            Icon(Icons.restaurant, color: Theme.of(context).colorScheme.onSurfaceVariant),
             const SizedBox(width: 12),
             Text(
               'No foods added yet',
-              style: TextStyle(color: Colors.grey.shade600),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ],
         ),
@@ -479,9 +563,9 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.white,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
+              border: Border.all(color: Theme.of(context).colorScheme.surfaceContainerHigh),
             ),
             child: Row(
               children: [
@@ -491,14 +575,14 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
                     children: [
                       Text(
                         item.name,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
+                        style: TextStyle(fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         '${entry.servings.toStringAsFixed(1)} servings • $calories cal',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade600,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -506,7 +590,7 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
                 ),
                 IconButton(
                   onPressed: () => _removeEntry(index),
-                  icon: const Icon(Icons.close),
+                  icon: Icon(Icons.close),
                 ),
               ],
             ),
@@ -522,7 +606,7 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
       children: [
         DropdownButtonFormField<MealType>(
           initialValue: _mealType,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'Meal Type',
             border: OutlineInputBorder(),
           ),
@@ -563,7 +647,7 @@ class _LogMealScreenState extends ConsumerState<LogMealScreen> {
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: _addFood,
-                icon: const Icon(Icons.search),
+                icon: Icon(Icons.search),
                 label: const Text('Search Foods'),
               ),
             ),

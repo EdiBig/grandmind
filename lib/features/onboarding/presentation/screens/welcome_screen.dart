@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/route_constants.dart';
+import '../../../../core/providers/analytics_provider.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_gradients.dart';
 import '../widgets/onboarding_shell.dart';
 
-class WelcomeScreen extends StatelessWidget {
+class WelcomeScreen extends ConsumerWidget {
   const WelcomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       body: OnboardingBackground(
         child: Padding(
@@ -33,10 +36,10 @@ class WelcomeScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.self_improvement,
                   size: 76,
-                  color: Colors.white,
+                  color: AppColors.white,
                 ),
               ),
               const SizedBox(height: 32),
@@ -70,7 +73,7 @@ class WelcomeScreen extends StatelessWidget {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
+                      color: AppColors.black.withValues(alpha: 0.05),
                       blurRadius: 12,
                       offset: const Offset(0, 6),
                     ),
@@ -116,14 +119,17 @@ class WelcomeScreen extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () => context.push(RouteConstants.onboardingGoal),
+                  onPressed: () {
+                    ref.read(analyticsProvider).logOnboardingStarted();
+                    context.push(RouteConstants.onboardingGoal);
+                  },
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
                     backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppColors.white,
                   ),
                   child: const Text(
                     'Get Started',
@@ -156,7 +162,7 @@ class WelcomeScreen extends StatelessWidget {
             gradient: Theme.of(context).extension<AppGradients>()!.primary,
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(icon, color: Colors.white, size: 24),
+          child: Icon(icon, color: AppColors.white, size: 24),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -165,7 +171,7 @@ class WelcomeScreen extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
                 ),

@@ -44,9 +44,11 @@ final recentHabitLogsProvider = StreamProvider<List<HabitLog>>((ref) {
 /// Provider for checking if a specific habit is completed today
 final habitCompletedTodayProvider = FutureProvider.family<HabitLog?, String>(
   (ref, habitId) async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return null;
     final repository = ref.watch(habitRepositoryProvider);
     final today = DateTime.now();
-    return repository.getHabitLogForDate(habitId, today);
+    return repository.getHabitLogForDate(habitId, userId, today);
   },
 );
 
@@ -62,9 +64,12 @@ final habitStatsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
 /// Provider for habit logs for a specific habit
 final habitLogsProvider = FutureProvider.family<List<HabitLog>, HabitLogsParams>(
   (ref, params) async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return [];
     final repository = ref.watch(habitRepositoryProvider);
     return repository.getHabitLogs(
       params.habitId,
+      userId,
       startDate: params.startDate,
       endDate: params.endDate,
     );
@@ -132,7 +137,11 @@ class HabitOperations extends StateNotifier<AsyncValue<void>> {
   Future<bool> deleteHabit(String habitId) async {
     state = const AsyncValue.loading();
     try {
-      await _repository.deleteHabit(habitId);
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) {
+        throw Exception('No authenticated user');
+      }
+      await _repository.deleteHabit(habitId, userId);
       state = const AsyncValue.data(null);
       return true;
     } catch (e, st) {
@@ -149,7 +158,11 @@ class HabitOperations extends StateNotifier<AsyncValue<void>> {
       final startOfDay = DateTime(today.year, today.month, today.day);
 
       // Check if already completed today
-      final existingLog = await _repository.getHabitLogForDate(habit.id, today);
+      final existingLog = await _repository.getHabitLogForDate(
+        habit.id,
+        habit.userId,
+        today,
+      );
 
       if (existingLog != null) {
         // Uncomplete - delete the log
@@ -183,7 +196,11 @@ class HabitOperations extends StateNotifier<AsyncValue<void>> {
       final startOfDay = DateTime(today.year, today.month, today.day);
 
       // Check if already logged today
-      final existingLog = await _repository.getHabitLogForDate(habit.id, today);
+      final existingLog = await _repository.getHabitLogForDate(
+        habit.id,
+        habit.userId,
+        today,
+      );
 
       if (existingLog != null) {
         // Update existing log
@@ -254,6 +271,7 @@ final habitInsightsProvider = FutureProvider<HabitInsights>((ref) async {
   for (var habit in habits) {
     final logs = await repository.getHabitLogs(
       habit.id,
+      userId,
       startDate: thirtyDaysAgo,
       endDate: now,
     );

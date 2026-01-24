@@ -1,5 +1,6 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
+import 'notification_navigation.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -156,7 +157,6 @@ class NotificationService {
   }
 
   void _onNotificationTapped(NotificationResponse response) {
-    // Handle notification tap
-    // You can navigate to specific screens based on payload
+    NotificationNavigation.handlePayload(response.payload);
   }
 }

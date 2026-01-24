@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_colors.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/route_constants.dart';
 import '../../../../core/utils/formatters.dart';
@@ -71,7 +72,7 @@ class MealDetailsScreen extends ConsumerWidget {
             title: const Text('Meal Details'),
             actions: [
               IconButton(
-                icon: const Icon(Icons.edit),
+                icon: Icon(Icons.edit),
                 onPressed: () {
                   context.push(
                     RouteConstants.logMeal,
@@ -88,7 +89,7 @@ class MealDetailsScreen extends ConsumerWidget {
           body: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              _buildHeader(meal),
+              _buildHeader(context, meal),
               const SizedBox(height: 16),
               _buildTotalsCard(meal),
               const SizedBox(height: 16),
@@ -99,7 +100,7 @@ class MealDetailsScreen extends ConsumerWidget {
                     ),
               ),
               const SizedBox(height: 8),
-              ...meal.entries.map((entry) => _buildEntryTile(entry)),
+              ...meal.entries.map((entry) => _buildEntryTile(context, entry)),
               if (meal.notes != null && meal.notes!.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 Text(
@@ -126,13 +127,13 @@ class MealDetailsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader(Meal meal) {
+  Widget _buildHeader(BuildContext context, Meal meal) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: Theme.of(context).colorScheme.surfaceContainerHigh),
       ),
       child: Row(
         children: [
@@ -140,10 +141,10 @@ class MealDetailsScreen extends ConsumerWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: Colors.orange.shade100,
+              color: AppColors.warning.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.restaurant_menu, color: Colors.orange),
+            child: Icon(Icons.restaurant_menu, color: AppColors.warning),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -152,7 +153,7 @@ class MealDetailsScreen extends ConsumerWidget {
               children: [
                 Text(
                   meal.mealType.displayName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
@@ -160,7 +161,7 @@ class MealDetailsScreen extends ConsumerWidget {
                 const SizedBox(height: 4),
                 Text(
                   Formatters.formatDateTime(meal.loggedAt),
-                  style: TextStyle(color: Colors.grey.shade600),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ],
             ),
@@ -174,9 +175,9 @@ class MealDetailsScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.orange.shade50,
+        color: AppColors.warning.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.orange.shade200),
+        border: Border.all(color: AppColors.warning.withValues(alpha: 0.4)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -195,7 +196,7 @@ class MealDetailsScreen extends ConsumerWidget {
       children: [
         Text(
           value.toStringAsFixed(0),
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),
         Text(
@@ -206,16 +207,16 @@ class MealDetailsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEntryTile(MealEntry entry) {
+  Widget _buildEntryTile(BuildContext context, MealEntry entry) {
     final calories =
         (entry.foodItem.calories * entry.servings).toStringAsFixed(0);
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: Theme.of(context).colorScheme.surfaceContainerHigh),
       ),
       child: Row(
         children: [
@@ -225,12 +226,12 @@ class MealDetailsScreen extends ConsumerWidget {
               children: [
                 Text(
                   entry.foodItem.name,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+                  style: TextStyle(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '${entry.servings.toStringAsFixed(1)} servings',
-                  style: TextStyle(color: Colors.grey.shade600),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ],
             ),

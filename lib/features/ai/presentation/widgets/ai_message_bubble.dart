@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import '../../../../core/theme/app_colors.dart';
 import 'package:kinesa/features/ai/data/models/ai_conversation_model.dart';
 import 'package:intl/intl.dart';
 
@@ -17,6 +18,7 @@ class AIMessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isUser = message.isUser;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -42,22 +44,22 @@ class AIMessageBubble extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: isUser
                         ? Theme.of(context).primaryColor
-                        : Colors.grey[200],
+                        : colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: isUser
                       ? Text(
                           message.content,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: AppColors.white,
                             fontSize: 16,
                           ),
                         )
                       : MarkdownBody(
                           data: message.content,
                           styleSheet: MarkdownStyleSheet(
-                            p: const TextStyle(
-                              color: Colors.black87,
+                            p: TextStyle(
+                              color: colorScheme.onSurface,
                               fontSize: 16,
                             ),
                             strong: const TextStyle(
@@ -79,7 +81,7 @@ class AIMessageBubble extends StatelessWidget {
                     Text(
                       _formatTime(message.timestamp),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
+                            color: colorScheme.onSurfaceVariant,
                             fontSize: 12,
                           ),
                     ),
@@ -88,14 +90,14 @@ class AIMessageBubble extends StatelessWidget {
                       Icon(
                         Icons.cached,
                         size: 14,
-                        color: Colors.green[600],
+                        color: AppColors.success,
                       ),
                       const SizedBox(width: 2),
                       Text(
                         'cached',
                         style:
                             Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Colors.green[600],
+                                  color: AppColors.success,
                                   fontSize: 11,
                                 ),
                       ),
@@ -106,7 +108,7 @@ class AIMessageBubble extends StatelessWidget {
                         '\$${message.cost!.toStringAsFixed(4)}',
                         style:
                             Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Colors.grey[600],
+                                  color: colorScheme.onSurfaceVariant,
                                   fontSize: 11,
                                 ),
                       ),
@@ -131,11 +133,13 @@ class AIMessageBubble extends StatelessWidget {
       radius: 18,
       backgroundColor: isUser
           ? Theme.of(context).primaryColor.withValues(alpha: 0.2)
-          : Colors.grey[300],
+          : Theme.of(context).colorScheme.surfaceContainerHighest,
       child: Icon(
         isUser ? Icons.person : Icons.fitness_center,
         size: 20,
-        color: isUser ? Theme.of(context).primaryColor : Colors.grey[700],
+        color: isUser
+            ? Theme.of(context).primaryColor
+            : Theme.of(context).colorScheme.onSurfaceVariant,
       ),
     );
   }

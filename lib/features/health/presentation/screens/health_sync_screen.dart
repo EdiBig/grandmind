@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:health/health.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../providers/health_providers.dart';
 
 class HealthSyncScreen extends ConsumerStatefulWidget {
@@ -77,7 +78,7 @@ class _HealthSyncScreenState extends ConsumerState<HealthSyncScreen> {
             children: [
               Icon(
                 hasPermissions ? Icons.check_circle : Icons.lock_outline,
-                color: hasPermissions ? Colors.green : Colors.orange,
+                color: hasPermissions ? AppColors.success : AppColors.warning,
               ),
               const SizedBox(width: 8),
               Text(
@@ -117,11 +118,11 @@ class _HealthSyncScreenState extends ConsumerState<HealthSyncScreen> {
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Icon(Icons.lock_open),
+                  : Icon(Icons.lock_open),
               label: Text(_isRequesting ? 'Requesting...' : 'Grant Access'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               ),
             )
@@ -129,6 +130,9 @@ class _HealthSyncScreenState extends ConsumerState<HealthSyncScreen> {
             ElevatedButton.icon(
               onPressed: () async {
                 await ref.read(healthSyncProvider.future);
+                await ref
+                    .read(healthSummaryProvider.notifier)
+                    .refresh(force: true);
                 if (context.mounted) {
                   ref.invalidate(lastHealthSyncProvider);
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -136,11 +140,11 @@ class _HealthSyncScreenState extends ConsumerState<HealthSyncScreen> {
                   );
                 }
               },
-              icon: const Icon(Icons.sync),
+              icon: Icon(Icons.sync),
               label: const Text('Sync Now'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               ),
             ),
@@ -182,7 +186,7 @@ class _HealthSyncScreenState extends ConsumerState<HealthSyncScreen> {
                           );
                         }
                       },
-                      icon: const Icon(Icons.settings),
+                      icon: Icon(Icons.settings),
                       label: const Text('Manage Permissions'),
                     );
                   }
@@ -310,7 +314,7 @@ class _HealthSyncScreenState extends ConsumerState<HealthSyncScreen> {
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+        border: Border.all(color: AppColors.grey.withValues(alpha: 0.2)),
       ),
       child: const Center(
         child: Padding(
@@ -365,11 +369,16 @@ class _HealthSyncScreenState extends ConsumerState<HealthSyncScreen> {
       if (!context.mounted) return;
       if (granted) {
         ref.invalidate(healthPermissionsProvider);
-        ref.invalidate(todayHealthSummaryProvider);
+        await ref.read(healthSyncProvider.future);
+        await ref
+            .read(healthSummaryProvider.notifier)
+            .refresh(force: true);
+        if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Health access granted')),
         );
       } else {
+        if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
@@ -443,7 +452,7 @@ class _DataTypeRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
-          Icon(icon, color: Colors.grey.shade700, size: 20),
+          Icon(icon, color: Theme.of(context).colorScheme.onSurfaceVariant, size: 20),
           const SizedBox(width: 12),
           Text(label, style: Theme.of(context).textTheme.bodyMedium),
         ],

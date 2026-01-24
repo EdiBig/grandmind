@@ -74,7 +74,7 @@ class OnboardingStepHeader extends StatelessWidget {
           children: [
             if (onBack != null)
               IconButton(
-                icon: const Icon(Icons.arrow_back),
+                icon: Icon(Icons.arrow_back),
                 onPressed: onBack,
               )
             else

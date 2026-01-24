@@ -51,6 +51,7 @@ const _$ReminderTypeEnumMap = {
   ReminderType.meal: 'meal',
   ReminderType.sleep: 'sleep',
   ReminderType.meditation: 'meditation',
+  ReminderType.moodEnergy: 'moodEnergy',
   ReminderType.custom: 'custom',
 };
 

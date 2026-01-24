@@ -6,8 +6,8 @@ service firebase.storage {
 
     // Progress Photos - read allowed for app display; writes restricted to owner
     match /progress_photos/{userId}/{fileName} {
-      // Allow read for display in client apps
-      allow read: if true;
+      // Allow read only for the authenticated owner
+      allow read: if request.auth != null && request.auth.uid == userId;
 
       // Allow write (create/update) if authenticated, user matches, and file is valid
       allow write: if request.auth != null
@@ -21,6 +21,16 @@ service firebase.storage {
 
     // User profile photos
     match /user_profiles/{userId}/{fileName} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null
+                   && request.auth.uid == userId
+                   && request.resource.size < 5 * 1024 * 1024  // 5MB limit
+                   && request.resource.contentType.matches('image/.*');
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Public profile avatars (intentionally public)
+    match /public_profiles/{userId}/{fileName} {
       allow read: if true;
       allow write: if request.auth != null
                    && request.auth.uid == userId
@@ -31,7 +41,7 @@ service firebase.storage {
 
     // Profile photos (legacy path)
     match /profile_photos/{userId}/{fileName} {
-      allow read: if true;
+      allow read: if request.auth != null && request.auth.uid == userId;
       allow write: if request.auth != null
                    && request.auth.uid == userId
                    && request.resource.size < 5 * 1024 * 1024  // 5MB limit
@@ -41,7 +51,7 @@ service firebase.storage {
 
     // Meal photos
     match /meal_photos/{userId}/{fileName} {
-      allow read: if true;
+      allow read: if request.auth != null && request.auth.uid == userId;
       allow write: if request.auth != null
                    && request.auth.uid == userId
                     && request.resource.size < 5 * 1024 * 1024  // 5MB limit

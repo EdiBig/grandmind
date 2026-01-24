@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../domain/models/habit.dart';
 
 class HabitIconHelper {
@@ -34,21 +35,21 @@ class HabitIconHelper {
   static Color getColor(HabitColor habitColor) {
     switch (habitColor) {
       case HabitColor.blue:
-        return Colors.blue;
+        return AppColors.info;
       case HabitColor.purple:
-        return Colors.deepPurple;
+        return AppColors.workoutFlexibility;
       case HabitColor.pink:
-        return Colors.pink;
+        return AppColors.mood4;
       case HabitColor.red:
-        return Colors.red;
+        return AppColors.error;
       case HabitColor.orange:
-        return Colors.orange;
+        return AppColors.warning;
       case HabitColor.yellow:
-        return Colors.amber;
+        return AppColors.mood5;
       case HabitColor.green:
-        return Colors.green;
+        return AppColors.success;
       case HabitColor.teal:
-        return Colors.teal;
+        return AppColors.workoutCardio;
     }
   }
 }

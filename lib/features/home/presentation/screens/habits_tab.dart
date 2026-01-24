@@ -1,34 +1,310 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../habits/domain/models/habit.dart';
 import '../../../habits/presentation/providers/habit_providers.dart';
+import '../../../habits/data/repositories/habit_repository.dart';
 import '../../../habits/presentation/widgets/habit_icon_helper.dart';
 import '../../../habits/presentation/widgets/ai_insights_card.dart';
+import '../../../settings/presentation/providers/app_settings_provider.dart';
+import '../../../../core/constants/route_constants.dart';
 
-class HabitsTab extends ConsumerWidget {
+/// Filter options for habits
+enum HabitFilterType { all, active, archived }
+enum HabitFilterFrequency { all, daily, weekly, custom }
+enum HabitSortOption { createdAt, name, streak }
+
+/// Provider for habit search query
+final habitSearchQueryProvider = StateProvider<String>((ref) => '');
+
+/// Provider for habit filter type
+final habitFilterTypeProvider = StateProvider<HabitFilterType>((ref) => HabitFilterType.all);
+
+/// Provider for habit filter frequency
+final habitFilterFrequencyProvider = StateProvider<HabitFilterFrequency>((ref) => HabitFilterFrequency.all);
+
+/// Provider for habit sort option
+final habitSortOptionProvider = StateProvider<HabitSortOption>((ref) => HabitSortOption.createdAt);
+
+/// Provider for showing archived habits
+final showArchivedHabitsProvider = StateProvider<bool>((ref) => false);
+
+/// Provider for all habits (including archived) for filtering
+final allUserHabitsProvider = StreamProvider<List<Habit>>((ref) {
+  final showArchived = ref.watch(showArchivedHabitsProvider);
+  final userId = ref.watch(userHabitsProvider).asData?.value.firstOrNull?.userId;
+  if (userId == null) return Stream.value([]);
+
+  final repository = ref.watch(habitRepositoryProvider);
+  return showArchived
+    ? repository.getUserHabitsStream(userId)
+    : repository.getUserHabitsStream(userId, isActive: true);
+});
+
+class HabitsTab extends ConsumerStatefulWidget {
   const HabitsTab({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HabitsTab> createState() => _HabitsTabState();
+}
+
+class _HabitsTabState extends ConsumerState<HabitsTab> {
+  final TextEditingController _searchController = TextEditingController();
+  bool _showSearchBar = false;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<Habit> _filterAndSortHabits(List<Habit> habits) {
+    final searchQuery = ref.read(habitSearchQueryProvider).toLowerCase();
+    final filterFrequency = ref.read(habitFilterFrequencyProvider);
+    final sortOption = ref.read(habitSortOptionProvider);
+
+    var filtered = habits.where((habit) {
+      // Search filter
+      if (searchQuery.isNotEmpty) {
+        if (!habit.name.toLowerCase().contains(searchQuery) &&
+            !habit.description.toLowerCase().contains(searchQuery)) {
+          return false;
+        }
+      }
+
+      // Frequency filter
+      if (filterFrequency != HabitFilterFrequency.all) {
+        switch (filterFrequency) {
+          case HabitFilterFrequency.daily:
+            if (habit.frequency != HabitFrequency.daily) return false;
+            break;
+          case HabitFilterFrequency.weekly:
+            if (habit.frequency != HabitFrequency.weekly) return false;
+            break;
+          case HabitFilterFrequency.custom:
+            if (habit.frequency != HabitFrequency.custom) return false;
+            break;
+          default:
+            break;
+        }
+      }
+
+      return true;
+    }).toList();
+
+    // Sort
+    switch (sortOption) {
+      case HabitSortOption.name:
+        filtered.sort((a, b) => a.name.compareTo(b.name));
+        break;
+      case HabitSortOption.streak:
+        filtered.sort((a, b) => b.currentStreak.compareTo(a.currentStreak));
+        break;
+      case HabitSortOption.createdAt:
+        filtered.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+        break;
+    }
+
+    return filtered;
+  }
+
+  void _showFilterSheet(BuildContext context) {
+    final filterFrequency = ref.read(habitFilterFrequencyProvider);
+    final sortOption = ref.read(habitSortOptionProvider);
+    final showArchived = ref.read(showArchivedHabitsProvider);
+
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Filter & Sort',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        ref.read(habitFilterFrequencyProvider.notifier).state = HabitFilterFrequency.all;
+                        ref.read(habitSortOptionProvider.notifier).state = HabitSortOption.createdAt;
+                        ref.read(showArchivedHabitsProvider.notifier).state = false;
+                        Navigator.pop(context);
+                        setState(() {});
+                      },
+                      child: const Text('Reset'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Frequency',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: HabitFilterFrequency.values.map((freq) {
+                    final isSelected = filterFrequency == freq;
+                    return FilterChip(
+                      label: Text(freq.name[0].toUpperCase() + freq.name.substring(1)),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        ref.read(habitFilterFrequencyProvider.notifier).state = freq;
+                        setSheetState(() {});
+                        setState(() {});
+                      },
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Sort by',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    FilterChip(
+                      label: const Text('Created'),
+                      selected: sortOption == HabitSortOption.createdAt,
+                      onSelected: (selected) {
+                        ref.read(habitSortOptionProvider.notifier).state = HabitSortOption.createdAt;
+                        setSheetState(() {});
+                        setState(() {});
+                      },
+                    ),
+                    FilterChip(
+                      label: const Text('Name'),
+                      selected: sortOption == HabitSortOption.name,
+                      onSelected: (selected) {
+                        ref.read(habitSortOptionProvider.notifier).state = HabitSortOption.name;
+                        setSheetState(() {});
+                        setState(() {});
+                      },
+                    ),
+                    FilterChip(
+                      label: const Text('Streak'),
+                      selected: sortOption == HabitSortOption.streak,
+                      onSelected: (selected) {
+                        ref.read(habitSortOptionProvider.notifier).state = HabitSortOption.streak;
+                        setSheetState(() {});
+                        setState(() {});
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Show archived habits'),
+                  value: showArchived,
+                  onChanged: (value) {
+                    ref.read(showArchivedHabitsProvider.notifier).state = value;
+                    setSheetState(() {});
+                    setState(() {});
+                  },
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = ref.watch(appSettingsProvider);
     final habitsAsync = ref.watch(userHabitsProvider);
     final statsAsync = ref.watch(habitStatsProvider);
     final todayLogsAsync = ref.watch(todayHabitLogsProvider);
+    final searchQuery = ref.watch(habitSearchQueryProvider);
+    final filterFrequency = ref.watch(habitFilterFrequencyProvider);
+
+    final hasActiveFilters = searchQuery.isNotEmpty || filterFrequency != HabitFilterFrequency.all;
+
+    if (!settings.habitsEnabled) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Habits'),
+        ),
+        body: _buildModuleDisabled(
+          context,
+          title: 'Habits are turned off',
+          subtitle: 'Enable habits in Settings to use this tab.',
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Habits'),
+        title: _showSearchBar
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'Search habits...',
+                  border: InputBorder.none,
+                  hintStyle: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                style: Theme.of(context).textTheme.bodyLarge,
+                onChanged: (value) {
+                  ref.read(habitSearchQueryProvider.notifier).state = value;
+                },
+              )
+            : const Text('Habits'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.calendar_today),
+            icon: Icon(_showSearchBar ? Icons.close : Icons.search),
+            tooltip: _showSearchBar ? 'Close search' : 'Search habits',
             onPressed: () {
-              // TODO: Navigate to habit calendar view
+              setState(() {
+                _showSearchBar = !_showSearchBar;
+                if (!_showSearchBar) {
+                  _searchController.clear();
+                  ref.read(habitSearchQueryProvider.notifier).state = '';
+                }
+              });
+            },
+          ),
+          IconButton(
+            icon: Badge(
+              isLabelVisible: hasActiveFilters,
+              child: const Icon(Icons.filter_list),
+            ),
+            tooltip: 'Filter & Sort',
+            onPressed: () => _showFilterSheet(context),
+          ),
+          IconButton(
+            icon: const Icon(Icons.calendar_today),
+            tooltip: 'View calendar',
+            onPressed: () {
+              context.push(RouteConstants.habitCalendar);
             },
           ),
         ],
       ),
       body: habitsAsync.when(
         data: (habits) {
+          final filteredHabits = _filterAndSortHabits(habits);
           return todayLogsAsync.when(
             data: (todayLogs) {
               return RefreshIndicator(
@@ -39,7 +315,9 @@ class HabitsTab extends ConsumerWidget {
                 },
                 child: habits.isEmpty
                     ? _buildEmptyState(context)
-                    : _buildHabitsList(context, ref, habits, todayLogs, statsAsync),
+                    : filteredHabits.isEmpty
+                        ? _buildNoResultsState(context)
+                        : _buildHabitsList(context, ref, filteredHabits, todayLogs, statsAsync),
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),
@@ -53,8 +331,92 @@ class HabitsTab extends ConsumerWidget {
         onPressed: () {
           context.push('/habits/create');
         },
+        tooltip: 'Create new habit',
         backgroundColor: Theme.of(context).colorScheme.primary,
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  Widget _buildNoResultsState(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.search_off,
+            size: 64,
+            color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No habits found',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Try adjusting your search or filters',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextButton.icon(
+            onPressed: () {
+              _searchController.clear();
+              ref.read(habitSearchQueryProvider.notifier).state = '';
+              ref.read(habitFilterFrequencyProvider.notifier).state = HabitFilterFrequency.all;
+              setState(() => _showSearchBar = false);
+            },
+            icon: const Icon(Icons.clear_all),
+            label: const Text('Clear filters'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModuleDisabled(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+  }) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.lock_outline,
+              size: 64,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => context.push(RouteConstants.settings),
+              child: const Text('Open Settings'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -66,17 +428,35 @@ class HabitsTab extends ConsumerWidget {
     List todayLogs,
     AsyncValue<Map<String, dynamic>> statsAsync,
   ) {
+    final searchQuery = this.ref.watch(habitSearchQueryProvider);
+    final showSearch = searchQuery.isNotEmpty;
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _buildProgressSummary(context, statsAsync),
-        const SizedBox(height: 24),
-        const AIInsightsCard(),
-        Text(
-          'Today\'s Habits',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
+        if (!showSearch) ...[
+          _buildProgressSummary(context, statsAsync),
+          const SizedBox(height: 24),
+          const AIInsightsCard(),
+        ],
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              showSearch ? 'Search Results' : 'Today\'s Habits',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            if (!showSearch)
+              TextButton.icon(
+                onPressed: () {
+                  context.push(RouteConstants.habitHistory);
+                },
+                icon: const Icon(Icons.history, size: 18),
+                label: const Text('History'),
               ),
+          ],
         ),
         const SizedBox(height: 16),
         ...habits.map((habit) {
@@ -88,7 +468,6 @@ class HabitsTab extends ConsumerWidget {
             padding: const EdgeInsets.only(bottom: 12),
             child: _buildHabitItem(
               context,
-              ref,
               habit,
               isCompletedToday,
               todayLog?.count ?? 0,
@@ -107,13 +486,13 @@ class HabitsTab extends ConsumerWidget {
           Icon(
             Icons.checklist,
             size: 80,
-            color: Colors.grey[300],
+            color: Theme.of(context).colorScheme.outlineVariant,
           ),
           const SizedBox(height: 16),
           Text(
             'No habits yet',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: Colors.grey[600],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.bold,
                 ),
           ),
@@ -121,7 +500,7 @@ class HabitsTab extends ConsumerWidget {
           Text(
             'Build consistency by tracking daily habits',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[500],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           ),
           const SizedBox(height: 24),
@@ -129,7 +508,7 @@ class HabitsTab extends ConsumerWidget {
             onPressed: () {
               context.push('/habits/create');
             },
-            icon: const Icon(Icons.add),
+            icon: Icon(Icons.add),
             label: const Text('Add Your First Habit'),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -145,7 +524,7 @@ class HabitsTab extends ConsumerWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, size: 64, color: Colors.red),
+          const Icon(Icons.error_outline, size: 64, color: AppColors.error),
           const SizedBox(height: 16),
           Text(
             'Error loading habits',
@@ -191,7 +570,7 @@ class HabitsTab extends ConsumerWidget {
               Text(
                 'Today\'s Progress',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Colors.white,
+                      color: AppColors.white,
                       fontWeight: FontWeight.bold,
                     ),
               ),
@@ -208,7 +587,7 @@ class HabitsTab extends ConsumerWidget {
                   Container(
                     height: 50,
                     width: 1,
-                    color: Colors.white.withValues(alpha: 0.3),
+                    color: AppColors.white.withValues(alpha: 0.3),
                   ),
                   _buildProgressItem(
                     context,
@@ -219,7 +598,7 @@ class HabitsTab extends ConsumerWidget {
                   Container(
                     height: 50,
                     width: 1,
-                    color: Colors.white.withValues(alpha: 0.3),
+                    color: AppColors.white.withValues(alpha: 0.3),
                   ),
                   _buildProgressItem(
                     context,
@@ -247,7 +626,7 @@ class HabitsTab extends ConsumerWidget {
           borderRadius: BorderRadius.circular(16),
         ),
         child: const Center(
-          child: CircularProgressIndicator(color: Colors.white),
+          child: CircularProgressIndicator(color: AppColors.white),
         ),
       ),
       error: (_, __) => const SizedBox.shrink(),
@@ -268,7 +647,7 @@ class HabitsTab extends ConsumerWidget {
             Text(
               value,
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: Colors.white,
+                    color: AppColors.white,
                     fontWeight: FontWeight.bold,
                   ),
             ),
@@ -276,7 +655,7 @@ class HabitsTab extends ConsumerWidget {
               Text(
                 '/$suffix',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Colors.white.withValues(alpha: 0.8),
+                      color: AppColors.white.withValues(alpha: 0.8),
                     ),
               ),
           ],
@@ -285,7 +664,7 @@ class HabitsTab extends ConsumerWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.white.withValues(alpha: 0.9),
+                color: AppColors.white.withValues(alpha: 0.9),
               ),
         ),
       ],
@@ -294,7 +673,6 @@ class HabitsTab extends ConsumerWidget {
 
   Widget _buildHabitItem(
     BuildContext context,
-    WidgetRef ref,
     Habit habit,
     bool isCompletedToday,
     int count,
@@ -328,7 +706,11 @@ class HabitsTab extends ConsumerWidget {
 
     return GestureDetector(
       onLongPress: () {
-        _showHabitOptions(context, ref, habit);
+        _showHabitOptions(context, habit);
+      },
+      onTap: () {
+        // Navigate to habit history when tapping on the habit card
+        context.push('/habits/${habit.id}/history');
       },
       child: Container(
         padding: const EdgeInsets.all(16),
@@ -338,7 +720,7 @@ class HabitsTab extends ConsumerWidget {
           border: Border.all(
             color: isCompletedToday
                 ? color.withValues(alpha: 0.3)
-                : Colors.grey.withValues(alpha: 0.2),
+                : AppColors.grey.withValues(alpha: 0.2),
           ),
         ),
         child: Column(
@@ -371,19 +753,20 @@ class HabitsTab extends ConsumerWidget {
                         Text(
                           subtitle,
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Colors.grey,
+                                color: AppColors.grey,
                               ),
                         ),
                         if (habit.currentStreak > 0) ...[
                           const SizedBox(width: 8),
-                          const Icon(Icons.local_fire_department,
-                              size: 14, color: Colors.orange),
+                          Icon(Icons.local_fire_department,
+                              size: 14, color: AppColors.warning,
+                              semanticLabel: 'Current streak'),
                           const SizedBox(width: 2),
                           Text(
                             '${habit.currentStreak} day${habit.currentStreak > 1 ? 's' : ''}',
                             style:
                                 Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Colors.orange,
+                                      color: AppColors.warning,
                                       fontWeight: FontWeight.bold,
                                     ),
                           ),
@@ -394,11 +777,13 @@ class HabitsTab extends ConsumerWidget {
                 ),
               ),
               if (progress >= 1.0)
-                const Icon(Icons.check_circle, color: Colors.green, size: 28)
+                Icon(Icons.check_circle, color: AppColors.success, size: 28,
+                    semanticLabel: 'Habit completed')
               else
                 IconButton(
                   icon: const Icon(Icons.check_circle_outline),
-                  color: Colors.grey,
+                  color: AppColors.grey,
+                  tooltip: 'Mark habit as complete',
                   onPressed: () async {
                     // For quantifiable habits, mark as complete with target count
                     if (habit.targetCount > 0) {
@@ -418,7 +803,7 @@ class HabitsTab extends ConsumerWidget {
             const SizedBox(height: 12),
             LinearProgressIndicator(
               value: progress,
-              backgroundColor: Colors.grey[200],
+              backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
               valueColor: AlwaysStoppedAnimation<Color>(color),
               borderRadius: BorderRadius.circular(4),
             ),
@@ -429,37 +814,45 @@ class HabitsTab extends ConsumerWidget {
     );
   }
 
-  void _showHabitOptions(BuildContext context, WidgetRef ref, Habit habit) {
+  void _showHabitOptions(BuildContext context, Habit habit) {
     showModalBottomSheet(
       context: context,
-      builder: (context) => SafeArea(
+      builder: (sheetContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.edit),
-              title: const Text('Edit Habit'),
+              leading: const Icon(Icons.history),
+              title: const Text('View History'),
               onTap: () {
-                context.pop();
-                context.push('/habits/edit/${habit.id}');
+                Navigator.pop(sheetContext);
+                context.push('/habits/${habit.id}/history');
               },
             ),
             ListTile(
-              leading: const Icon(Icons.delete, color: Colors.red),
-              title: const Text('Delete Habit', style: TextStyle(color: Colors.red)),
+              leading: const Icon(Icons.edit),
+              title: const Text('Edit Habit'),
               onTap: () {
-                context.pop();
-                _confirmDeleteHabit(context, ref, habit);
+                Navigator.pop(sheetContext);
+                context.push('/habits/edit/${habit.id}');
               },
             ),
             ListTile(
               leading: Icon(habit.isActive ? Icons.archive : Icons.unarchive),
               title: Text(habit.isActive ? 'Archive Habit' : 'Unarchive Habit'),
               onTap: () async {
-                context.pop();
+                Navigator.pop(sheetContext);
                 final habitOps = ref.read(habitOperationsProvider.notifier);
                 await habitOps.setHabitActive(habit.id, !habit.isActive);
                 ref.invalidate(userHabitsProvider);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete, color: AppColors.error),
+              title: const Text('Delete Habit', style: TextStyle(color: AppColors.error)),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _confirmDeleteHabit(context, habit);
               },
             ),
           ],
@@ -468,20 +861,20 @@ class HabitsTab extends ConsumerWidget {
     );
   }
 
-  void _confirmDeleteHabit(BuildContext context, WidgetRef ref, Habit habit) {
+  void _confirmDeleteHabit(BuildContext context, Habit habit) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Delete Habit?'),
         content: Text('Are you sure you want to delete "${habit.name}"? This action cannot be undone.'),
         actions: [
           TextButton(
-            onPressed: () => context.pop(),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () async {
-              context.pop();
+              Navigator.pop(dialogContext);
               final habitOps = ref.read(habitOperationsProvider.notifier);
               final success = await habitOps.deleteHabit(habit.id);
 
@@ -498,7 +891,7 @@ class HabitsTab extends ConsumerWidget {
               ref.invalidate(userHabitsProvider);
               ref.invalidate(habitStatsProvider);
             },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
             child: const Text('Delete'),
           ),
         ],

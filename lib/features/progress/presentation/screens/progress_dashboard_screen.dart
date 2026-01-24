@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/constants/route_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_gradients.dart';
 import '../../domain/models/progress_goal.dart';
 import '../../domain/models/weight_entry.dart';
 import '../../domain/models/measurement_entry.dart';
 import '../providers/progress_providers.dart';
-import 'package:go_router/go_router.dart';
-import '../../../../core/constants/route_constants.dart';
 import '../widgets/weight_chart_widget.dart';
 import '../widgets/goal_progress_card.dart';
-import 'weight_tracking_screen.dart';
-import 'measurements_screen.dart';
-import 'goals_screen.dart';
+import '../widgets/streak_card.dart';
+import '../widgets/personal_best_card.dart';
+import '../widgets/milestone_widget.dart';
 
 /// Comprehensive progress dashboard showing all progress metrics
 class ProgressDashboardScreen extends ConsumerStatefulWidget {
@@ -26,13 +26,14 @@ class ProgressDashboardScreen extends ConsumerStatefulWidget {
 
 class _ProgressDashboardScreenState
     extends ConsumerState<ProgressDashboardScreen> {
-  DateRange _selectedRange = DateRange.last30Days;
+  DateRange _selectedRange = DateRange.last30Days();
 
   @override
   Widget build(BuildContext context) {
     final weightEntriesAsync = ref.watch(weightEntriesProvider);
     final activeGoalsAsync = ref.watch(activeGoalsProvider);
     final measurementEntriesAsync = ref.watch(measurementEntriesProvider);
+    final useMetric = ref.watch(useMetricUnitsProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -51,6 +52,9 @@ class _ProgressDashboardScreenState
           ref.invalidate(latestMeasurementsProvider);
           ref.invalidate(measurementEntriesProvider);
           ref.invalidate(activeGoalsProvider);
+          ref.invalidate(streakDataProvider);
+          ref.invalidate(personalBestsSummaryProvider);
+          ref.invalidate(milestoneSummaryProvider);
         },
         child: ListView(
           padding: const EdgeInsets.all(16),
@@ -61,7 +65,20 @@ class _ProgressDashboardScreenState
               weightEntriesAsync,
               measurementEntriesAsync,
               activeGoalsAsync,
+              useMetric,
             ),
+            const SizedBox(height: 24),
+
+            // Streak Card
+            _buildStreakSection(context),
+            const SizedBox(height: 24),
+
+            // Personal Bests Section
+            _buildPersonalBestsSection(context),
+            const SizedBox(height: 24),
+
+            // Milestones Section
+            _buildMilestonesSection(context),
             const SizedBox(height: 24),
 
             // Active Goals Section
@@ -85,13 +102,7 @@ class _ProgressDashboardScreenState
                                 ),
                           ),
                           TextButton(
-                            onPressed: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) => const GoalsScreen(),
-                                ),
-                              );
-                            },
+                            onPressed: () => context.push(RouteConstants.goals),
                             child: const Text('View All'),
                           ),
                         ],
@@ -108,7 +119,11 @@ class _ProgressDashboardScreenState
                 return _buildEmptyGoalsState(context);
               },
               loading: () => const SizedBox.shrink(),
-              error: (_, __) => const SizedBox.shrink(),
+              error: (error, __) => _buildErrorCard(
+                context,
+                'Unable to load goals',
+                () => ref.invalidate(activeGoalsProvider),
+              ),
             ),
 
             // Weight Trend Section
@@ -132,14 +147,7 @@ class _ProgressDashboardScreenState
                                 ),
                           ),
                           TextButton(
-                            onPressed: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const WeightTrackingScreen(),
-                                ),
-                              );
-                            },
+                            onPressed: () => context.push(RouteConstants.weightTracking),
                             child: const Text('View Details'),
                           ),
                         ],
@@ -149,10 +157,10 @@ class _ProgressDashboardScreenState
                       const SizedBox(height: 12),
                       WeightChartWidget(
                         entries: filteredEntries.reversed.toList(),
-                        useKg: true,
+                        useKg: useMetric,
                       ),
                       const SizedBox(height: 8),
-                      _buildWeightInsights(context, filteredEntries),
+                      _buildWeightInsights(context, filteredEntries, useMetric),
                       const SizedBox(height: 24),
                     ],
                   );
@@ -168,7 +176,11 @@ class _ProgressDashboardScreenState
                   child: CircularProgressIndicator(),
                 ),
               ),
-              error: (_, __) => const SizedBox.shrink(),
+              error: (error, __) => _buildErrorCard(
+                context,
+                'Unable to load weight data',
+                () => ref.invalidate(weightEntriesProvider),
+              ),
             ),
 
             // Measurements Section
@@ -193,20 +205,13 @@ class _ProgressDashboardScreenState
                                 ),
                           ),
                           TextButton(
-                            onPressed: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const MeasurementsScreen(),
-                                ),
-                              );
-                            },
+                            onPressed: () => context.push(RouteConstants.measurements),
                             child: const Text('View Details'),
                           ),
                         ],
                       ),
                       const SizedBox(height: 12),
-                      _buildMeasurementsSummary(context, latest),
+                      _buildMeasurementsSummary(context, latest, useMetric),
                       const SizedBox(height: 24),
                     ],
                   );
@@ -217,7 +222,11 @@ class _ProgressDashboardScreenState
                 );
               },
               loading: () => const SizedBox.shrink(),
-              error: (_, __) => const SizedBox.shrink(),
+              error: (error, __) => _buildErrorCard(
+                context,
+                'Unable to load measurements',
+                () => ref.invalidate(measurementEntriesProvider),
+              ),
             ),
 
             // Insights & Correlations Section
@@ -233,6 +242,7 @@ class _ProgressDashboardScreenState
     AsyncValue<List<WeightEntry>> weightEntriesAsync,
     AsyncValue<List<MeasurementEntry>> measurementEntriesAsync,
     AsyncValue<List<ProgressGoal>> activeGoals,
+    bool useMetric,
   ) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -260,10 +270,14 @@ class _ProgressDashboardScreenState
                     final filtered = _filterEntriesByRange(entries);
                     final weight = _latestWeight(filtered);
                     if (weight != null) {
+                      final displayWeight = useMetric
+                          ? weight.weight
+                          : weight.weight * 2.20462;
+                      final unit = useMetric ? 'kg' : 'lbs';
                       return _buildSummaryStatWhite(
                         context,
-                        weight.weight.toStringAsFixed(1),
-                        'kg',
+                        displayWeight.toStringAsFixed(1),
+                        unit,
                         Icons.monitor_weight,
                       );
                     }
@@ -277,7 +291,7 @@ class _ProgressDashboardScreenState
                   loading: () => _buildSummaryStatWhite(
                     context,
                     '...',
-                    'kg',
+                    useMetric ? 'kg' : 'lbs',
                     Icons.monitor_weight,
                   ),
                   error: (_, __) => _buildSummaryStatWhite(
@@ -384,7 +398,7 @@ class _ProgressDashboardScreenState
   }
 
   Widget _buildWeightInsights(
-      BuildContext context, List<WeightEntry> entries) {
+      BuildContext context, List<WeightEntry> entries, bool useMetric) {
     if (entries.length < 2) return const SizedBox.shrink();
 
     final sorted = List<WeightEntry>.from(entries)
@@ -392,6 +406,8 @@ class _ProgressDashboardScreenState
     final latest = sorted.first;
     final oldest = sorted.last;
     final change = latest.weight - oldest.weight;
+    final displayChange = useMetric ? change : change * 2.20462;
+    final unit = useMetric ? 'kg' : 'lbs';
     final isLoss = change < 0;
     final daysBetween = latest.date.difference(oldest.date).inDays;
 
@@ -417,7 +433,7 @@ class _ProgressDashboardScreenState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${isLoss ? 'Lost' : 'Gained'} ${change.abs().toStringAsFixed(1)} kg',
+                  '${isLoss ? 'Lost' : 'Gained'} ${displayChange.abs().toStringAsFixed(1)} $unit',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: isLoss
@@ -443,9 +459,12 @@ class _ProgressDashboardScreenState
   Widget _buildMeasurementsSummary(
     BuildContext context,
     MeasurementEntry latest,
+    bool useMetric,
   ) {
     final types = latest.recordedTypes;
     if (types.isEmpty) return const SizedBox.shrink();
+    final unit = useMetric ? 'cm' : 'in';
+    final conversionFactor = useMetric ? 1.0 : 0.393701;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -469,10 +488,13 @@ class _ProgressDashboardScreenState
             runSpacing: 12,
             children: types.take(6).map((type) {
               final value = latest.getMeasurement(type);
+              final displayValue = value != null
+                  ? '${(value * conversionFactor).toStringAsFixed(1)} $unit'
+                  : '--';
               return _buildMeasurementChip(
                 context,
                 type.displayName,
-                value != null ? '${value.toStringAsFixed(1)} cm' : '--',
+                displayValue,
                 type.icon,
               );
             }).toList(),
@@ -616,13 +638,7 @@ class _ProgressDashboardScreenState
           ),
           const SizedBox(height: 16),
           ElevatedButton.icon(
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const WeightTrackingScreen(),
-                ),
-              );
-            },
+            onPressed: () => context.push(RouteConstants.weightTracking),
             icon: Icon(Icons.add),
             label: const Text('Start Tracking'),
           ),
@@ -659,13 +675,7 @@ class _ProgressDashboardScreenState
           ),
           const SizedBox(height: 16),
           ElevatedButton.icon(
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const MeasurementsScreen(),
-                ),
-              );
-            },
+            onPressed: () => context.push(RouteConstants.measurements),
             icon: Icon(Icons.add),
             label: const Text('Start Tracking'),
           ),
@@ -677,7 +687,7 @@ class _ProgressDashboardScreenState
   void _showDateRangePicker() {
     showModalBottomSheet(
       context: context,
-      builder: (context) => Container(
+      builder: (ctx) => Container(
         padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -685,45 +695,45 @@ class _ProgressDashboardScreenState
           children: [
             Text(
               'Select Time Range',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
             ),
             const SizedBox(height: 16),
             ListTile(
-              leading: Icon(Icons.calendar_today),
+              leading: const Icon(Icons.calendar_today),
               title: const Text('Last 7 Days'),
-              selected: _selectedRange == DateRange.last7Days,
+              selected: _selectedRange.label == 'Last 7 days',
               onTap: () {
-                setState(() => _selectedRange = DateRange.last7Days);
-                Navigator.pop(context);
+                setState(() => _selectedRange = DateRange.last7Days());
+                Navigator.pop(ctx);
               },
             ),
             ListTile(
               leading: const Icon(Icons.calendar_today),
               title: const Text('Last 30 Days'),
-              selected: _selectedRange == DateRange.last30Days,
+              selected: _selectedRange.label == 'Last 30 days',
               onTap: () {
-                setState(() => _selectedRange = DateRange.last30Days);
-                Navigator.pop(context);
+                setState(() => _selectedRange = DateRange.last30Days());
+                Navigator.pop(ctx);
               },
             ),
             ListTile(
               leading: const Icon(Icons.calendar_today),
               title: const Text('Last 90 Days'),
-              selected: _selectedRange == DateRange.last90Days,
+              selected: _selectedRange.label == 'Last 90 days',
               onTap: () {
-                setState(() => _selectedRange = DateRange.last90Days);
-                Navigator.pop(context);
+                setState(() => _selectedRange = DateRange.last90Days());
+                Navigator.pop(ctx);
               },
             ),
             ListTile(
               leading: const Icon(Icons.calendar_today),
               title: const Text('All Time'),
-              selected: _selectedRange == DateRange.allTime,
+              selected: _selectedRange.label == 'All time',
               onTap: () {
-                setState(() => _selectedRange = DateRange.allTime);
-                Navigator.pop(context);
+                setState(() => _selectedRange = DateRange.allTime());
+                Navigator.pop(ctx);
               },
             ),
           ],
@@ -780,24 +790,10 @@ class _ProgressDashboardScreenState
     return sorted.first;
   }
 
-  String _rangeLabel() {
-    final days = _selectedRange.end.difference(_selectedRange.start).inDays;
-    if (days <= 7) {
-      return 'last 7 days';
-    }
-    if (days <= 30) {
-      return 'last 30 days';
-    }
-    if (days <= 90) {
-      return 'last 90 days';
-    }
-    return 'all time';
-  }
+  String _rangeLabel() => _selectedRange.label.toLowerCase();
 
   Widget _buildRangeChip(BuildContext context) {
-    final label = _rangeLabel();
-    final displayLabel =
-        label.isEmpty ? label : '${label[0].toUpperCase()}${label.substring(1)}';
+    final displayLabel = _selectedRange.label;
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
@@ -833,6 +829,53 @@ class _ProgressDashboardScreenState
     );
   }
 
+  Widget _buildErrorCard(
+    BuildContext context,
+    String message,
+    VoidCallback onRetry,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: AppColors.error.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline, color: AppColors.error, size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  message,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.error,
+                      ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Tap retry to try again',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: onRetry,
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildEmptyGoalsState(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -862,6 +905,51 @@ class _ProgressDashboardScreenState
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildStreakSection(BuildContext context) {
+    final streakAsync = ref.watch(streakDataProvider);
+
+    return streakAsync.when(
+      data: (streakData) => StreakCard(
+        streakData: streakData,
+        onTap: () => context.push(RouteConstants.activityCalendar),
+      ),
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+
+  Widget _buildPersonalBestsSection(BuildContext context) {
+    final summaryAsync = ref.watch(personalBestsSummaryProvider);
+
+    return summaryAsync.when(
+      data: (summary) {
+        if (summary.totalPRCount == 0) return const SizedBox.shrink();
+        return PersonalBestsSummaryCard(
+          summary: summary,
+          onViewAll: () => context.push(RouteConstants.personalBests),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+
+  Widget _buildMilestonesSection(BuildContext context) {
+    final summaryAsync = ref.watch(milestoneSummaryProvider);
+
+    return summaryAsync.when(
+      data: (summary) {
+        if (summary.totalCount == 0) return const SizedBox.shrink();
+        return MilestonesSummaryCard(
+          summary: summary,
+          onViewAll: null, // TODO: Add milestones screen route
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 }

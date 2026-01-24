@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../home/presentation/providers/dashboard_provider.dart';
 import '../../../user/data/services/firestore_service.dart';
+import '../../data/services/profile_photo_service.dart';
+import '../../../../core/utils/validators.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
@@ -18,6 +21,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final _phoneController = TextEditingController();
   final _heightController = TextEditingController();
   final _weightController = TextEditingController();
+  final _profilePhotoService = ProfilePhotoService();
 
   DateTime? _dateOfBirth;
   String? _gender;
@@ -52,7 +56,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             onPressed: _isSaving ? null : () => _saveProfile(context),
             child: Text(
               _isSaving ? 'Saving...' : 'Save',
-              style: const TextStyle(color: Colors.white),
+              style: TextStyle(color: AppColors.white),
             ),
           ),
         ],
@@ -71,7 +75,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             _fitnessLevel = _normalizeDropdownValue(user.fitnessLevel, _fitnessOptions);
             _goal = _normalizeDropdownValue(user.goal, _goalOptions);
             _initialized = true;
-            _runProfileMigration(user.id);
+            _runProfileMigration(user.id, user.photoUrl);
           }
 
           return Form(
@@ -117,6 +121,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   icon: Icons.height,
                   keyboardType: const TextInputType.numberWithOptions(decimal: false),
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  validator: (value) => Validators.validateOptionalNumber(
+                    value,
+                    fieldName: 'Height',
+                    min: 100,
+                    max: 250,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 _buildTextField(
@@ -127,6 +137,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   inputFormatters: [
                     FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,1}')),
                   ],
+                  validator: (value) => Validators.validateOptionalNumber(
+                    value,
+                    fieldName: 'Weight',
+                    min: 30,
+                    max: 300,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 _buildDropdownField(
@@ -149,7 +165,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   onPressed: _isSaving ? null : () => _saveProfile(context),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: colorScheme.primary,
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppColors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                   child: Text(_isSaving ? 'Saving...' : 'Save Changes'),
@@ -182,6 +198,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     required IconData icon,
     TextInputType? keyboardType,
     List<TextInputFormatter>? inputFormatters,
+    String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
@@ -192,6 +209,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         prefixIcon: Icon(icon),
         border: const OutlineInputBorder(),
       ),
+      validator: validator,
     );
   }
 
@@ -238,11 +256,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     return InkWell(
       onTap: () async {
         final now = DateTime.now();
+        // Constrain to ages 13-120
+        final maxAge = DateTime(now.year - 120, now.month, now.day);
+        final minAge = DateTime(now.year - 13, now.month, now.day);
         final picked = await showDatePicker(
           context: context,
           initialDate: _dateOfBirth ?? DateTime(now.year - 25, 1, 1),
-          firstDate: DateTime(1900),
-          lastDate: DateTime(now.year, now.month, now.day),
+          firstDate: maxAge,
+          lastDate: minAge,
         );
 
         if (picked != null) {
@@ -262,6 +283,17 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   Future<void> _saveProfile(BuildContext context) async {
     if (_isSaving) return;
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    // Validate date of birth if set
+    final dobError = Validators.validateDateOfBirth(_dateOfBirth);
+    if (_dateOfBirth != null && dobError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(dobError)),
+      );
+      return;
+    }
+
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) return;
 
@@ -324,10 +356,28 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     return '${date.year}-$month-$day';
   }
 
-  Future<void> _runProfileMigration(String userId) async {
+  Future<void> _runProfileMigration(String userId, String? photoUrl) async {
     try {
       final firestoreService = ref.read(firestoreServiceProvider);
       await firestoreService.sanitizeUserProfile(userId);
+
+      final authPhotoUrl = FirebaseAuth.instance.currentUser?.photoURL;
+      final candidateUrl = photoUrl ?? authPhotoUrl;
+      final migratedUrl = await _profilePhotoService.migrateLegacyProfilePhoto(
+        userId: userId,
+        photoUrl: candidateUrl,
+      );
+      if (migratedUrl == null) return;
+
+      await firestoreService.updateUser(userId, {
+        'photoUrl': migratedUrl,
+        'photoURL': migratedUrl,
+      });
+
+      final authUser = FirebaseAuth.instance.currentUser;
+      if (authUser != null) {
+        await authUser.updatePhotoURL(migratedUrl);
+      }
     } catch (_) {
       // Best-effort cleanup; ignore failures.
     }

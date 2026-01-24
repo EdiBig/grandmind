@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../../../../core/constants/route_constants.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_gradients.dart';
 import '../../../../core/providers/auth_config_provider.dart';
 import '../../../user/data/services/firestore_service.dart';
@@ -52,13 +53,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
     final appleEnabledAsync = ref.watch(appleSignInEnabledProvider);
+    final colorScheme = Theme.of(context).colorScheme;
 
     ref.listen<AuthState>(authControllerProvider, (previous, next) async {
       if (next.status == AuthStatus.error) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(next.errorMessage ?? 'An error occurred'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -121,10 +123,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         Theme.of(context).extension<AppGradients>()!.primary,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.self_improvement,
                     size: 80,
-                    color: Colors.white,
+                    color: AppColors.white,
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -139,7 +141,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 Text(
                   'Sign in to continue your journey',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Colors.grey,
+                        color: colorScheme.onSurfaceVariant,
                       ),
                   textAlign: TextAlign.center,
                 ),
@@ -150,7 +152,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   decoration: InputDecoration(
                     labelText: 'Email',
                     hintText: 'Enter your email',
-                    prefixIcon: const Icon(Icons.email_outlined),
+                    prefixIcon: Icon(Icons.email_outlined),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -217,16 +219,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppColors.white,
                   ),
                   child: authState.status == AuthStatus.loading
-                      ? const SizedBox(
+                      ? SizedBox(
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
+                                AlwaysStoppedAnimation<Color>(AppColors.white),
                           ),
                         )
                       : const Text(
@@ -240,15 +242,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: 24),
                 Row(
                   children: [
-                    Expanded(child: Divider(color: Colors.grey[300])),
+                    Expanded(child: Divider(color: colorScheme.outlineVariant)),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
                         'OR',
-                        style: TextStyle(color: Colors.grey[600]),
+                        style: TextStyle(color: colorScheme.onSurfaceVariant),
                       ),
                     ),
-                    Expanded(child: Divider(color: Colors.grey[300])),
+                    Expanded(child: Divider(color: colorScheme.outlineVariant)),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -278,7 +280,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    side: BorderSide(color: Colors.grey[300]!),
+                    side: BorderSide(color: colorScheme.outlineVariant),
                   ),
                 ),
                 if (isAppleSignInSupported && isAppleSignInEnabled) ...[

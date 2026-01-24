@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/route_constants.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../providers/progress_providers.dart';
 import 'mini_weight_chart.dart';
 
@@ -21,8 +22,8 @@ class ProgressSummaryCard extends ConsumerWidget {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              Colors.blue.shade400,
-              Colors.cyan.shade600,
+              AppColors.info,
+              AppColors.workoutCardio,
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -30,7 +31,7 @@ class ProgressSummaryCard extends ConsumerWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.blue.withValues(alpha: 0.3),
+              color: AppColors.info.withValues(alpha: 0.3),
               blurRadius: 10,
               offset: const Offset(0, 5),
             ),
@@ -42,16 +43,16 @@ class ProgressSummaryCard extends ConsumerWidget {
             // Header
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.show_chart,
-                  color: Colors.white,
+                  color: AppColors.white,
                   size: 24,
                 ),
                 const SizedBox(width: 12),
                 Text(
                   'Your Progress',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: Colors.white,
+                        color: AppColors.white,
                         fontWeight: FontWeight.bold,
                       ),
                 ),
@@ -89,7 +90,7 @@ class ProgressSummaryCard extends ConsumerWidget {
                             Text(
                               'Current',
                               style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.8),
+                                color: AppColors.white.withValues(alpha: 0.8),
                                 fontSize: 12,
                               ),
                             ),
@@ -97,7 +98,7 @@ class ProgressSummaryCard extends ConsumerWidget {
                             Text(
                               '${weight.weight.toStringAsFixed(1)} kg',
                               style: const TextStyle(
-                                color: Colors.white,
+                                color: AppColors.white,
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -111,7 +112,7 @@ class ProgressSummaryCard extends ConsumerWidget {
                           Text(
                             'Current',
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.8),
+                              color: AppColors.white.withValues(alpha: 0.8),
                               fontSize: 12,
                             ),
                           ),
@@ -119,7 +120,7 @@ class ProgressSummaryCard extends ConsumerWidget {
                           const Text(
                             'No data',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: AppColors.white,
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
@@ -133,7 +134,7 @@ class ProgressSummaryCard extends ConsumerWidget {
                         Text(
                           'Current',
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.8),
+                            color: AppColors.white.withValues(alpha: 0.8),
                             fontSize: 12,
                           ),
                         ),
@@ -141,7 +142,7 @@ class ProgressSummaryCard extends ConsumerWidget {
                         const Text(
                           '...',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: AppColors.white,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -188,7 +189,7 @@ class ProgressSummaryCard extends ConsumerWidget {
                     Text(
                       'Active Goals: $activeCount',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9),
+                        color: AppColors.white.withValues(alpha: 0.9),
                         fontSize: 14,
                       ),
                     ),
@@ -197,14 +198,14 @@ class ProgressSummaryCard extends ConsumerWidget {
                         children: [
                           const Icon(
                             Icons.star,
-                            color: Colors.amber,
+                            color: AppColors.warning,
                             size: 16,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             onTrack > 0 ? 'On Track' : 'Keep Going',
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.9),
+                              color: AppColors.white.withValues(alpha: 0.9),
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                             ),
@@ -217,7 +218,7 @@ class ProgressSummaryCard extends ConsumerWidget {
               loading: () => Text(
                 'Loading goals...',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.9),
+                  color: AppColors.white.withValues(alpha: 0.9),
                   fontSize: 14,
                 ),
               ),
@@ -232,7 +233,7 @@ class ProgressSummaryCard extends ConsumerWidget {
                 Text(
                   'View Details',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.9),
+                    color: AppColors.white.withValues(alpha: 0.9),
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
@@ -240,7 +241,7 @@ class ProgressSummaryCard extends ConsumerWidget {
                 const SizedBox(width: 4),
                 Icon(
                   Icons.arrow_forward,
-                  color: Colors.white.withValues(alpha: 0.9),
+                  color: AppColors.white.withValues(alpha: 0.9),
                   size: 16,
                 ),
               ],
@@ -253,7 +254,7 @@ class ProgressSummaryCard extends ConsumerWidget {
 
   Widget _buildWeightChange(double change) {
     final isLoss = change < 0;
-    final color = isLoss ? Colors.green : Colors.red;
+    final color = isLoss ? AppColors.success : AppColors.error;
     final icon = isLoss ? Icons.arrow_downward : Icons.arrow_upward;
 
     return Row(
@@ -276,14 +277,14 @@ class ProgressSummaryCard extends ConsumerWidget {
     return Container(
       height: 100,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
+        color: AppColors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Center(
         child: Text(
           'Start tracking to see your progress',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.7),
+            color: AppColors.white.withValues(alpha: 0.7),
             fontSize: 12,
           ),
         ),
@@ -295,12 +296,12 @@ class ProgressSummaryCard extends ConsumerWidget {
     return Container(
       height: 100,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
+        color: AppColors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: const Center(
         child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          valueColor: AlwaysStoppedAnimation<Color>(AppColors.white),
         ),
       ),
     );

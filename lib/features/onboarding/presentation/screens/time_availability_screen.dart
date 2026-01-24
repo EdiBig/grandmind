@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/route_constants.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_gradients.dart';
 import '../../domain/onboarding_data.dart';
 import '../providers/onboarding_provider.dart';
@@ -98,7 +99,7 @@ class TimeAvailabilityScreen extends ConsumerWidget {
                 color: colorScheme.surface,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.06),
+                    color: AppColors.black.withValues(alpha: 0.06),
                     blurRadius: 12,
                     offset: const Offset(0, -6),
                   ),
@@ -116,7 +117,7 @@ class TimeAvailabilityScreen extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(14),
                     ),
                     backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppColors.white,
                     disabledBackgroundColor:
                         colorScheme.surfaceContainerHighest,
                   ),
@@ -169,7 +170,7 @@ class _FrequencyCard extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: AppColors.black.withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),
@@ -190,9 +191,9 @@ class _FrequencyCard extends StatelessWidget {
                       ),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.calendar_today,
-                color: Colors.white,
+                color: AppColors.white,
                 size: 24,
               ),
             ),

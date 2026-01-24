@@ -76,6 +76,12 @@ flutter {
     source = "../.."
 }
 
+// Exclude deprecated SafetyNet artifacts; we use Play Integrity via Firebase App Check.
+configurations.configureEach {
+    exclude(group = "com.google.firebase", module = "firebase-appcheck-safetynet")
+    exclude(group = "com.google.android.gms", module = "play-services-safetynet")
+}
+
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
     // Updated Play libraries for Android 14 compatibility.

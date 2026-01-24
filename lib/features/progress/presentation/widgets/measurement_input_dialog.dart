@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../../../../core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../domain/models/measurement_entry.dart';
 import '../providers/progress_providers.dart';
+import '../../../../core/utils/validators.dart';
 
 /// Modal dialog for logging body measurements
 class MeasurementInputDialog extends ConsumerStatefulWidget {
@@ -100,9 +103,9 @@ class _MeasurementInputDialogState
 
     if (measurements.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter at least one measurement'),
-          backgroundColor: Colors.orange,
+        SnackBar(
+          content: const Text('Please enter at least one measurement'),
+          backgroundColor: AppColors.warning,
         ),
       );
       return;
@@ -140,17 +143,17 @@ class _MeasurementInputDialogState
 
       if (success != null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Measurements logged successfully!'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: const Text('Measurements logged successfully!'),
+            backgroundColor: AppColors.success,
           ),
         );
         Navigator.pop(context);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to log measurements. Please try again.'),
-            backgroundColor: Colors.red,
+          SnackBar(
+            content: const Text('Failed to log measurements. Please try again.'),
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -169,17 +172,17 @@ class _MeasurementInputDialogState
 
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Measurements updated successfully!'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: const Text('Measurements updated successfully!'),
+            backgroundColor: AppColors.success,
           ),
         );
         Navigator.pop(context);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to update measurements. Please try again.'),
-            backgroundColor: Colors.red,
+          SnackBar(
+            content: const Text('Failed to update measurements. Please try again.'),
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -188,11 +191,12 @@ class _MeasurementInputDialogState
 
   /// Pick a date
   Future<void> _pickDate() async {
+    final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now(),
+      firstDate: now.subtract(const Duration(days: 365)), // Max 1 year ago
+      lastDate: now,
     );
 
     if (picked != null) {
@@ -227,7 +231,7 @@ class _MeasurementInputDialogState
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 20),
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
+                    color: Theme.of(context).colorScheme.outlineVariant,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -266,7 +270,7 @@ class _MeasurementInputDialogState
               Text(
                 'Enter only the measurements you want to track. All fields are optional.',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
               ),
               const SizedBox(height: 16),
@@ -274,7 +278,7 @@ class _MeasurementInputDialogState
               // Date picker
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.calendar_today),
+                leading: Icon(Icons.calendar_today),
                 title: const Text('Date'),
                 subtitle: Text(
                   '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
@@ -319,7 +323,7 @@ class _MeasurementInputDialogState
               // Notes (optional)
               TextFormField(
                 controller: _notesController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Notes (optional)',
                   hintText: 'Add any notes...',
                   border: OutlineInputBorder(),
@@ -354,6 +358,30 @@ class _MeasurementInputDialogState
     );
   }
 
+  /// Map MeasurementType to validator-friendly name
+  String _getMeasurementTypeName(MeasurementType type) {
+    switch (type) {
+      case MeasurementType.waist:
+        return 'waist';
+      case MeasurementType.chest:
+        return 'chest';
+      case MeasurementType.hips:
+        return 'hips';
+      case MeasurementType.shoulders:
+        return 'shoulders';
+      case MeasurementType.neck:
+        return 'neck';
+      case MeasurementType.leftArm:
+      case MeasurementType.rightArm:
+        return 'bicep';
+      case MeasurementType.leftThigh:
+      case MeasurementType.rightThigh:
+        return 'thigh';
+      case MeasurementType.calves:
+        return 'calf';
+    }
+  }
+
   Widget _buildMeasurementSection(
       String title, List<MeasurementType> types) {
     return Column(
@@ -363,7 +391,7 @@ class _MeasurementInputDialogState
           title,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: Colors.grey[700],
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
         ),
         const SizedBox(height: 8),
@@ -373,6 +401,9 @@ class _MeasurementInputDialogState
                 controller: _controllers[type],
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,1}')),
+                ],
                 decoration: InputDecoration(
                   labelText: type.displayName,
                   hintText: 'Optional',
@@ -382,12 +413,13 @@ class _MeasurementInputDialogState
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) return null;
-
-                  final number = double.tryParse(value);
-                  if (number == null || number <= 0) {
-                    return 'Please enter a valid measurement';
-                  }
-                  return null;
+                  // Convert measurement type to validator-friendly name
+                  final measurementName = _getMeasurementTypeName(type);
+                  return Validators.validateBodyMeasurement(
+                    value,
+                    measurementType: measurementName,
+                    required: false,
+                  );
                 },
               ),
             )),

@@ -72,16 +72,38 @@ class AppTheme {
             fontWeight: FontWeight.w600,
             color: states.contains(WidgetState.selected)
                 ? colorScheme.primary
-                : colorScheme.onSurfaceVariant,
+                : colorScheme.onSurface.withValues(alpha: 0.85), // WCAG compliant
           ),
         ),
         iconTheme: WidgetStateProperty.resolveWith(
           (states) => IconThemeData(
             color: states.contains(WidgetState.selected)
                 ? colorScheme.primary
-                : colorScheme.onSurfaceVariant,
+                : colorScheme.onSurface.withValues(alpha: 0.85), // WCAG compliant
           ),
         ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: colorScheme.surfaceContainerHighest,
+        labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+        hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colorScheme.outlineVariant),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colorScheme.outlineVariant),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
+        ),
+      ),
+      listTileTheme: ListTileThemeData(
+        textColor: colorScheme.onSurface,
+        iconColor: colorScheme.onSurfaceVariant,
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: colorScheme.primary,
@@ -153,41 +175,6 @@ class AppTheme {
             fontSize: 14,
             fontWeight: FontWeight.w600,
           ),
-        ),
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: isDark
-            ? AppColors.greyDark.withValues(alpha: 0.2)
-            : AppColors.greyLight.withValues(alpha: 0.1),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colorScheme.primary, width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.error, width: 2),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.error, width: 2),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
-        ),
-        hintStyle: TextStyle(
-          color:
-              isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-          fontSize: 14,
         ),
       ),
       textTheme: TextTheme(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_colors.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_gradients.dart';
 import '../../domain/models/measurement_entry.dart';
@@ -31,7 +32,7 @@ class _MeasurementsScreenState extends ConsumerState<MeasurementsScreen> {
           IconButton(
             icon: Text(
               _useCm ? 'cm' : 'in',
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
             onPressed: () {
               setState(() {
@@ -99,7 +100,7 @@ class _MeasurementsScreenState extends ConsumerState<MeasurementsScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                Icon(Icons.error_outline, size: 48, color: AppColors.error),
                 const SizedBox(height: 16),
                 const Text('Error loading measurements'),
                 const SizedBox(height: 8),
@@ -130,27 +131,27 @@ class _MeasurementsScreenState extends ConsumerState<MeasurementsScreen> {
           Icon(
             Icons.straighten,
             size: 80,
-            color: Colors.grey[400],
+            color: Theme.of(context).colorScheme.outline,
           ),
           const SizedBox(height: 24),
           Text(
             'No Measurements Yet',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.grey[600],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           ),
           const SizedBox(height: 8),
           Text(
             'Start tracking your body measurements',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Colors.grey[500],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: () => MeasurementInputDialog.show(context),
-            icon: const Icon(Icons.add),
+            icon: Icon(Icons.add),
             label: const Text('Log First Measurement'),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
@@ -175,7 +176,7 @@ class _MeasurementsScreenState extends ConsumerState<MeasurementsScreen> {
           Text(
             'Latest Measurements',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.white,
+                  color: AppColors.white,
                   fontWeight: FontWeight.w600,
                 ),
           ),
@@ -183,7 +184,7 @@ class _MeasurementsScreenState extends ConsumerState<MeasurementsScreen> {
           Text(
             DateFormat('MMM d, yyyy').format(latest.date),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.8),
+                  color: AppColors.white.withValues(alpha: 0.8),
                 ),
           ),
           const SizedBox(height: 16),
@@ -219,7 +220,7 @@ class _MeasurementsScreenState extends ConsumerState<MeasurementsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.2),
+        color: AppColors.white.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -227,8 +228,8 @@ class _MeasurementsScreenState extends ConsumerState<MeasurementsScreen> {
         children: [
           Text(
             label,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: AppColors.white,
               fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
@@ -236,8 +237,8 @@ class _MeasurementsScreenState extends ConsumerState<MeasurementsScreen> {
           const SizedBox(width: 8),
           Text(
             '${value.toStringAsFixed(1)} $unit',
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: AppColors.white,
               fontSize: 14,
               fontWeight: FontWeight.bold,
             ),
@@ -257,7 +258,7 @@ class _MeasurementsScreenState extends ConsumerState<MeasurementsScreen> {
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+        border: Border.all(color: AppColors.grey.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -304,7 +305,7 @@ class _MeasurementsScreenState extends ConsumerState<MeasurementsScreen> {
     final unit = _useCm ? 'cm' : 'in';
 
     final isDecrease = change < 0;
-    final changeColor = isDecrease ? Colors.green : Colors.orange;
+    final changeColor = isDecrease ? AppColors.success : AppColors.warning;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -321,12 +322,12 @@ class _MeasurementsScreenState extends ConsumerState<MeasurementsScreen> {
             child: Text(
               '${displayBaseline.toStringAsFixed(1)} $unit',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey,
+                    color: AppColors.grey,
                   ),
               textAlign: TextAlign.center,
             ),
           ),
-          const Icon(Icons.arrow_forward, size: 16, color: Colors.grey),
+          Icon(Icons.arrow_forward, size: 16, color: AppColors.grey),
           Expanded(
             child: Text(
               '${displayCurrent.toStringAsFixed(1)} $unit',
@@ -378,7 +379,7 @@ class _MeasurementsScreenState extends ConsumerState<MeasurementsScreen> {
         ),
         title: Text(
           DateFormat('EEEE, MMM d, yyyy').format(entry.date),
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 16,
           ),
@@ -386,7 +387,7 @@ class _MeasurementsScreenState extends ConsumerState<MeasurementsScreen> {
         subtitle: Text(
           '${entry.measurements.length} measurements',
           style: TextStyle(
-            color: Colors.grey[600],
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             fontSize: 12,
           ),
         ),
@@ -409,7 +410,7 @@ class _MeasurementsScreenState extends ConsumerState<MeasurementsScreen> {
                     children: [
                       Row(
                         children: [
-                          Icon(type.icon, size: 20, color: Colors.grey[600]),
+                          Icon(type.icon, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
                           const SizedBox(width: 8),
                           Text(type.displayName),
                         ],

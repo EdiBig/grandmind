@@ -1,8 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/nutrition_goal.dart';
 import '../providers/nutrition_providers.dart';
+import '../../../../core/utils/validators.dart';
 
 class NutritionGoalsScreen extends ConsumerStatefulWidget {
   const NutritionGoalsScreen({super.key});
@@ -129,6 +131,7 @@ class _NutritionGoalsScreenState extends ConsumerState<NutritionGoalsScreen> {
                 _buildNumberField(
                   controller: _caloriesController,
                   label: 'Daily Calories',
+                  validator: Validators.validateCalories,
                 ),
                 const SizedBox(height: 16),
                 Row(
@@ -137,6 +140,11 @@ class _NutritionGoalsScreenState extends ConsumerState<NutritionGoalsScreen> {
                       child: _buildNumberField(
                         controller: _proteinController,
                         label: 'Protein (g)',
+                        validator: (value) => Validators.validateMacro(
+                          value,
+                          macroName: 'Protein',
+                          required: true,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -144,6 +152,11 @@ class _NutritionGoalsScreenState extends ConsumerState<NutritionGoalsScreen> {
                       child: _buildNumberField(
                         controller: _carbsController,
                         label: 'Carbs (g)',
+                        validator: (value) => Validators.validateMacro(
+                          value,
+                          macroName: 'Carbs',
+                          required: true,
+                        ),
                       ),
                     ),
                   ],
@@ -152,12 +165,18 @@ class _NutritionGoalsScreenState extends ConsumerState<NutritionGoalsScreen> {
                 _buildNumberField(
                   controller: _fatController,
                   label: 'Fat (g)',
+                  validator: (value) => Validators.validateMacro(
+                    value,
+                    macroName: 'Fat',
+                    required: true,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 _buildNumberField(
                   controller: _waterController,
                   label: 'Water (glasses)',
                   isInteger: true,
+                  validator: (value) => Validators.validateWaterGlasses(value, required: true),
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(
@@ -193,6 +212,7 @@ class _NutritionGoalsScreenState extends ConsumerState<NutritionGoalsScreen> {
     required TextEditingController controller,
     required String label,
     bool isInteger = false,
+    String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
@@ -201,7 +221,13 @@ class _NutritionGoalsScreenState extends ConsumerState<NutritionGoalsScreen> {
         border: const OutlineInputBorder(),
       ),
       keyboardType: TextInputType.numberWithOptions(decimal: !isInteger),
-      validator: (value) {
+      inputFormatters: [
+        if (isInteger)
+          FilteringTextInputFormatter.digitsOnly
+        else
+          FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,1}')),
+      ],
+      validator: validator ?? (value) {
         if (value == null || value.trim().isEmpty) {
           return 'Required';
         }

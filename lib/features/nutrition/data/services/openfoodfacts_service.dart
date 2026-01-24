@@ -34,7 +34,9 @@ class OpenFoodFactsService {
 
       return null;
     } catch (e) {
-      debugPrint('Error fetching product: $e');
+      if (kDebugMode) {
+        debugPrint('Error fetching product: $e');
+      }
       return null;
     }
   }
@@ -65,7 +67,9 @@ class OpenFoodFactsService {
 
       return [];
     } catch (e) {
-      debugPrint('Error searching products: $e');
+      if (kDebugMode) {
+        debugPrint('Error searching products: $e');
+      }
       return [];
     }
   }
@@ -131,7 +135,9 @@ class OpenFoodFactsService {
         createdAt: DateTime.now(),
       );
     } catch (e) {
-      debugPrint('Error parsing food item: $e');
+      if (kDebugMode) {
+        debugPrint('Error parsing food item: $e');
+      }
       return null;
     }
   }

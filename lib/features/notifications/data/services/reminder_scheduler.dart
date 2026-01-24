@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../../domain/models/notification_preference.dart';
 import 'notification_service.dart';
+import 'notification_payload.dart';
 
 /// Service for scheduling and managing reminders
 class ReminderScheduler {
@@ -15,7 +16,8 @@ class ReminderScheduler {
   static const int mealBase = 4000;
   static const int sleepBase = 5000;
   static const int meditationBase = 6000;
-  static const int customBase = 7000;
+  static const int moodEnergyBase = 7000;
+  static const int customBase = 8000;
 
   /// Get base ID for reminder type
   int _getBaseId(ReminderType type) {
@@ -32,6 +34,8 @@ class ReminderScheduler {
         return sleepBase;
       case ReminderType.meditation:
         return meditationBase;
+      case ReminderType.moodEnergy:
+        return moodEnergyBase;
       case ReminderType.custom:
         return customBase;
     }
@@ -111,7 +115,7 @@ class ReminderScheduler {
         title: preference.title,
         body: preference.message,
         scheduledTime: nextWeekTime,
-        payload: preference.id,
+        payload: payloadForReminder(preference),
       );
     } else {
       await _notificationService.scheduleNotification(
@@ -119,7 +123,7 @@ class ReminderScheduler {
         title: preference.title,
         body: preference.message,
         scheduledTime: scheduledTime,
-        payload: preference.id,
+        payload: payloadForReminder(preference),
       );
     }
   }
@@ -311,6 +315,23 @@ class ReminderScheduler {
       message: 'Take a few minutes to center yourself and breathe.',
       daysOfWeek: [1, 2, 3, 4, 5, 6, 7], // Every day
       hour: 7, // 7 AM
+      minute: 0,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  /// Create default mood & energy reminder
+  NotificationPreference createDefaultMoodEnergyReminder(String userId) {
+    return NotificationPreference(
+      id: '',
+      userId: userId,
+      type: ReminderType.moodEnergy,
+      enabled: false,
+      title: '😊 How Are You Feeling?',
+      message: 'Take a moment to log your mood and energy levels.',
+      daysOfWeek: [1, 2, 3, 4, 5, 6, 7], // Every day
+      hour: 20, // 8 PM
       minute: 0,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),

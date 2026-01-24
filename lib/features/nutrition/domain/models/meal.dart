@@ -9,6 +9,7 @@ part 'meal.g.dart';
 /// Contains multiple food items (MealEntry) with their serving sizes
 @freezed
 class Meal with _$Meal {
+  // ignore: invalid_annotation_target
   @JsonSerializable(explicitToJson: true)
   const factory Meal({
     required String id,
@@ -56,6 +57,7 @@ class Meal with _$Meal {
 /// A single food item within a meal, with serving size
 @freezed
 class MealEntry with _$MealEntry {
+  // ignore: invalid_annotation_target
   @JsonSerializable(explicitToJson: true)
   const factory MealEntry({
     required FoodItem foodItem,

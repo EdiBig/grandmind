@@ -1,60 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/models/date_range.dart';
 import '../../data/services/progress_correlation_service.dart';
 
 /// Provider for the progress correlation service
 final progressCorrelationServiceProvider = Provider<ProgressCorrelationService>((ref) {
   return ProgressCorrelationService();
 });
-
-/// Date range for insights analysis
-class DateRange {
-  final DateTime start;
-  final DateTime end;
-
-  const DateRange({
-    required this.start,
-    required this.end,
-  });
-
-  /// Last 7 days
-  factory DateRange.last7Days() {
-    final now = DateTime.now();
-    return DateRange(
-      start: now.subtract(const Duration(days: 7)),
-      end: now,
-    );
-  }
-
-  /// Last 30 days
-  factory DateRange.last30Days() {
-    final now = DateTime.now();
-    return DateRange(
-      start: now.subtract(const Duration(days: 30)),
-      end: now,
-    );
-  }
-
-  /// Last 90 days
-  factory DateRange.last90Days() {
-    final now = DateTime.now();
-    return DateRange(
-      start: now.subtract(const Duration(days: 90)),
-      end: now,
-    );
-  }
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is DateRange &&
-          runtimeType == other.runtimeType &&
-          start == other.start &&
-          end == other.end;
-
-  @override
-  int get hashCode => start.hashCode ^ end.hashCode;
-}
 
 /// State provider for selected date range
 /// Default: last 30 days

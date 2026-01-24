@@ -251,7 +251,8 @@ class __$$WorkoutLogImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(explicitToJson: true)
 class _$WorkoutLogImpl implements _WorkoutLog {
   const _$WorkoutLogImpl(
       {required this.id,
@@ -568,7 +569,8 @@ class __$$ExerciseLogImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(explicitToJson: true)
 class _$ExerciseLogImpl implements _ExerciseLog {
   const _$ExerciseLogImpl(
       {required this.exerciseId,

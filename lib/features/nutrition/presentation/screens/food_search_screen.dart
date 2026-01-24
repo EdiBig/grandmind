@@ -31,6 +31,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final trimmedQuery = _query.trim();
     final AsyncValue<List<FoodItem>> results;
 
@@ -51,7 +52,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         title: Text(widget.isSelection ? 'Select Food' : 'Food Search'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.qr_code_scanner),
+            icon: Icon(Icons.qr_code_scanner),
             onPressed: () async {
               final scannedFood = await context.push<FoodItem>(
                 RouteConstants.barcodeScanner,
@@ -87,7 +88,19 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
             controller: _searchController,
             decoration: InputDecoration(
               labelText: 'Search foods',
-              border: const OutlineInputBorder(),
+              filled: true,
+              fillColor: colorScheme.surfaceContainerHighest,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: colorScheme.outlineVariant),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
+              ),
               prefixIcon: const Icon(Icons.search),
               suffixIcon: _query.isEmpty
                   ? null
@@ -115,7 +128,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                     padding: const EdgeInsets.all(24),
                     child: Text(
                       emptyText,
-                      style: TextStyle(color: Colors.grey.shade600),
+                      style: TextStyle(color: colorScheme.onSurfaceVariant),
                     ),
                   ),
                 );
@@ -133,18 +146,21 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                       horizontal: 12,
                       vertical: 4,
                     ),
-                    tileColor: Colors.grey.shade50,
+                    tileColor: colorScheme.surface,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(color: Colors.grey.shade200),
+                      side: BorderSide(color: colorScheme.outlineVariant),
                     ),
-                    title: Text(item.name),
+                    title: Text(
+                      item.name,
+                      style: TextStyle(color: colorScheme.onSurface),
+                    ),
                     subtitle: Text(
                       '${item.calories.toStringAsFixed(0)} cal - '
                       '${item.proteinGrams.toStringAsFixed(0)}g P - '
                       '${item.carbsGrams.toStringAsFixed(0)}g C - '
                       '${item.fatGrams.toStringAsFixed(0)}g F',
-                      style: TextStyle(color: Colors.grey.shade600),
+                      style: TextStyle(color: colorScheme.onSurfaceVariant),
                     ),
                     trailing: widget.isSelection
                         ? const Icon(Icons.add_circle_outline)
@@ -174,6 +190,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   }
 
   Widget _buildCategoryChips() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -182,12 +199,24 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           label: const Text('All'),
           selected: _selectedCategory == null,
           onSelected: (_) => setState(() => _selectedCategory = null),
+          selectedColor: colorScheme.primaryContainer,
+          labelStyle: TextStyle(
+            color: _selectedCategory == null
+                ? colorScheme.onPrimaryContainer
+                : colorScheme.onSurface,
+          ),
         ),
         ...FoodCategory.values.map(
           (category) => ChoiceChip(
             label: Text(category.displayName),
             selected: _selectedCategory == category,
             onSelected: (_) => setState(() => _selectedCategory = category),
+            selectedColor: colorScheme.primaryContainer,
+            labelStyle: TextStyle(
+              color: _selectedCategory == category
+                  ? colorScheme.onPrimaryContainer
+                  : colorScheme.onSurface,
+            ),
           ),
         ),
       ],

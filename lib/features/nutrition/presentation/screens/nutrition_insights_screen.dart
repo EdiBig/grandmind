@@ -2,10 +2,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../providers/nutrition_providers.dart';
 import '../../domain/models/daily_nutrition_summary.dart';
 import '../../domain/models/meal.dart';
 import '../../domain/models/nutrition_goal.dart';
+import '../../data/services/nutrition_ai_service.dart';
+import 'package:kinesa/features/ai/presentation/providers/ai_providers.dart';
+import 'nutrition_chat_screen.dart';
 
 /// Nutrition AI Insights Screen
 /// Provides comprehensive analysis of nutrition data including:
@@ -152,7 +156,7 @@ class _NutritionInsightsScreenState
           children: [
             Row(
               children: [
-                const Icon(Icons.local_fire_department, color: Colors.orange),
+                Icon(Icons.local_fire_department, color: AppColors.warning),
                 const SizedBox(width: 8),
                 const Text(
                   'Calories Trend',
@@ -242,7 +246,7 @@ class _NutritionInsightsScreenState
                 horizontalInterval: 500,
                 getDrawingHorizontalLine: (value) {
                   return FlLine(
-                    color: Colors.grey.shade300,
+                    color: Theme.of(context).colorScheme.outlineVariant,
                     strokeWidth: 1,
                   );
                 },
@@ -264,7 +268,7 @@ class _NutritionInsightsScreenState
                         '${value.toInt()}',
                         style: TextStyle(
                           fontSize: 10,
-                          color: Colors.grey.shade600,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       );
                     },
@@ -284,7 +288,7 @@ class _NutritionInsightsScreenState
                         '${date.day}/${date.month}',
                         style: TextStyle(
                           fontSize: 10,
-                          color: Colors.grey.shade600,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       );
                     },
@@ -296,14 +300,14 @@ class _NutritionInsightsScreenState
                 LineChartBarData(
                   spots: spots,
                   isCurved: true,
-                  color: Colors.orange,
+                  color: AppColors.warning,
                   barWidth: 3,
                   dotData: FlDotData(
                     show: spots.length <= 14,
                   ),
                   belowBarData: BarAreaData(
                     show: true,
-                    color: Colors.orange.withValues(alpha: 0.1),
+                    color: AppColors.warning.withValues(alpha: 0.1),
                   ),
                 ),
                 // Target line
@@ -315,7 +319,7 @@ class _NutritionInsightsScreenState
                           (sortedDates.length - 1).toDouble(), targetCalories),
                     ],
                     isCurved: false,
-                    color: Colors.green.withValues(alpha: 0.5),
+                    color: AppColors.success.withValues(alpha: 0.5),
                     barWidth: 2,
                     dotData: const FlDotData(show: false),
                     dashArray: [5, 5],
@@ -331,17 +335,17 @@ class _NutritionInsightsScreenState
             _buildStatColumn(
               'Average',
               '${avgCalories.toStringAsFixed(0)} cal',
-              Colors.orange,
+              AppColors.warning,
             ),
             _buildStatColumn(
               'Target',
               '${targetCalories.toStringAsFixed(0)} cal',
-              Colors.green,
+              AppColors.success,
             ),
             _buildStatColumn(
               'Difference',
               '${(avgCalories - targetCalories).toStringAsFixed(0)} cal',
-              avgCalories > targetCalories ? Colors.red : Colors.blue,
+              avgCalories > targetCalories ? AppColors.error : AppColors.info,
             ),
           ],
         ),
@@ -368,7 +372,7 @@ class _NutritionInsightsScreenState
           children: [
             Row(
               children: [
-                const Icon(Icons.pie_chart, color: Colors.blue),
+                Icon(Icons.pie_chart, color: AppColors.info),
                 const SizedBox(width: 8),
                 const Text(
                   'Macros Breakdown',
@@ -411,17 +415,17 @@ class _NutritionInsightsScreenState
                         _buildMacroCircle(
                           'Protein',
                           avgProtein,
-                          Colors.blue,
+                          AppColors.info,
                         ),
                         _buildMacroCircle(
                           'Carbs',
                           avgCarbs,
-                          Colors.green,
+                          AppColors.success,
                         ),
                         _buildMacroCircle(
                           'Fat',
                           avgFat,
-                          Colors.purple,
+                          AppColors.workoutFlexibility,
                         ),
                       ],
                     ),
@@ -430,7 +434,7 @@ class _NutritionInsightsScreenState
                       'Daily averages over the last $_selectedDays days',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade600,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -471,7 +475,7 @@ class _NutritionInsightsScreenState
         const SizedBox(height: 8),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
@@ -489,7 +493,7 @@ class _NutritionInsightsScreenState
           children: [
             Row(
               children: [
-                const Icon(Icons.local_drink, color: Colors.blue),
+                Icon(Icons.local_drink, color: AppColors.info),
                 const SizedBox(width: 8),
                 const Text(
                   'Water Intake Trend',
@@ -532,7 +536,7 @@ class _NutritionInsightsScreenState
           children: [
             Row(
               children: [
-                const Icon(Icons.schedule, color: Colors.purple),
+                Icon(Icons.schedule, color: AppColors.workoutFlexibility),
                 const SizedBox(width: 8),
                 const Text(
                   'Meal Timing Patterns',
@@ -588,7 +592,7 @@ class _NutritionInsightsScreenState
                                 const SizedBox(height: 4),
                                 LinearProgressIndicator(
                                   value: count / meals.length,
-                                  backgroundColor: Colors.grey.shade200,
+                                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
                                 ),
                               ],
                             ),
@@ -598,7 +602,7 @@ class _NutritionInsightsScreenState
                             '$count meals ($percentage%)',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.grey.shade600,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -633,7 +637,7 @@ class _NutritionInsightsScreenState
           label,
           style: TextStyle(
             fontSize: 12,
-            color: Colors.grey.shade600,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
       ],
@@ -643,14 +647,42 @@ class _NutritionInsightsScreenState
   // ========== AI TIPS TAB ==========
 
   Widget _buildAITipsTab(String userId) {
+    final endDate = DateTime.now();
+    final startDate = endDate.subtract(const Duration(days: 7));
+    final dateRange = DateRange(
+      start: DateTime(startDate.year, startDate.month, startDate.day),
+      end: DateTime(endDate.year, endDate.month, endDate.day),
+    );
+
+    final mealsAsync = ref.watch(mealsForDateRangeProvider(dateRange));
+    final goalAsync = ref.watch(userNutritionGoalProvider);
+    final summaryAsync = ref.watch(todayNutritionSummaryProvider);
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildPersonalizedTipsCard(),
+          mealsAsync.when(
+            data: (meals) => goalAsync.when(
+              data: (goal) => summaryAsync.when(
+                data: (summary) => _buildPersonalizedTipsCard(
+                  userId: userId,
+                  meals: meals,
+                  goal: goal,
+                  summary: summary,
+                ),
+                loading: () => _buildPersonalizedTipsCardLoading(),
+                error: (e, st) => _buildPersonalizedTipsCardError(e.toString()),
+              ),
+              loading: () => _buildPersonalizedTipsCardLoading(),
+              error: (e, st) => _buildPersonalizedTipsCardError(e.toString()),
+            ),
+            loading: () => _buildPersonalizedTipsCardLoading(),
+            error: (e, st) => _buildPersonalizedTipsCardError(e.toString()),
+          ),
           const SizedBox(height: 16),
-          _buildNutritionRecommendationsCard(),
+          _buildNutritionRecommendationsCard(userId),
           const SizedBox(height: 16),
           _buildHabitSuggestionsCard(),
         ],
@@ -658,32 +690,142 @@ class _NutritionInsightsScreenState
     );
   }
 
-  Widget _buildPersonalizedTipsCard() {
-    // TODO: Integrate with Claude AI API for real insights
-    final tips = [
-      {
-        'icon': Icons.trending_up,
-        'color': Colors.green,
-        'title': 'Great Progress!',
-        'description':
-            'You\'ve been consistent with logging meals for 5 days straight. Keep it up!',
-      },
-      {
-        'icon': Icons.water_drop,
-        'color': Colors.blue,
-        'title': 'Hydration Reminder',
-        'description':
-            'Your water intake is below target on most days. Try drinking a glass of water with each meal.',
-      },
-      {
-        'icon': Icons.restaurant,
-        'color': Colors.orange,
-        'title': 'Protein Boost',
-        'description':
-            'Your protein intake averages 15% below your goal. Consider adding a protein source to breakfast.',
-      },
-    ];
+  Widget _buildPersonalizedTipsCard({
+    required String userId,
+    required List<Meal> meals,
+    required NutritionGoal? goal,
+    required DailyNutritionSummary summary,
+  }) {
+    final tipsState = ref.watch(nutritionTipsProviderOverride);
+    final tipsNotifier = ref.read(nutritionTipsProviderOverride.notifier);
 
+    // Auto-generate tips if not loaded
+    if (!tipsState.hasTips && !tipsState.isLoading && tipsState.error == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        tipsNotifier.generateTips(
+          userId: userId,
+          recentMeals: meals,
+          goal: goal,
+          todaySummary: summary,
+        );
+      });
+    }
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.lightbulb, color: AppColors.warning),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'Personalized Tips',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                if (tipsState.lastUpdated != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.success.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.auto_awesome, size: 14, color: AppColors.success),
+                        const SizedBox(width: 4),
+                        Text(
+                          'AI',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.success,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (tipsState.isLoading)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(height: 12),
+                      Text('Analyzing your nutrition data...'),
+                    ],
+                  ),
+                ),
+              )
+            else if (tipsState.error != null)
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      Icon(Icons.error_outline, size: 48, color: AppColors.warning),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Unable to generate tips',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: () => tipsNotifier.generateTips(
+                          userId: userId,
+                          recentMeals: meals,
+                          goal: goal,
+                          todaySummary: summary,
+                        ),
+                        child: const Text('Try Again'),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else if (tipsState.hasTips)
+              ...tipsState.tips.map((tip) => _buildTipItemFromAI(tip))
+            else
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Text('No tips available'),
+                ),
+              ),
+            const SizedBox(height: 12),
+            Center(
+              child: TextButton.icon(
+                onPressed: tipsState.isLoading
+                    ? null
+                    : () => tipsNotifier.generateTips(
+                          userId: userId,
+                          recentMeals: meals,
+                          goal: goal,
+                          todaySummary: summary,
+                        ),
+                icon: Icon(Icons.refresh),
+                label: const Text('Generate New Tips'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPersonalizedTipsCardLoading() {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -692,7 +834,7 @@ class _NutritionInsightsScreenState
           children: [
             const Row(
               children: [
-                Icon(Icons.lightbulb, color: Colors.amber),
+                Icon(Icons.lightbulb, color: AppColors.warning),
                 SizedBox(width: 8),
                 Text(
                   'Personalized Tips',
@@ -704,25 +846,10 @@ class _NutritionInsightsScreenState
               ],
             ),
             const SizedBox(height: 16),
-            ...tips.map((tip) => _buildTipItem(
-                  icon: tip['icon'] as IconData,
-                  color: tip['color'] as Color,
-                  title: tip['title'] as String,
-                  description: tip['description'] as String,
-                )),
-            const SizedBox(height: 12),
-            Center(
-              child: TextButton.icon(
-                onPressed: () {
-                  // TODO: Generate more tips using AI
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('AI tip generation coming soon!'),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.refresh),
-                label: const Text('Generate New Tips'),
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: CircularProgressIndicator(),
               ),
             ),
           ],
@@ -731,12 +858,43 @@ class _NutritionInsightsScreenState
     );
   }
 
-  Widget _buildTipItem({
-    required IconData icon,
-    required Color color,
-    required String title,
-    required String description,
-  }) {
+  Widget _buildPersonalizedTipsCardError(String error) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.lightbulb, color: AppColors.warning),
+                const SizedBox(width: 8),
+                const Text(
+                  'Personalized Tips',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Text('Error loading data: $error'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTipItemFromAI(NutritionTip tip) {
+    final iconData = _getIconFromName(tip.icon);
+    final color = _getColorFromName(tip.color);
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
@@ -748,7 +906,7 @@ class _NutritionInsightsScreenState
               color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, color: color, size: 24),
+            child: Icon(iconData, color: color, size: 24),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -756,7 +914,7 @@ class _NutritionInsightsScreenState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  tip.title,
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -764,12 +922,39 @@ class _NutritionInsightsScreenState
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  description,
+                  tip.description,
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey.shade700,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
+                if (tip.actionableAdvice != null) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: color.withValues(alpha: 0.2)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.arrow_forward, size: 16, color: color),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            tip.actionableAdvice!,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: color,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -778,43 +963,123 @@ class _NutritionInsightsScreenState
     );
   }
 
-  Widget _buildNutritionRecommendationsCard() {
+  IconData _getIconFromName(String name) {
+    switch (name) {
+      case 'trending_up':
+        return Icons.trending_up;
+      case 'water_drop':
+        return Icons.water_drop;
+      case 'restaurant':
+        return Icons.restaurant;
+      case 'egg':
+        return Icons.egg;
+      case 'schedule':
+        return Icons.schedule;
+      case 'local_fire_department':
+        return Icons.local_fire_department;
+      case 'fitness_center':
+        return Icons.fitness_center;
+      case 'bedtime':
+        return Icons.bedtime;
+      case 'mood':
+        return Icons.mood;
+      case 'favorite':
+        return Icons.favorite;
+      default:
+        return Icons.lightbulb;
+    }
+  }
+
+  Color _getColorFromName(String name) {
+    switch (name) {
+      case 'green':
+        return AppColors.success;
+      case 'blue':
+        return AppColors.info;
+      case 'orange':
+        return AppColors.warning;
+      case 'purple':
+        return AppColors.workoutFlexibility;
+      case 'amber':
+        return AppColors.warning;
+      case 'teal':
+        return AppColors.workoutCardio;
+      case 'red':
+        return AppColors.error;
+      case 'pink':
+        return AppColors.workoutStrength;
+      case 'indigo':
+        return AppColors.info;
+      default:
+        return AppColors.warning;
+    }
+  }
+
+  Widget _buildNutritionRecommendationsCard(String userId) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               children: [
-                Icon(Icons.recommend, color: Colors.purple),
-                SizedBox(width: 8),
-                Text(
-                  'Nutrition Recommendations',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                Icon(Icons.recommend, color: AppColors.workoutFlexibility),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'Nutrition Recommendations',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.workoutFlexibility.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.auto_awesome, size: 14, color: AppColors.workoutFlexibility),
+                      const SizedBox(width: 4),
+                      Text(
+                        'AI Powered',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.workoutFlexibility,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 16),
             const Text(
-              'AI-powered recommendations based on your nutrition patterns will appear here.',
+              'Get personalized nutrition advice from our AI nutritionist. Ask questions about your diet, get meal recommendations, and receive evidence-based guidance.',
             ),
-            const SizedBox(height: 12),
-            ElevatedButton.icon(
-              onPressed: () {
-                // TODO: Navigate to Claude AI chat for nutrition
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content:
-                        Text('AI nutrition coaching coming soon!'),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.chat),
-              label: const Text('Ask AI Nutritionist'),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => NutritionChatScreen(userId: userId),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.chat),
+                label: const Text('Ask AI Nutritionist'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
             ),
           ],
         ),
@@ -831,7 +1096,7 @@ class _NutritionInsightsScreenState
           children: [
             const Row(
               children: [
-                Icon(Icons.psychology, color: Colors.teal),
+                Icon(Icons.psychology, color: AppColors.workoutCardio),
                 SizedBox(width: 8),
                 Text(
                   'Habit Suggestions',
@@ -865,12 +1130,12 @@ class _NutritionInsightsScreenState
       padding: const EdgeInsets.only(bottom: 12),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: Colors.teal.withValues(alpha: 0.1),
-          child: Icon(icon, color: Colors.teal),
+          backgroundColor: AppColors.workoutCardio.withValues(alpha: 0.1),
+          child: Icon(icon, color: AppColors.workoutCardio),
         ),
         title: Text(
           title,
-          style: const TextStyle(fontWeight: FontWeight.w600),
+          style: TextStyle(fontWeight: FontWeight.w600),
         ),
         subtitle: Text(description),
         contentPadding: EdgeInsets.zero,
@@ -900,7 +1165,7 @@ class _NutritionInsightsScreenState
                         const Icon(
                           Icons.track_changes,
                           size: 64,
-                          color: Colors.grey,
+                          color: AppColors.grey,
                         ),
                         const SizedBox(height: 16),
                         const Text(
@@ -973,28 +1238,28 @@ class _NutritionInsightsScreenState
               'Calories',
               summary.totalCalories,
               goal.dailyCalories,
-              Colors.orange,
+              AppColors.warning,
             ),
             const SizedBox(height: 12),
             _buildGoalProgressBar(
               'Protein',
               summary.totalProtein,
               goal.dailyProteinGrams,
-              Colors.blue,
+              AppColors.info,
             ),
             const SizedBox(height: 12),
             _buildGoalProgressBar(
               'Carbs',
               summary.totalCarbs,
               goal.dailyCarbsGrams,
-              Colors.green,
+              AppColors.success,
             ),
             const SizedBox(height: 12),
             _buildGoalProgressBar(
               'Fat',
               summary.totalFat,
               goal.dailyFatGrams,
-              Colors.purple,
+              AppColors.workoutFlexibility,
             ),
           ],
         ),
@@ -1028,7 +1293,7 @@ class _NutritionInsightsScreenState
               '${current.toStringAsFixed(0)} / ${target.toStringAsFixed(0)} ($percentage%)',
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey.shade600,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -1060,7 +1325,7 @@ class _NutritionInsightsScreenState
           children: [
             Row(
               children: [
-                const Icon(Icons.trending_up, color: Colors.green),
+                Icon(Icons.trending_up, color: AppColors.success),
                 const SizedBox(width: 8),
                 const Text(
                   'Goal Predictions',
@@ -1075,7 +1340,7 @@ class _NutritionInsightsScreenState
             if (daysToGoal != null)
               Text(
                 'At your current rate, you\'ll reach your goal in approximately $daysToGoal days.',
-                style: const TextStyle(fontSize: 16),
+                style: TextStyle(fontSize: 16),
               )
             else
               const Text(
@@ -1112,7 +1377,7 @@ class _NutritionInsightsScreenState
           children: [
             Row(
               children: [
-                const Icon(Icons.local_fire_department, color: Colors.orange),
+                const Icon(Icons.local_fire_department, color: AppColors.warning),
                 const SizedBox(width: 8),
                 const Text(
                   'Goal Streak',
@@ -1132,7 +1397,7 @@ class _NutritionInsightsScreenState
                     style: TextStyle(
                       fontSize: 48,
                       fontWeight: FontWeight.bold,
-                      color: Colors.orange,
+                      color: AppColors.warning,
                     ),
                   ),
                   Text(
@@ -1170,7 +1435,7 @@ class _NutritionInsightsScreenState
             'Discover how your nutrition relates to other aspects of your health',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey.shade600,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 20),
@@ -1178,44 +1443,44 @@ class _NutritionInsightsScreenState
             'Nutrition & Sleep',
             'On days you eat more protein, you sleep 12% better on average.',
             Icons.bedtime,
-            Colors.indigo,
+            AppColors.info,
           ),
           const SizedBox(height: 16),
           _buildCorrelationCard(
             'Nutrition & Workouts',
             'Your workout performance is 15% higher when you meet your carb goals.',
             Icons.fitness_center,
-            Colors.orange,
+            AppColors.warning,
           ),
           const SizedBox(height: 16),
           _buildCorrelationCard(
             'Nutrition & Mood',
             'Days with balanced meals show 20% better mood ratings.',
             Icons.mood,
-            Colors.amber,
+            AppColors.warning,
           ),
           const SizedBox(height: 16),
           _buildCorrelationCard(
             'Hydration & Energy',
             'Meeting water goals correlates with 18% higher energy levels.',
             Icons.battery_charging_full,
-            Colors.green,
+            AppColors.success,
           ),
           const SizedBox(height: 20),
           Card(
-            color: Colors.blue.shade50,
+            color: AppColors.info.withValues(alpha: 0.1),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline, color: Colors.blue.shade700),
+                  Icon(Icons.info_outline, color: AppColors.info),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       'These insights are based on your personal data and patterns. Keep logging to see more accurate correlations!',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.blue.shade900,
+                        color: AppColors.info,
                       ),
                     ),
                   ),

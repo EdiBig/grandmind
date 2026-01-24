@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_gradients.dart';
 import '../../domain/models/weight_entry.dart';
 import '../providers/progress_providers.dart';
@@ -16,7 +17,7 @@ class WeightTrackingScreen extends ConsumerStatefulWidget {
 }
 
 class _WeightTrackingScreenState extends ConsumerState<WeightTrackingScreen> {
-  DateRange _selectedRange = DateRange.last90Days;
+  DateRange _selectedRange = DateRange.last90Days();
   bool _useKg = true; // Unit preference
 
   @override
@@ -32,7 +33,7 @@ class _WeightTrackingScreenState extends ConsumerState<WeightTrackingScreen> {
           IconButton(
             icon: Text(
               _useKg ? 'kg' : 'lbs',
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
             onPressed: () {
               setState(() {
@@ -93,7 +94,7 @@ class _WeightTrackingScreenState extends ConsumerState<WeightTrackingScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                Icon(Icons.error_outline, size: 48, color: AppColors.error),
                 const SizedBox(height: 16),
                 Text('Error loading weight data'),
                 const SizedBox(height: 8),
@@ -124,27 +125,27 @@ class _WeightTrackingScreenState extends ConsumerState<WeightTrackingScreen> {
           Icon(
             Icons.monitor_weight_outlined,
             size: 80,
-            color: Colors.grey[400],
+            color: Theme.of(context).colorScheme.outlineVariant,
           ),
           const SizedBox(height: 24),
           Text(
             'No Weight Entries',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.grey[600],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           ),
           const SizedBox(height: 8),
           Text(
             'Start tracking your weight progress!',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Colors.grey[500],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: () => WeightInputDialog.show(context),
-            icon: const Icon(Icons.add),
+            icon: Icon(Icons.add),
             label: const Text('Log First Weight'),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
@@ -170,7 +171,7 @@ class _WeightTrackingScreenState extends ConsumerState<WeightTrackingScreen> {
           Text(
             'Current Weight',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.white,
+                  color: AppColors.white,
                   fontWeight: FontWeight.w600,
                 ),
           ),
@@ -182,7 +183,7 @@ class _WeightTrackingScreenState extends ConsumerState<WeightTrackingScreen> {
               Text(
                 displayWeight.toStringAsFixed(1),
                 style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                      color: Colors.white,
+                      color: AppColors.white,
                       fontWeight: FontWeight.bold,
                     ),
               ),
@@ -190,7 +191,7 @@ class _WeightTrackingScreenState extends ConsumerState<WeightTrackingScreen> {
               Text(
                 _useKg ? 'kg' : 'lbs',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: Colors.white.withValues(alpha: 0.9),
+                      color: AppColors.white.withValues(alpha: 0.9),
                     ),
               ),
             ],
@@ -199,7 +200,7 @@ class _WeightTrackingScreenState extends ConsumerState<WeightTrackingScreen> {
           Text(
             'Last updated: ${DateFormat('MMM d, yyyy').format(latest.date)}',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.8),
+                  color: AppColors.white.withValues(alpha: 0.8),
                 ),
           ),
         ],
@@ -218,10 +219,10 @@ class _WeightTrackingScreenState extends ConsumerState<WeightTrackingScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isLoss ? Colors.green.shade50 : Colors.orange.shade50,
+        color: isLoss ? AppColors.success.withValues(alpha: 0.1) : AppColors.warning.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isLoss ? Colors.green.shade200 : Colors.orange.shade200,
+          color: isLoss ? AppColors.success.withValues(alpha: 0.4) : AppColors.warning.withValues(alpha: 0.4),
         ),
       ),
       child: Row(
@@ -229,12 +230,12 @@ class _WeightTrackingScreenState extends ConsumerState<WeightTrackingScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: isLoss ? Colors.green : Colors.orange,
+              color: isLoss ? AppColors.success : AppColors.warning,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
               isLoss ? Icons.trending_down : Icons.trending_up,
-              color: Colors.white,
+              color: AppColors.white,
               size: 28,
             ),
           ),
@@ -247,14 +248,14 @@ class _WeightTrackingScreenState extends ConsumerState<WeightTrackingScreen> {
                   '${isLoss ? 'Lost' : 'Gained'} ${changeDisplay.abs().toStringAsFixed(1)} ${_useKg ? 'kg' : 'lbs'}',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: isLoss ? Colors.green.shade900 : Colors.orange.shade900,
+                        color: isLoss ? AppColors.success : AppColors.warning,
                       ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Since ${DateFormat('MMM d').format(oldest.date)}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[700],
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                 ),
               ],
@@ -270,20 +271,20 @@ class _WeightTrackingScreenState extends ConsumerState<WeightTrackingScreen> {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          _buildRangeChip('7 Days', DateRange.last7Days),
+          _buildRangeChip('7 Days', DateRange.last7Days()),
           const SizedBox(width: 8),
-          _buildRangeChip('30 Days', DateRange.last30Days),
+          _buildRangeChip('30 Days', DateRange.last30Days()),
           const SizedBox(width: 8),
-          _buildRangeChip('90 Days', DateRange.last90Days),
+          _buildRangeChip('90 Days', DateRange.last90Days()),
           const SizedBox(width: 8),
-          _buildRangeChip('All Time', DateRange.allTime),
+          _buildRangeChip('All Time', DateRange.allTime()),
         ],
       ),
     );
   }
 
   Widget _buildRangeChip(String label, DateRange range) {
-    final isSelected = _selectedRange == range;
+    final isSelected = _selectedRange.label == range.label;
     final colorScheme = Theme.of(context).colorScheme;
     final labelColor = isSelected
         ? colorScheme.onPrimaryContainer
@@ -351,7 +352,7 @@ class _WeightTrackingScreenState extends ConsumerState<WeightTrackingScreen> {
         ),
         title: Text(
           '${displayWeight.toStringAsFixed(1)} ${_useKg ? 'kg' : 'lbs'}',
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 16,
           ),
@@ -366,7 +367,7 @@ class _WeightTrackingScreenState extends ConsumerState<WeightTrackingScreen> {
               Text(
                 entry.notes!,
                 style: TextStyle(
-                  color: Colors.grey[600],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontSize: 12,
                 ),
               ),
@@ -385,13 +386,13 @@ class _WeightTrackingScreenState extends ConsumerState<WeightTrackingScreen> {
                 ],
               ),
             ),
-            const PopupMenuItem<String>(
+            PopupMenuItem<String>(
               value: 'delete',
               child: Row(
                 children: [
-                  Icon(Icons.delete, size: 20, color: Colors.red),
+                  Icon(Icons.delete, size: 20, color: AppColors.error),
                   SizedBox(width: 8),
-                  Text('Delete', style: TextStyle(color: Colors.red)),
+                  Text('Delete', style: TextStyle(color: AppColors.error)),
                 ],
               ),
             ),
@@ -439,11 +440,11 @@ class _WeightTrackingScreenState extends ConsumerState<WeightTrackingScreen> {
                   content: Text(
                     success ? 'Weight entry deleted' : 'Failed to delete entry',
                   ),
-                  backgroundColor: success ? Colors.green : Colors.red,
+                  backgroundColor: success ? AppColors.success : AppColors.error,
                 ),
               );
             },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: Text('Delete', style: TextStyle(color: AppColors.error)),
           ),
         ],
       ),

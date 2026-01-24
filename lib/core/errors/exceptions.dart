@@ -67,3 +67,62 @@ class PermissionException extends AppException {
     super.code,
   });
 }
+
+/// Image processing exceptions
+class ImageException extends AppException {
+  final ImageErrorType type;
+
+  const ImageException({
+    required super.message,
+    required this.type,
+    super.code,
+  });
+
+  factory ImageException.decodeError([String? details]) {
+    return ImageException(
+      message: details ?? 'Failed to decode image. The file may be corrupted or in an unsupported format.',
+      type: ImageErrorType.decode,
+      code: 'IMAGE_DECODE_ERROR',
+    );
+  }
+
+  factory ImageException.compressionError([String? details]) {
+    return ImageException(
+      message: details ?? 'Failed to compress image.',
+      type: ImageErrorType.compression,
+      code: 'IMAGE_COMPRESSION_ERROR',
+    );
+  }
+
+  factory ImageException.uploadError([String? details]) {
+    return ImageException(
+      message: details ?? 'Failed to upload image. Please check your connection and try again.',
+      type: ImageErrorType.upload,
+      code: 'IMAGE_UPLOAD_ERROR',
+    );
+  }
+
+  factory ImageException.fileTooLarge(int maxSizeMB) {
+    return ImageException(
+      message: 'Image file is too large. Maximum size is ${maxSizeMB}MB.',
+      type: ImageErrorType.fileTooLarge,
+      code: 'IMAGE_FILE_TOO_LARGE',
+    );
+  }
+
+  factory ImageException.unsupportedFormat() {
+    return ImageException(
+      message: 'Unsupported image format. Please use JPG, PNG, or WebP.',
+      type: ImageErrorType.unsupportedFormat,
+      code: 'IMAGE_UNSUPPORTED_FORMAT',
+    );
+  }
+}
+
+enum ImageErrorType {
+  decode,
+  compression,
+  upload,
+  fileTooLarge,
+  unsupportedFormat,
+}

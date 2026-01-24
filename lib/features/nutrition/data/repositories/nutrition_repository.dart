@@ -1,13 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../../core/pagination/pagination.dart';
 import '../../domain/models/food_item.dart';
 import '../../domain/models/meal.dart';
 import '../../domain/models/water_log.dart';
 import '../../domain/models/nutrition_goal.dart';
 import '../../domain/models/daily_nutrition_summary.dart';
+import '../../domain/exceptions/nutrition_exceptions.dart';
 
 /// Repository for nutrition-related data operations
 /// Handles CRUD operations for meals, water logs, food items, and nutrition goals
-class NutritionRepository {
+class NutritionRepository with PaginatedRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Collection names
@@ -30,8 +32,8 @@ class NutritionRepository {
       final docRef =
           await _firestore.collection(_mealsCollection).add(mealData);
       return docRef.id;
-    } catch (e) {
-      throw Exception('Failed to log meal: $e');
+    } catch (e, stackTrace) {
+      throw MealException.logFailed(e, stackTrace);
     }
   }
 
@@ -44,7 +46,7 @@ class NutritionRepository {
         final doc =
             await _firestore.collection(_mealsCollection).doc(mealId).get();
         if (!doc.exists) {
-          throw Exception('Meal not found');
+          throw MealException.notFound(mealId);
         }
 
         final mergedData = <String, dynamic>{
@@ -64,8 +66,9 @@ class NutritionRepository {
           .collection(_mealsCollection)
           .doc(mealId)
           .update(updateData);
-    } catch (e) {
-      throw Exception('Failed to update meal: $e');
+    } catch (e, stackTrace) {
+      if (e is MealException) rethrow;
+      throw MealException.updateFailed(e, stackTrace);
     }
   }
 
@@ -73,8 +76,8 @@ class NutritionRepository {
   Future<void> deleteMeal(String mealId) async {
     try {
       await _firestore.collection(_mealsCollection).doc(mealId).delete();
-    } catch (e) {
-      throw Exception('Failed to delete meal: $e');
+    } catch (e, stackTrace) {
+      throw MealException.deleteFailed(e, stackTrace);
     }
   }
 
@@ -90,8 +93,8 @@ class NutritionRepository {
         ...doc.data() as Map<String, dynamic>,
         'id': doc.id,
       });
-    } catch (e) {
-      throw Exception('Failed to get meal: $e');
+    } catch (e, stackTrace) {
+      throw MealException.fetchFailed(e, stackTrace);
     }
   }
 
@@ -120,8 +123,8 @@ class NutritionRepository {
                 'id': doc.id,
               }))
           .toList();
-    } catch (e) {
-      throw Exception('Failed to get user meals for date: $e');
+    } catch (e, stackTrace) {
+      throw MealException.fetchFailed(e, stackTrace);
     }
   }
 
@@ -158,6 +161,84 @@ class NutritionRepository {
     } catch (e) {
       throw Exception('Failed to stream user meals: $e');
     }
+  }
+
+  /// Get paginated meals for a user (cursor-based pagination)
+  ///
+  /// [userId] - The user's ID
+  /// [pageSize] - Number of items per page (default: 20)
+  /// [startAfterDocument] - Document snapshot to start after (for pagination)
+  /// [startDate] - Optional start date filter
+  /// [endDate] - Optional end date filter
+  Future<PaginatedResult<Meal>> getMealsPaginated({
+    required String userId,
+    int pageSize = 20,
+    DocumentSnapshot? startAfterDocument,
+    DateTime? startDate,
+    DateTime? endDate,
+    int page = 0,
+  }) async {
+    try {
+      Query baseQuery = _firestore
+          .collection(_mealsCollection)
+          .where('userId', isEqualTo: userId);
+
+      if (startDate != null) {
+        final start = DateTime(startDate.year, startDate.month, startDate.day);
+        baseQuery = baseQuery.where('mealDate',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(start));
+      }
+
+      if (endDate != null) {
+        final end = DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59);
+        baseQuery = baseQuery.where('mealDate',
+            isLessThanOrEqualTo: Timestamp.fromDate(end));
+      }
+
+      baseQuery = baseQuery.orderBy('mealDate', descending: true);
+
+      return executePaginatedQuery(
+        baseQuery: baseQuery,
+        fromJson: (json) => Meal.fromJson(json),
+        pageSize: pageSize,
+        startAfterDocument: startAfterDocument,
+        page: page,
+      );
+    } catch (e) {
+      throw Exception('Failed to get paginated meals: $e');
+    }
+  }
+
+  /// Stream the first page of meals (real-time updates)
+  Stream<PaginatedResult<Meal>> streamMealsFirstPage({
+    required String userId,
+    int pageSize = 20,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    Query baseQuery = _firestore
+        .collection(_mealsCollection)
+        .where('userId', isEqualTo: userId);
+
+    if (startDate != null) {
+      final start = DateTime(startDate.year, startDate.month, startDate.day);
+      baseQuery = baseQuery.where('mealDate',
+          isGreaterThanOrEqualTo: Timestamp.fromDate(start));
+    }
+
+    if (endDate != null) {
+      final end = DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59);
+      baseQuery = baseQuery.where('mealDate',
+          isLessThanOrEqualTo: Timestamp.fromDate(end));
+    }
+
+    baseQuery = baseQuery.orderBy('mealDate', descending: true);
+
+    return streamFirstPage(
+      baseQuery: baseQuery,
+      fromJson: (json) => Meal.fromJson(json),
+      pageSize: pageSize,
+    );
   }
 
   // ========== WATER LOGS CRUD ==========
@@ -388,24 +469,55 @@ class NutritionRepository {
     }
   }
 
-  /// Get user's custom foods
-  Future<List<FoodItem>> getUserCustomFoods(String userId) async {
+  /// Get user's custom foods (with optional limit)
+  Future<List<FoodItem>> getUserCustomFoods(String userId, {int? limit}) async {
     try {
-      final snapshot = await _firestore
+      Query query = _firestore
           .collection(_foodItemsCollection)
           .where('userId', isEqualTo: userId)
           .where('isCustom', isEqualTo: true)
-          .orderBy('createdAt', descending: true)
-          .get();
+          .orderBy('createdAt', descending: true);
+
+      if (limit != null) {
+        query = query.limit(limit);
+      }
+
+      final snapshot = await query.get();
 
       return snapshot.docs
           .map((doc) => FoodItem.fromJson({
-                ...doc.data(),
+                ...doc.data() as Map<String, dynamic>,
                 'id': doc.id,
               }))
           .toList();
     } catch (e) {
       throw Exception('Failed to get user custom foods: $e');
+    }
+  }
+
+  /// Get paginated custom foods for a user
+  Future<PaginatedResult<FoodItem>> getCustomFoodsPaginated({
+    required String userId,
+    int pageSize = 20,
+    DocumentSnapshot? startAfterDocument,
+    int page = 0,
+  }) async {
+    try {
+      final baseQuery = _firestore
+          .collection(_foodItemsCollection)
+          .where('userId', isEqualTo: userId)
+          .where('isCustom', isEqualTo: true)
+          .orderBy('createdAt', descending: true);
+
+      return executePaginatedQuery(
+        baseQuery: baseQuery,
+        fromJson: (json) => FoodItem.fromJson(json),
+        pageSize: pageSize,
+        startAfterDocument: startAfterDocument,
+        page: page,
+      );
+    } catch (e) {
+      throw Exception('Failed to get paginated custom foods: $e');
     }
   }
 

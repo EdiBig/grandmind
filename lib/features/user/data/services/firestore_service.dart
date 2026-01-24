@@ -45,6 +45,8 @@ class FirestoreService {
 
   Future<void> updateUser(String userId, Map<String, dynamic> data) async {
     data['updatedAt'] = Timestamp.now();
+    // Always include uid to satisfy Firestore security rules
+    data['uid'] = userId;
     try {
       await _firestore.collection(_usersCollection).doc(userId).update(data);
     } on FirebaseException catch (e) {

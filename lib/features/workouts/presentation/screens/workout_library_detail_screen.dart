@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/workout_library_data.dart';
 import '../../domain/models/workout_library_entry.dart';
@@ -89,7 +90,7 @@ class _WorkoutLibraryDetailScreenState
                 ),
               );
             },
-            icon: const Icon(Icons.play_circle_outline),
+            icon: Icon(Icons.play_circle_outline),
             label: const Text('Start Workout'),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -131,7 +132,7 @@ class _WorkoutLibraryDetailScreenState
             ),
             child: Icon(
               _focusIcon(),
-              color: Colors.white,
+              color: AppColors.white,
               size: 30,
             ),
           ),
@@ -474,7 +475,7 @@ class _WorkoutLibraryDetailScreenState
           children: entry.instructions
               .map(
                 (step) => ListTile(
-                  leading: const Icon(Icons.check_circle, color: Colors.green),
+                  leading: Icon(Icons.check_circle, color: AppColors.success),
                   title: Text(step),
                 ),
               )
@@ -486,7 +487,7 @@ class _WorkoutLibraryDetailScreenState
           children: entry.commonMistakes
               .map(
                 (mistake) => ListTile(
-                  leading: const Icon(Icons.error, color: Colors.redAccent),
+                  leading: Icon(Icons.error, color: AppColors.error),
                   title: Text(mistake),
                 ),
               )
@@ -512,7 +513,7 @@ class _WorkoutLibraryDetailScreenState
         const SizedBox(height: 10),
         OutlinedButton.icon(
           onPressed: () => _showVariantsSheet(context),
-          icon: const Icon(Icons.swap_horizontal_circle_outlined),
+          icon: Icon(Icons.swap_horizontal_circle_outlined),
           label: const Text('See alternatives'),
         ),
       ],
@@ -524,14 +525,16 @@ class _WorkoutLibraryDetailScreenState
     final savedEntry = savedMap[entry.id];
     final isSaved = savedEntry != null;
 
+    final saved = savedEntry;
+
     return Row(
       children: [
         Expanded(
-          child: isSaved
+          child: isSaved && saved != null
               ? ElevatedButton.icon(
                   onPressed: _isSaving
                       ? null
-                      : () => _handleSavedAction(context, savedEntry!),
+                      : () => _handleSavedAction(context, saved),
                   icon: _isSaving
                       ? const SizedBox(
                           height: 18,
@@ -573,6 +576,7 @@ class _WorkoutLibraryDetailScreenState
     }
 
     final details = await _showSaveDialog(context);
+    if (!context.mounted) return;
     if (details == null) {
       return;
     }
@@ -585,8 +589,10 @@ class _WorkoutLibraryDetailScreenState
             folderName: details.folderName,
             notes: details.notes,
           );
+      if (!context.mounted) return;
       _showMessage('Added to My Routines.');
     } catch (error) {
+      if (!context.mounted) return;
       _showMessage('Try again. ${error.toString()}');
     } finally {
       if (mounted) {
@@ -625,6 +631,7 @@ class _WorkoutLibraryDetailScreenState
         ],
       ),
     );
+    if (!context.mounted) return;
 
     if (result == null) {
       return;
@@ -636,6 +643,7 @@ class _WorkoutLibraryDetailScreenState
         await ref
             .read(workoutRepositoryProvider)
             .removeSavedWorkout(saved.id);
+        if (!context.mounted) return;
         _showMessage('Removed from My Routines.');
       } else {
         final details = await _showSaveDialog(
@@ -643,16 +651,19 @@ class _WorkoutLibraryDetailScreenState
           folderName: saved.folderName,
           notes: saved.notes,
         );
+        if (!context.mounted) return;
         if (details != null) {
           await ref.read(workoutRepositoryProvider).updateSavedWorkout(
                 savedWorkoutId: saved.id,
                 folderName: details.folderName,
                 notes: details.notes,
               );
+          if (!context.mounted) return;
           _showMessage('Updated routine details.');
         }
       }
     } catch (error) {
+      if (!context.mounted) return;
       _showMessage('Try again. ${error.toString()}');
     } finally {
       if (mounted) {
@@ -677,7 +688,7 @@ class _WorkoutLibraryDetailScreenState
           children: [
             TextField(
               controller: folderController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Folder (optional)',
               ),
             ),
@@ -725,10 +736,12 @@ class _WorkoutLibraryDetailScreenState
 
   Future<void> _handleShareAction(BuildContext context) async {
     final note = await _showShareDialog(context);
+    if (!context.mounted) return;
     if (note == null) {
       return;
     }
     await WorkoutShareHelper.shareWorkout(entry, note: note);
+    if (!context.mounted) return;
     _showMessage('Share sheet opened.');
   }
 
@@ -796,7 +809,7 @@ class _WorkoutLibraryDetailScreenState
             const SizedBox(height: 16),
             ...variants.map(
               (variant) => ListTile(
-                leading: const Icon(Icons.swap_calls),
+                leading: Icon(Icons.swap_calls),
                 title: Text(variant.name),
                 subtitle: Text(
                   variant.targetSummary,
@@ -859,13 +872,13 @@ class _WorkoutLibraryDetailScreenState
       case WorkoutCategory.yoga:
         return Theme.of(context).colorScheme.tertiary;
       case WorkoutCategory.hiit:
-        return Colors.orange;
+        return AppColors.warning;
       case WorkoutCategory.flexibility:
-        return Colors.teal;
+        return AppColors.workoutFlexibility;
       case WorkoutCategory.sports:
-        return Colors.green;
+        return AppColors.success;
       case WorkoutCategory.other:
-        return Colors.grey;
+        return AppColors.grey;
     }
   }
 

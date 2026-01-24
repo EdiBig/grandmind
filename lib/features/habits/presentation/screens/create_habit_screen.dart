@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../domain/models/habit.dart';
 import '../../data/repositories/habit_repository.dart';
 import '../providers/habit_providers.dart';
 import '../widgets/habit_icon_helper.dart';
+import '../../../../core/utils/validators.dart';
 
 class CreateHabitScreen extends ConsumerStatefulWidget {
   final String? habitId; // null for create, non-null for edit
@@ -143,7 +146,7 @@ class _CreateHabitScreenState extends ConsumerState<CreateHabitScreen> {
             // Habit Name
             TextFormField(
               controller: _nameController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Habit Name',
                 hintText: 'e.g., Drink 8 glasses of water',
                 border: OutlineInputBorder(),
@@ -221,22 +224,17 @@ class _CreateHabitScreenState extends ConsumerState<CreateHabitScreen> {
                     flex: 2,
                     child: TextFormField(
                       controller: _targetCountController,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Target Count',
                         hintText: '8',
                         border: OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
                       validator: _hasTargetCount
-                          ? (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Required';
-                              }
-                              if (int.tryParse(value) == null) {
-                                return 'Invalid number';
-                              }
-                              return null;
-                            }
+                          ? (value) => Validators.validateTargetCount(value, required: true)
                           : null,
                     ),
                   ),
@@ -266,17 +264,17 @@ class _CreateHabitScreenState extends ConsumerState<CreateHabitScreen> {
                 backgroundColor: Theme.of(context).colorScheme.primary,
               ),
               child: _isLoading
-                  ? const SizedBox(
+                  ? SizedBox(
                       height: 20,
                       width: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.white),
                       ),
                     )
                   : Text(
                       widget.habitId == null ? 'Create Habit' : 'Update Habit',
-                      style: const TextStyle(fontSize: 16),
+                      style: TextStyle(fontSize: 16),
                     ),
             ),
           ],
@@ -302,7 +300,7 @@ class _CreateHabitScreenState extends ConsumerState<CreateHabitScreen> {
             decoration: BoxDecoration(
               color: isSelected
                   ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
-                  : Colors.grey[200],
+                  : Theme.of(context).colorScheme.surfaceContainerHigh,
               border: Border.all(
                 color: isSelected
                     ? Theme.of(context).colorScheme.primary
@@ -315,7 +313,7 @@ class _CreateHabitScreenState extends ConsumerState<CreateHabitScreen> {
               iconData,
               color: isSelected
                   ? Theme.of(context).colorScheme.primary
-                  : Colors.grey[700],
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
               size: 28,
             ),
           ),
@@ -341,13 +339,13 @@ class _CreateHabitScreenState extends ConsumerState<CreateHabitScreen> {
             decoration: BoxDecoration(
               color: color,
               border: Border.all(
-                color: isSelected ? Colors.black : Colors.transparent,
+                color: isSelected ? AppColors.black : Colors.transparent,
                 width: 3,
               ),
               borderRadius: BorderRadius.circular(12),
             ),
             child: isSelected
-                ? const Icon(Icons.check, color: Colors.white, size: 24)
+                ? Icon(Icons.check, color: AppColors.white, size: 24)
                 : null,
           ),
         );

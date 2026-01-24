@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/constants/route_constants.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../domain/models/progress_goal.dart';
 import '../providers/progress_providers.dart';
-import 'create_goal_screen.dart';
 
 class GoalsScreen extends ConsumerStatefulWidget {
   const GoalsScreen({super.key});
@@ -24,7 +26,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
         title: const Text('Goals'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.info_outline),
+            icon: Icon(Icons.info_outline),
             onPressed: () => _showInfoDialog(context),
           ),
         ],
@@ -96,7 +98,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                Icon(Icons.error_outline, size: 48, color: AppColors.error),
                 const SizedBox(height: 16),
                 const Text('Error loading goals'),
                 const SizedBox(height: 8),
@@ -112,13 +114,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const CreateGoalScreen(),
-            ),
-          );
-        },
+        onPressed: () => context.push(RouteConstants.createGoal),
         icon: const Icon(Icons.add),
         label: const Text('New Goal'),
       ),
@@ -129,7 +125,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     final isCompleted = goal.status == GoalStatus.completed;
     final cardColor = isCompleted
-        ? Colors.green.withValues(alpha: 0.1)
+        ? AppColors.success.withValues(alpha: 0.1)
         : Theme.of(context).cardColor;
 
     Color progressColor;
@@ -152,8 +148,8 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isCompleted
-              ? Colors.green.withValues(alpha: 0.3)
-              : Colors.grey.withValues(alpha: 0.2),
+              ? AppColors.success.withValues(alpha: 0.3)
+              : AppColors.grey.withValues(alpha: 0.2),
         ),
       ),
       child: Column(
@@ -179,9 +175,9 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
               ),
               const Spacer(),
               if (isCompleted)
-                const Icon(Icons.check_circle, color: Colors.green, size: 24)
+                Icon(Icons.check_circle, color: AppColors.success, size: 24)
               else if (goal.isOverdue)
-                const Icon(Icons.warning_amber, color: Colors.orange, size: 24),
+                const Icon(Icons.warning_amber, color: AppColors.warning, size: 24),
               PopupMenuButton(
                 itemBuilder: (context) => [
                   if (!isCompleted)
@@ -189,7 +185,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                       value: 'complete',
                       child: Row(
                         children: [
-                          Icon(Icons.check_circle, size: 20, color: Colors.green),
+                          Icon(Icons.check_circle, size: 20, color: AppColors.success),
                           SizedBox(width: 8),
                           Text('Mark Complete'),
                         ],
@@ -199,9 +195,9 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                     value: 'delete',
                     child: Row(
                       children: [
-                        Icon(Icons.delete, size: 20, color: Colors.red),
+                        Icon(Icons.delete, size: 20, color: AppColors.error),
                         SizedBox(width: 8),
-                        Text('Delete', style: TextStyle(color: Colors.red)),
+                        Text('Delete', style: TextStyle(color: AppColors.error)),
                       ],
                     ),
                   ),
@@ -233,7 +229,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
               Text(
                 goal.getProgressDisplay(),
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Colors.grey[700],
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
               ),
               const Spacer(),
@@ -251,7 +247,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
           // Progress Bar
           LinearProgressIndicator(
             value: goal.progressPercentage / 100,
-            backgroundColor: Colors.grey[200],
+            backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
             valueColor: AlwaysStoppedAnimation<Color>(progressColor),
             borderRadius: BorderRadius.circular(4),
             minHeight: 8,
@@ -261,15 +257,15 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
           // Footer Info
           Row(
             children: [
-              Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
+              Icon(Icons.calendar_today, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
               const SizedBox(width: 4),
               Text(
                 'Started ${DateFormat('MMM d, yyyy').format(goal.startDate)}',
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
               if (goal.targetDate != null) ...[
                 const Spacer(),
-                Icon(Icons.flag, size: 14, color: Colors.grey[600]),
+                Icon(Icons.flag, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 const SizedBox(width: 4),
                 Text(
                   goal.daysRemaining != null && goal.daysRemaining! > 0
@@ -279,7 +275,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                           : 'Due today',
                   style: TextStyle(
                     fontSize: 12,
-                    color: goal.isOverdue ? Colors.orange : Colors.grey[600],
+                    color: goal.isOverdue ? AppColors.warning : Theme.of(context).colorScheme.onSurfaceVariant,
                     fontWeight:
                         goal.isOverdue ? FontWeight.bold : FontWeight.normal,
                   ),
@@ -293,7 +289,7 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
             const SizedBox(height: 8),
             Text(
               goal.notes!,
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -311,32 +307,26 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
           Icon(
             Icons.flag_outlined,
             size: 80,
-            color: Colors.grey[400],
+            color: Theme.of(context).colorScheme.outline,
           ),
           const SizedBox(height: 24),
           Text(
             'No Goals Yet',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.grey[600],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           ),
           const SizedBox(height: 8),
           Text(
             'Set goals to track your progress',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Colors.grey[500],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const CreateGoalScreen(),
-                ),
-              );
-            },
+            onPressed: () => context.push(RouteConstants.createGoal),
             icon: const Icon(Icons.add),
             label: const Text('Create First Goal'),
             style: ElevatedButton.styleFrom(
@@ -357,14 +347,14 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Goal marked as complete!'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.success,
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Failed to complete goal'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -397,19 +387,19 @@ class _GoalsScreenState extends ConsumerState<GoalsScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Goal deleted successfully'),
-                    backgroundColor: Colors.green,
+                    backgroundColor: AppColors.success,
                   ),
                 );
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Failed to delete goal'),
-                    backgroundColor: Colors.red,
+                    backgroundColor: AppColors.error,
                   ),
                 );
               }
             },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: const Text('Delete', style: TextStyle(color: AppColors.error)),
           ),
         ],
       ),

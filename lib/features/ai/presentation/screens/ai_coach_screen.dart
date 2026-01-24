@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:kinesa/features/ai/presentation/providers/ai_coach_provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:go_router/go_router.dart';
+import 'package:kinesa/core/constants/route_constants.dart';
+import 'package:kinesa/features/ai/presentation/providers/ai_providers.dart';
 import 'package:kinesa/features/ai/presentation/widgets/ai_message_bubble.dart';
 import 'package:kinesa/features/ai/presentation/widgets/quick_action_chips.dart';
 import 'package:kinesa/features/ai/data/models/ai_conversation_model.dart';
 import 'package:kinesa/features/ai/data/models/user_context.dart';
+import 'package:kinesa/features/home/presentation/providers/dashboard_provider.dart';
+import 'package:kinesa/features/user/data/models/user_model.dart';
 
 /// AI Fitness Coach chat screen
 class AICoachScreen extends ConsumerStatefulWidget {
@@ -18,12 +23,44 @@ class _AICoachScreenState extends ConsumerState<AICoachScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _showQuickActions = true;
+  bool _hasLoadedConversation = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Load latest conversation after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadLatestConversation();
+    });
+  }
 
   @override
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadLatestConversation() async {
+    if (_hasLoadedConversation) return;
+    _hasLoadedConversation = true;
+
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return;
+
+    final state = ref.read(aiCoachProviderOverride);
+    // Only load if no conversation is currently active
+    if (!state.hasConversation) {
+      await ref.read(aiCoachProviderOverride.notifier).loadLatestConversation(userId);
+      // If conversation was loaded, hide quick actions
+      final newState = ref.read(aiCoachProviderOverride);
+      if (newState.messages.isNotEmpty) {
+        setState(() {
+          _showQuickActions = false;
+        });
+        _scrollToBottom();
+      }
+    }
   }
 
   /// Scroll to the bottom of the message list
@@ -52,11 +89,11 @@ class _AICoachScreenState extends ConsumerState<AICoachScreen> {
       _showQuickActions = false;
     });
 
-    // Get user context (in production, this would come from user profile)
-    final userContext = _buildMockUserContext();
+    final user = ref.read(currentUserProvider).asData?.value;
+    final userContext = _buildUserContext(user);
 
     // Send message
-    await ref.read(aiCoachProvider.notifier).sendMessage(
+    await ref.read(aiCoachProviderOverride.notifier).sendMessage(
           message: message,
           userContext: userContext,
         );
@@ -71,21 +108,22 @@ class _AICoachScreenState extends ConsumerState<AICoachScreen> {
       _showQuickActions = false;
     });
 
-    final userContext = _buildMockUserContext();
+    final user = ref.read(currentUserProvider).asData?.value;
+    final userContext = _buildUserContext(user);
 
     if (action.id == 'recommend_workout') {
-      await ref.read(aiCoachProvider.notifier).getWorkoutRecommendation(
+      await ref.read(aiCoachProviderOverride.notifier).getWorkoutRecommendation(
             userContext: userContext,
             availableMinutes: 45,
           );
     } else if (action.id == 'form_check') {
-      await ref.read(aiCoachProvider.notifier).getFormCheck(
+      await ref.read(aiCoachProviderOverride.notifier).getFormCheck(
             userContext: userContext,
             exercise: 'Squat',
           );
     } else {
       // For other actions, send as regular message
-      await ref.read(aiCoachProvider.notifier).sendMessage(
+      await ref.read(aiCoachProviderOverride.notifier).sendMessage(
             message: action.prompt,
             userContext: userContext,
           );
@@ -94,26 +132,33 @@ class _AICoachScreenState extends ConsumerState<AICoachScreen> {
     _scrollToBottom();
   }
 
-  /// Build mock user context (temporary - will be replaced with real data)
-  UserContext _buildMockUserContext() {
+  UserContext _buildUserContext(UserModel? user) {
+    final authUser = FirebaseAuth.instance.currentUser;
+    final resolvedId = user?.id ?? authUser?.uid ?? 'demo_user';
+    final resolvedName = _resolveDisplayName(user);
+    final coachTone = user?.onboarding?['coachTone'] as String? ??
+        user?.preferences?['coachTone'] as String?;
+    final age = user?.dateOfBirth != null
+        ? _calculateAge(user!.dateOfBirth!)
+        : null;
     final builder = UserContextBuilder()
-      ..userId = 'demo_user'
-      ..displayName = 'Demo User'
-      ..age = 30
-      ..gender = 'Male'
-      ..height = 175
-      ..weight = 70
-      ..fitnessGoal = 'Build Muscle'
-      ..fitnessLevel = 'Intermediate'
-      ..coachTone = 'friendly'
+      ..userId = resolvedId
+      ..displayName = resolvedName
+      ..age = age
+      ..gender = user?.gender
+      ..height = user?.height
+      ..weight = user?.weight
+      ..fitnessGoal = user?.goal
+      ..fitnessLevel = user?.fitnessLevel
+      ..coachTone = coachTone ?? 'friendly'
       ..physicalLimitations = []
       ..preferredWorkoutTypes = ['Strength Training', 'Cardio']
-      ..preferredWorkoutDuration = 45
-      ..weeklyWorkoutFrequency = 4
+      ..preferredWorkoutDuration = user?.onboarding?['preferredDuration'] as int?
+      ..weeklyWorkoutFrequency = user?.onboarding?['workoutsPerWeek'] as int?
       ..daysSinceLastWorkout = 1
-      ..lastNightSleepHours = 7.5
-      ..currentEnergyLevel = 4
-      ..currentMood = 4
+      ..lastNightSleepHours = user?.preferences?['sleepHours'] as double?
+      ..currentEnergyLevel = user?.preferences?['energyLevel'] as int?
+      ..currentMood = user?.preferences?['moodLevel'] as int?
       ..timestamp = DateTime.now();
 
     return builder.build();
@@ -121,23 +166,40 @@ class _AICoachScreenState extends ConsumerState<AICoachScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(aiCoachProvider);
+    final state = ref.watch(aiCoachProviderOverride);
+    final user = ref.watch(currentUserProvider).asData?.value;
+    final displayName = _resolveDisplayName(user);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('AI Fitness Coach'),
         actions: [
+          // History button
+          IconButton(
+            icon: const Icon(Icons.history),
+            tooltip: 'Chat History',
+            onPressed: () {
+              context.push(RouteConstants.aiCoachHistory);
+            },
+          ),
+          // New conversation button
           if (state.hasConversation)
             IconButton(
-              icon: const Icon(Icons.refresh),
+              icon: const Icon(Icons.add_comment_outlined),
               tooltip: 'New Conversation',
               onPressed: () {
-                ref.read(aiCoachProvider.notifier).clearConversation();
+                final userId = FirebaseAuth.instance.currentUser?.uid;
+                if (userId != null) {
+                  ref.read(aiCoachProviderOverride.notifier).startNewConversation(userId);
+                } else {
+                  ref.read(aiCoachProviderOverride.notifier).clearConversation();
+                }
                 setState(() {
                   _showQuickActions = true;
                 });
               },
             ),
+          // Info button
           IconButton(
             icon: const Icon(Icons.info_outline),
             tooltip: 'About',
@@ -149,36 +211,10 @@ class _AICoachScreenState extends ConsumerState<AICoachScreen> {
       ),
       body: Column(
         children: [
-          // Cost indicator (if there are messages)
-          if (state.messages.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '${state.messages.length} messages',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color:
-                              Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                  ),
-                  Text(
-                    'Cost: \$${state.totalCost.toStringAsFixed(4)}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                ],
-              ),
-            ),
-
           // Messages list
           Expanded(
             child: state.messages.isEmpty
-                ? _buildEmptyState()
+                ? _buildEmptyState(displayName)
                 : ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.all(16),
@@ -187,7 +223,8 @@ class _AICoachScreenState extends ConsumerState<AICoachScreen> {
                       final message = state.messages[index];
                       return AIMessageBubble(
                         message: message,
-                        showCostInfo: true,
+                        // Cost info hidden from users - only visible in debug builds if needed
+                        showCostInfo: false,
                       );
                     },
                   ),
@@ -238,9 +275,9 @@ class _AICoachScreenState extends ConsumerState<AICoachScreen> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close),
+                    icon: Icon(Icons.close),
                     onPressed: () {
-                      ref.read(aiCoachProvider.notifier).clearError();
+                      ref.read(aiCoachProviderOverride.notifier).clearError();
                     },
                   ),
                 ],
@@ -260,7 +297,7 @@ class _AICoachScreenState extends ConsumerState<AICoachScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(String displayName) {
     final colorScheme = Theme.of(context).colorScheme;
     return Center(
       child: Column(
@@ -273,7 +310,9 @@ class _AICoachScreenState extends ConsumerState<AICoachScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Your AI Fitness Coach',
+            displayName.isEmpty
+                ? 'Your AI Fitness Coach'
+                : 'Hi $displayName, I’m your AI Coach',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   color: colorScheme.onSurface,
                   fontWeight: FontWeight.bold,
@@ -341,7 +380,7 @@ class _AICoachScreenState extends ConsumerState<AICoachScreen> {
           ),
           const SizedBox(width: 8),
           IconButton(
-            icon: const Icon(Icons.send),
+            icon: Icon(Icons.send),
             color: colorScheme.primary,
             onPressed: _sendMessage,
           ),
@@ -397,5 +436,33 @@ class _AICoachScreenState extends ConsumerState<AICoachScreen> {
         ],
       ),
     );
+  }
+
+  String _resolveDisplayName(UserModel? user) {
+    final name = user?.displayName?.trim();
+    if (name != null && name.isNotEmpty) {
+      return name;
+    }
+    final email = user?.email;
+    if (email != null && email.trim().isNotEmpty) {
+      return email.split('@').first;
+    }
+    final authName = FirebaseAuth.instance.currentUser?.displayName?.trim();
+    if (authName != null && authName.isNotEmpty) {
+      return authName;
+    }
+    return '';
+  }
+
+  int _calculateAge(DateTime birthDate) {
+    final now = DateTime.now();
+    var age = now.year - birthDate.year;
+    final hasHadBirthdayThisYear =
+        (now.month > birthDate.month) ||
+        (now.month == birthDate.month && now.day >= birthDate.day);
+    if (!hasHadBirthdayThisYear) {
+      age -= 1;
+    }
+    return age;
   }
 }

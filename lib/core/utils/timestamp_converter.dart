@@ -7,8 +7,10 @@ class TimestampConverter implements JsonConverter<DateTime, dynamic> {
 
   @override
   DateTime fromJson(dynamic json) {
+    // Handle null gracefully by returning current time as fallback
+    // This prevents crashes when Firestore documents have missing timestamps
     if (json == null) {
-      throw ArgumentError('Cannot convert null to DateTime');
+      return DateTime.now();
     }
 
     // If it's already a DateTime, return it
@@ -37,7 +39,8 @@ class TimestampConverter implements JsonConverter<DateTime, dynamic> {
       }
     }
 
-    throw ArgumentError('Cannot convert $json to DateTime');
+    // Fallback to current time for unexpected types
+    return DateTime.now();
   }
 
   @override

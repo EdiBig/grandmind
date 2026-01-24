@@ -3,7 +3,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../data/repositories/notification_repository.dart';
 import '../../data/services/notification_service.dart';
 import '../../data/services/reminder_scheduler.dart';
+import '../../data/services/notification_payload.dart';
 import '../../domain/models/notification_preference.dart';
+import '../../../../core/constants/route_constants.dart';
 
 // ==================== SERVICE PROVIDERS ====================
 
@@ -288,11 +290,20 @@ class NotificationOperations {
     return await createPreference(defaultReminder);
   }
 
+  /// Create default mood & energy reminder
+  Future<NotificationPreference?> createDefaultMoodEnergyReminder() async {
+    if (userId == null) return null;
+
+    final defaultReminder = scheduler.createDefaultMoodEnergyReminder(userId!);
+    return await createPreference(defaultReminder);
+  }
+
   /// Send test notification
   Future<void> sendTestNotification() async {
     await scheduler.sendInstantReminder(
       title: '🔔 Test Notification',
       message: 'This is a test notification from Kinesa!',
+      payload: payloadForRoute(RouteConstants.notifications),
     );
   }
 

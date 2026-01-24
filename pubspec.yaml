@@ -2,7 +2,7 @@ name: kinesa
 description: "Kinesa - A holistic fitness and wellbeing app"
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.0.1+10
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -19,14 +19,14 @@ dependencies:
   riverpod_annotation: ^2.6.1
 
   # Firebase
-  firebase_core: ^3.8.1
-  firebase_auth: ^5.3.4
-  cloud_firestore: ^5.5.2
-  firebase_storage: ^12.3.8
-  firebase_messaging: ^15.1.6
-  firebase_analytics: ^11.3.6
-  firebase_crashlytics: ^4.1.6
-  firebase_app_check: ^0.3.2+10
+  firebase_core: ^4.3.0
+  firebase_auth: ^6.1.3
+  cloud_firestore: ^6.1.1
+  firebase_storage: ^13.0.5
+  firebase_messaging: ^16.1.0
+  firebase_analytics: ^12.1.0
+  firebase_crashlytics: ^5.0.6
+  firebase_app_check: ^0.4.1+3
 
   # Authentication
   google_sign_in: ^6.2.2
@@ -44,14 +44,16 @@ dependencies:
   # Image Handling
   cached_network_image: ^3.4.1
   image_picker: ^1.1.2
+  image_cropper: ^8.0.2
   image: ^4.0.0
   path_provider: ^2.0.0
 
   # Barcode Scanning
-  mobile_scanner: ^5.2.3
 
   # Local Storage
   shared_preferences: ^2.3.4
+  workmanager:
+    path: third_party/workmanager
 
   # Data Export
   csv: ^6.0.0
@@ -62,6 +64,7 @@ dependencies:
   android_intent_plus: ^5.2.0
   connectivity_plus: ^6.1.2
   package_info_plus: ^8.1.2
+  device_info_plus: ^12.3.0
   share_plus: ^10.0.2
   uuid: ^4.5.1
   logger: ^2.4.0
@@ -85,11 +88,8 @@ dependencies:
   # UI (for AI chat)
   flutter_markdown: ^0.7.4+1
 
-  # Error Tracking
-  sentry_flutter: ^9.9.0
-
   # Firebase Remote Config (for secure API key storage)
-  firebase_remote_config: ^5.1.4
+  firebase_remote_config: ^6.1.3
 
   # Immutable Models
   freezed_annotation: ^2.4.4
@@ -97,6 +97,8 @@ dependencies:
 
 dev_dependencies:
   flutter_test:
+    sdk: flutter
+  integration_test:
     sdk: flutter
 
   flutter_lints: ^5.0.0
@@ -112,6 +114,7 @@ dev_dependencies:
   # Testing (for AI features)
   # mockito: ^5.4.4  # Temporarily disabled due to analyzer compatibility
   mocktail: ^1.0.4
+  fake_cloud_firestore: ^4.0.1
 
 flutter_icons:
   android: "ic_launcher"

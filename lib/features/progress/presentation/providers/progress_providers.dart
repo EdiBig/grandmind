@@ -1,54 +1,42 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../../core/models/date_range.dart';
 import '../../data/repositories/progress_repository.dart';
 import '../../data/services/image_upload_service.dart';
+import '../../data/services/streak_service.dart';
+import '../../data/services/personal_best_service.dart';
+import '../../data/services/predictive_insights_service.dart';
+import '../../data/services/milestone_service.dart';
 import '../../domain/models/weight_entry.dart';
+import '../../domain/models/milestone.dart';
 import '../../domain/models/measurement_entry.dart';
 import '../../domain/models/progress_photo.dart';
 import '../../domain/models/progress_goal.dart';
+import '../../domain/models/streak_data.dart';
+import '../../domain/models/personal_best.dart';
+import '../../../home/presentation/providers/dashboard_provider.dart';
 
-// ========== HELPER CLASSES ==========
+export '../../../../core/models/date_range.dart';
+export '../../domain/models/streak_data.dart';
+export '../../domain/models/personal_best.dart';
+export '../../domain/models/milestone.dart';
+export '../../data/services/predictive_insights_service.dart';
 
-/// Date range helper for filtering entries
-class DateRange {
-  final DateTime start;
-  final DateTime end;
+// ========== USER PREFERENCES ==========
 
-  DateRange(this.start, this.end);
+/// Provider for user's preferred units (metric/imperial)
+final userUnitsProvider = Provider<String>((ref) {
+  final user = ref.watch(currentUserProvider).asData?.value;
+  return user?.preferences?['units'] as String? ?? 'metric';
+});
 
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is DateRange && start == other.start && end == other.end;
-
-  @override
-  int get hashCode => Object.hash(start, end);
-
-  // Preset ranges
-  static DateRange get last7Days => DateRange(
-        DateTime.now().subtract(const Duration(days: 7)),
-        DateTime.now(),
-      );
-
-  static DateRange get last30Days => DateRange(
-        DateTime.now().subtract(const Duration(days: 30)),
-        DateTime.now(),
-      );
-
-  static DateRange get last90Days => DateRange(
-        DateTime.now().subtract(const Duration(days: 90)),
-        DateTime.now(),
-      );
-
-  static DateRange get allTime => DateRange(
-        DateTime(2000), // Far in the past
-        DateTime.now(),
-      );
-}
+/// Provider for whether user prefers metric units
+final useMetricUnitsProvider = Provider<bool>((ref) {
+  return ref.watch(userUnitsProvider) == 'metric';
+});
 
 // ========== BASE PROVIDERS ==========
 
@@ -60,6 +48,163 @@ final progressRepositoryProvider = Provider<ProgressRepository>((ref) {
 /// Provider for image upload service
 final imageUploadServiceProvider = Provider<ImageUploadService>((ref) {
   return ImageUploadService();
+});
+
+/// Provider for streak service
+final streakServiceProvider = Provider<StreakService>((ref) {
+  return StreakService();
+});
+
+// ========== STREAK PROVIDERS ==========
+
+/// Provider for user's streak data
+final streakDataProvider = FutureProvider.autoDispose<StreakData>((ref) async {
+  final userId = FirebaseAuth.instance.currentUser?.uid;
+  if (userId == null) return StreakData.empty();
+
+  final service = ref.watch(streakServiceProvider);
+  return service.calculateStreak(userId: userId);
+});
+
+/// Provider for activity calendar data for a specific month
+final activityCalendarProvider = FutureProvider.autoDispose
+    .family<List<ActivityDay>, DateTime>((ref, month) async {
+  final userId = FirebaseAuth.instance.currentUser?.uid;
+  if (userId == null) return [];
+
+  final service = ref.watch(streakServiceProvider);
+  final startDate = DateTime(month.year, month.month, 1);
+  final endDate = DateTime(month.year, month.month + 1, 0);
+
+  return service.getActivityCalendar(
+    userId: userId,
+    startDate: startDate,
+    endDate: endDate,
+  );
+});
+
+/// Provider for last 7 days of activity (for mini calendar)
+final recentActivityProvider = FutureProvider.autoDispose<List<ActivityDay>>((ref) async {
+  final userId = FirebaseAuth.instance.currentUser?.uid;
+  if (userId == null) return [];
+
+  final service = ref.watch(streakServiceProvider);
+  final now = DateTime.now();
+  final startDate = now.subtract(const Duration(days: 6));
+
+  return service.getActivityCalendar(
+    userId: userId,
+    startDate: startDate,
+    endDate: now,
+  );
+});
+
+// ========== PERSONAL BEST PROVIDERS ==========
+
+/// Provider for personal best service
+final personalBestServiceProvider = Provider<PersonalBestService>((ref) {
+  return PersonalBestService();
+});
+
+/// Provider for personal bests summary
+final personalBestsSummaryProvider = FutureProvider.autoDispose<PersonalBestsSummary>((ref) async {
+  final userId = FirebaseAuth.instance.currentUser?.uid;
+  if (userId == null) return PersonalBestsSummary.empty();
+
+  final service = ref.watch(personalBestServiceProvider);
+  return service.getPersonalBestsSummary(userId);
+});
+
+/// Provider for all personal bests
+final allPersonalBestsProvider = FutureProvider.autoDispose<List<PersonalBest>>((ref) async {
+  final userId = FirebaseAuth.instance.currentUser?.uid;
+  if (userId == null) return [];
+
+  final service = ref.watch(personalBestServiceProvider);
+  return service.getPersonalBests(userId);
+});
+
+/// Provider for exercise PRs (filtered by exercise name)
+final exercisePRsProvider = FutureProvider.autoDispose.family<List<ExercisePR>, String?>((ref, exerciseName) async {
+  final userId = FirebaseAuth.instance.currentUser?.uid;
+  if (userId == null) return [];
+
+  final service = ref.watch(personalBestServiceProvider);
+  return service.getExercisePRs(userId, exerciseName: exerciseName);
+});
+
+// ========== PREDICTIVE INSIGHTS PROVIDERS ==========
+
+/// Provider for predictive insights service
+final predictiveInsightsServiceProvider = Provider<PredictiveInsightsService>((ref) {
+  return PredictiveInsightsService();
+});
+
+/// Provider for progress predictions (30 day analysis)
+final progressPredictionsProvider = FutureProvider.autoDispose<ProgressPredictions>((ref) async {
+  final userId = FirebaseAuth.instance.currentUser?.uid;
+  if (userId == null) {
+    return ProgressPredictions(
+      weightTrend: TrendData(
+        direction: TrendDirection.stable,
+        changePerWeek: 0,
+        confidence: 0,
+        dataPoints: 0,
+      ),
+      goalPredictions: [],
+      insights: [],
+      lastUpdated: DateTime.now(),
+    );
+  }
+
+  final service = ref.watch(predictiveInsightsServiceProvider);
+  return service.analyzeProgressTrends(userId: userId, days: 30);
+});
+
+/// Provider for progress predictions with custom days
+final progressPredictionsRangeProvider = FutureProvider.autoDispose.family<ProgressPredictions, int>((ref, days) async {
+  final userId = FirebaseAuth.instance.currentUser?.uid;
+  if (userId == null) {
+    return ProgressPredictions(
+      weightTrend: TrendData(
+        direction: TrendDirection.stable,
+        changePerWeek: 0,
+        confidence: 0,
+        dataPoints: 0,
+      ),
+      goalPredictions: [],
+      insights: [],
+      lastUpdated: DateTime.now(),
+    );
+  }
+
+  final service = ref.watch(predictiveInsightsServiceProvider);
+  return service.analyzeProgressTrends(userId: userId, days: days);
+});
+
+// ========== MILESTONE PROVIDERS ==========
+
+/// Provider for milestone service
+final milestoneServiceProvider = Provider<MilestoneService>((ref) {
+  return MilestoneService();
+});
+
+/// Provider for milestone summary
+final milestoneSummaryProvider = FutureProvider.autoDispose<MilestoneSummary>((ref) async {
+  final userId = FirebaseAuth.instance.currentUser?.uid;
+  if (userId == null) return MilestoneSummary.empty();
+
+  final service = ref.watch(milestoneServiceProvider);
+  return service.getMilestoneSummary(userId);
+});
+
+/// Provider for all milestones
+final allMilestonesProvider = FutureProvider.autoDispose<List<Milestone>>((ref) async {
+  final userId = FirebaseAuth.instance.currentUser?.uid;
+  if (userId == null) return [];
+
+  final service = ref.watch(milestoneServiceProvider);
+  return service.getMilestones(userId);
 });
 
 // ========== WEIGHT PROVIDERS ==========
@@ -383,7 +528,7 @@ class ProgressOperations extends StateNotifier<AsyncValue<void>> {
 
   // ========== PHOTO OPERATIONS ==========
 
-  /// Upload a progress photo
+  /// Upload a progress photo with optional progress callback
   Future<String?> uploadProgressPhoto({
     required String userId,
     required File imageFile,
@@ -391,6 +536,7 @@ class ProgressOperations extends StateNotifier<AsyncValue<void>> {
     DateTime? date,
     String? notes,
     double? weight,
+    void Function(double progress, String status)? onProgress,
   }) async {
     state = const AsyncValue.loading();
     try {
@@ -400,6 +546,7 @@ class ProgressOperations extends StateNotifier<AsyncValue<void>> {
         userId: userId,
         imageFile: imageFile,
         angle: angle,
+        onProgress: onProgress,
       );
 
       // Create photo entry
@@ -437,6 +584,7 @@ class ProgressOperations extends StateNotifier<AsyncValue<void>> {
     DateTime? date,
     String? notes,
     double? weight,
+    void Function(double progress, String status)? onProgress,
   }) async {
     state = const AsyncValue.loading();
     try {
@@ -445,6 +593,7 @@ class ProgressOperations extends StateNotifier<AsyncValue<void>> {
         userId: userId,
         imageBytes: imageBytes,
         angle: angle,
+        onProgress: onProgress,
       );
 
       final photo = ProgressPhoto(
@@ -514,7 +663,9 @@ class ProgressOperations extends StateNotifier<AsyncValue<void>> {
       }
     } catch (e) {
       // Silently fail - don't block weight logging if goal update fails
-      debugPrint('Error updating weight goals: $e');
+      if (kDebugMode) {
+        debugPrint('Error updating weight goals: $e');
+      }
     }
   }
 
@@ -538,7 +689,9 @@ class ProgressOperations extends StateNotifier<AsyncValue<void>> {
       }
     } catch (e) {
       // Silently fail
-      debugPrint('Error updating measurement goals: $e');
+      if (kDebugMode) {
+        debugPrint('Error updating measurement goals: $e');
+      }
     }
   }
 }

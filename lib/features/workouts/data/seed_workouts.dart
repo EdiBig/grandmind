@@ -11,7 +11,9 @@ Future<void> seedWorkouts() async {
   // Check if workouts already exist
   final existingWorkouts = await workoutsCollection.limit(1).get();
   if (existingWorkouts.docs.isNotEmpty) {
-    debugPrint('Workouts already seeded');
+    if (kDebugMode) {
+      debugPrint('Workouts already seeded');
+    }
     return;
   }
 

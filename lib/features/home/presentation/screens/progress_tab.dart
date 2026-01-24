@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../progress/presentation/widgets/weight_input_dialog.dart';
 import '../../../progress/presentation/screens/weight_tracking_screen.dart';
 import '../../../progress/presentation/screens/measurements_screen.dart';
@@ -9,10 +11,13 @@ import '../../../progress/presentation/screens/goals_screen.dart';
 import '../../../progress/presentation/screens/progress_dashboard_screen.dart';
 import '../../../progress/presentation/providers/progress_providers.dart';
 import '../../../progress/domain/models/progress_goal.dart';
+import '../../../progress/domain/models/measurement_entry.dart';
+import '../../../progress/domain/models/weight_entry.dart';
 import '../../../habits/presentation/providers/habit_providers.dart';
 import '../../../workouts/presentation/providers/workout_providers.dart';
 import '../../../profile/presentation/providers/profile_providers.dart';
 import '../../../profile/data/services/user_stats_service.dart';
+import '../../../settings/presentation/providers/privacy_settings_provider.dart';
 import '../../../../core/constants/route_constants.dart';
 import '../widgets/achievement_list.dart';
 
@@ -35,7 +40,7 @@ class ProgressTab extends ConsumerWidget {
         title: const Text('Progress'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.insights),
+            icon: Icon(Icons.insights),
             tooltip: 'View Dashboard',
             onPressed: () {
               Navigator.of(context).push(
@@ -48,7 +53,17 @@ class ProgressTab extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.share),
             onPressed: () {
-              // TODO: Implement share progress
+              _shareProgress(
+                context,
+                ref,
+                latestWeightAsync: latestWeightAsync,
+                activeGoalsAsync: activeGoalsAsync,
+                latestMeasurementsAsync: latestMeasurementsAsync,
+                workoutStatsAsync: workoutStatsAsync,
+                habitStatsAsync: habitStatsAsync,
+                userStatsAsync: userStatsAsync,
+                allGoalsAsync: allGoalsAsync,
+              );
             },
           ),
         ],
@@ -118,7 +133,7 @@ class ProgressTab extends ConsumerWidget {
             'Goals',
             'Set and track your fitness goals',
             Icons.flag,
-            Colors.purple,
+            AppColors.workoutFlexibility,
             () {
               Navigator.of(context).push(
                 MaterialPageRoute(
@@ -162,10 +177,217 @@ class ProgressTab extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => WeightInputDialog.show(context),
-        icon: const Icon(Icons.monitor_weight),
+        icon: Icon(Icons.monitor_weight),
         label: const Text('Log Weight'),
       ),
     );
+  }
+
+  Future<void> _shareProgress(
+    BuildContext context,
+    WidgetRef ref, {
+    required AsyncValue<WeightEntry?> latestWeightAsync,
+    required AsyncValue<List<ProgressGoal>> activeGoalsAsync,
+    required AsyncValue<MeasurementEntry?> latestMeasurementsAsync,
+    required AsyncValue<Map<String, dynamic>> workoutStatsAsync,
+    required AsyncValue<Map<String, dynamic>> habitStatsAsync,
+    required AsyncValue<UserStats> userStatsAsync,
+    required AsyncValue<List<ProgressGoal>> allGoalsAsync,
+  }) async {
+    final privacy = ref.read(privacySettingsProvider);
+    final shareAllowed = privacy.maybeWhen(
+      data: (settings) => settings.shareProgress,
+      orElse: () => true,
+    );
+
+    if (!shareAllowed) {
+      final shouldOpen = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Sharing disabled'),
+          content: const Text(
+            'Enable "Share progress" in Privacy Settings to share your stats.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Open Settings'),
+            ),
+          ],
+        ),
+      );
+      if (shouldOpen == true && context.mounted) {
+        context.push(RouteConstants.privacy);
+      }
+      return;
+    }
+
+    final latestWeight = latestWeightAsync.asData?.value ??
+        await _safeReadFuture<WeightEntry?>(
+          ref,
+          latestWeightProvider.future,
+        );
+    final latestMeasurements = latestMeasurementsAsync.asData?.value ??
+        await _safeReadFuture<MeasurementEntry?>(
+          ref,
+          latestMeasurementsProvider.future,
+        );
+    final activeGoals = activeGoalsAsync.asData?.value ??
+        await _safeReadFuture<List<ProgressGoal>>(
+          ref,
+          activeGoalsProvider.future,
+        ) ??
+        [];
+    final workoutStats = workoutStatsAsync.asData?.value ??
+        await _safeReadFuture<Map<String, dynamic>>(
+          ref,
+          workoutStatsProvider.future,
+        ) ??
+        {};
+    final habitStats = habitStatsAsync.asData?.value ??
+        await _safeReadFuture<Map<String, dynamic>>(
+          ref,
+          habitStatsProvider.future,
+        ) ??
+        {};
+    final userStats = userStatsAsync.asData?.value ??
+        await _safeReadFuture<UserStats>(
+          ref,
+          userStatsProvider.future,
+        ) ??
+        UserStats.empty();
+    final allGoals = allGoalsAsync.asData?.value ??
+        await _safeReadFuture<List<ProgressGoal>>(
+          ref,
+          allGoalsProvider.future,
+        ) ??
+        [];
+
+    final shareAchievements = privacy.maybeWhen(
+      data: (settings) => settings.shareAchievements,
+      orElse: () => true,
+    );
+
+    final message = _buildProgressShareMessage(
+      latestWeight: latestWeight,
+      latestMeasurements: latestMeasurements,
+      activeGoals: activeGoals,
+      workoutStats: workoutStats,
+      habitStats: habitStats,
+      userStats: userStats,
+      goals: allGoals,
+      includeAchievements: shareAchievements,
+    );
+
+    await Share.share(message, subject: 'My Progress');
+  }
+
+  Future<T?> _safeReadFuture<T>(
+    WidgetRef ref,
+    ProviderListenable<Future<T>> provider,
+  ) async {
+    try {
+      return await ref.read(provider);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String _buildProgressShareMessage({
+    required WeightEntry? latestWeight,
+    required MeasurementEntry? latestMeasurements,
+    required List<ProgressGoal> activeGoals,
+    required Map<String, dynamic> workoutStats,
+    required Map<String, dynamic> habitStats,
+    required UserStats userStats,
+    required List<ProgressGoal> goals,
+    required bool includeAchievements,
+  }) {
+    final buffer = StringBuffer('My Kinesa Progress');
+
+    if (latestWeight != null) {
+      buffer.writeln();
+      buffer.writeln('• Latest weight: ${latestWeight.weight.toStringAsFixed(1)} kg');
+    }
+
+    final measurementSummary = _measurementSummary(latestMeasurements);
+    if (measurementSummary != null) {
+      buffer.writeln('• Measurements: $measurementSummary');
+    }
+
+    if (activeGoals.isNotEmpty) {
+      buffer.writeln('• Active goals: ${activeGoals.length}');
+    }
+
+    final workoutsThisWeek = workoutStats['workoutsThisWeek'] as int? ?? 0;
+    final workoutsThisMonth = workoutStats['workoutsThisMonth'] as int? ?? 0;
+    if (workoutsThisWeek > 0 || workoutsThisMonth > 0) {
+      buffer.writeln(
+        '• Workouts: $workoutsThisWeek this week, $workoutsThisMonth this month',
+      );
+    }
+
+    final habitCompletionRate =
+        (habitStats['completionRate'] as num?)?.toDouble() ?? 0.0;
+    if (habitCompletionRate > 0) {
+      buffer.writeln(
+        '• Habit completion today: ${habitCompletionRate.toStringAsFixed(0)}%',
+      );
+    }
+
+    if (userStats.currentStreak > 0) {
+      buffer.writeln('• Current streak: ${userStats.currentStreak} days');
+    }
+
+    if (includeAchievements && userStats.achievementsUnlocked > 0) {
+      buffer.writeln(
+        '• Achievements unlocked: ${userStats.achievementsUnlocked}',
+      );
+    }
+
+    if (goals.isEmpty && activeGoals.isEmpty && latestWeight == null) {
+      buffer.writeln();
+      buffer.writeln('Tracking my fitness journey with Kinesa.');
+    }
+
+    return buffer.toString();
+  }
+
+  String? _measurementSummary(MeasurementEntry? entry) {
+    if (entry == null || entry.measurements.isEmpty) return null;
+
+    final preferred = <MeasurementType>[
+      MeasurementType.waist,
+      MeasurementType.hips,
+      MeasurementType.chest,
+    ];
+
+    final parts = <String>[];
+    for (final type in preferred) {
+      final value = entry.getMeasurement(type);
+      if (value != null) {
+        parts.add('${type.displayName}: ${value.toStringAsFixed(1)} cm');
+      }
+    }
+
+    if (parts.isEmpty) {
+      final firstKey = entry.measurements.keys.first;
+      final value = entry.measurements[firstKey];
+      if (value == null) return null;
+      final label = MeasurementType.values
+          .firstWhere(
+            (type) => type.name == firstKey,
+            orElse: () => MeasurementType.waist,
+          )
+          .displayName;
+      return '$label: ${value.toStringAsFixed(1)} cm';
+    }
+
+    return parts.join(' • ');
   }
 
   Widget _buildOverviewCard(
@@ -197,14 +419,14 @@ class ProgressTab extends ConsumerWidget {
               Text(
                 'Your Progress',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Colors.white,
+                      color: AppColors.white,
                       fontWeight: FontWeight.bold,
                     ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
+                  color: AppColors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
@@ -212,14 +434,14 @@ class ProgressTab extends ConsumerWidget {
                   children: [
                     Icon(
                       Icons.analytics,
-                      color: Colors.white,
+                      color: AppColors.white,
                       size: 16,
                     ),
                     SizedBox(width: 4),
                     Text(
                       'Summary',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: AppColors.white,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
@@ -327,12 +549,12 @@ class ProgressTab extends ConsumerWidget {
   Widget _buildOverviewStat(BuildContext context, String value, String label, IconData icon) {
     return Column(
       children: [
-        Icon(icon, color: Colors.white, size: 28),
+        Icon(icon, color: AppColors.white, size: 28),
         const SizedBox(height: 8),
         Text(
           value,
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: Colors.white,
+                color: AppColors.white,
                 fontWeight: FontWeight.bold,
               ),
         ),
@@ -340,7 +562,7 @@ class ProgressTab extends ConsumerWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.white.withValues(alpha: 0.9),
+                color: AppColors.white.withValues(alpha: 0.9),
               ),
         ),
       ],
@@ -389,13 +611,13 @@ class ProgressTab extends ConsumerWidget {
                   Text(
                     subtitle,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey,
+                          color: AppColors.grey,
                         ),
                   ),
                 ],
               ),
             ),
-            Icon(Icons.arrow_forward_ios, color: Colors.grey[400], size: 16),
+            Icon(Icons.arrow_forward_ios, color: Theme.of(context).colorScheme.outline, size: 16),
           ],
         ),
       ),
@@ -415,7 +637,7 @@ class ProgressTab extends ConsumerWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+        border: Border.all(color: AppColors.grey.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -445,7 +667,7 @@ class ProgressTab extends ConsumerWidget {
                     Text(
                       subtitle,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey,
+                            color: AppColors.grey,
                           ),
                     ),
                   ],
@@ -463,7 +685,7 @@ class ProgressTab extends ConsumerWidget {
           const SizedBox(height: 12),
           LinearProgressIndicator(
             value: progress,
-            backgroundColor: Colors.grey[200],
+            backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
             valueColor: AlwaysStoppedAnimation<Color>(color),
             borderRadius: BorderRadius.circular(4),
           ),

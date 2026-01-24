@@ -19,7 +19,7 @@ class _CreateChallengeScreenState extends ConsumerState<CreateChallengeScreen> {
   final _descriptionController = TextEditingController();
   ChallengeType _type = ChallengeType.community;
   ChallengeGoalType _goalType = ChallengeGoalType.workouts;
-  ChallengeVisibility _visibility = ChallengeVisibility.public;
+  final ChallengeVisibility _visibility = ChallengeVisibility.inviteOnly;
   ChallengeTheme _theme = ChallengeTheme.custom;
   DateTime _startDate = DateTime.now();
   DateTime _endDate = DateTime.now().add(const Duration(days: 30));
@@ -57,7 +57,7 @@ class _CreateChallengeScreenState extends ConsumerState<CreateChallengeScreen> {
         children: [
           TextField(
             controller: _nameController,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Challenge name',
             ),
           ),
@@ -128,11 +128,14 @@ class _CreateChallengeScreenState extends ConsumerState<CreateChallengeScreen> {
             onChanged: (date) => setState(() => _endDate = date),
           ),
           const SizedBox(height: 16),
-          _buildDropdown(
-            label: 'Visibility',
-            value: _visibility,
-            values: ChallengeVisibility.values,
-            onChanged: (value) => setState(() => _visibility = value),
+          InputDecorator(
+            decoration: const InputDecoration(
+              labelText: 'Visibility',
+            ),
+            child: Text(
+              _visibility.name,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
           ),
           const SizedBox(height: 12),
           _buildDropdown(
@@ -209,6 +212,7 @@ class _CreateChallengeScreenState extends ConsumerState<CreateChallengeScreen> {
           firstDate: DateTime.now(),
           lastDate: DateTime.now().add(const Duration(days: 365)),
         );
+        if (!context.mounted) return;
         if (picked != null) {
           onChanged(picked);
         }
@@ -260,10 +264,10 @@ class _CreateChallengeScreenState extends ConsumerState<CreateChallengeScreen> {
         isActive: true,
       );
       await ref.read(challengeRepositoryProvider).createChallenge(challenge);
-      if (mounted) {
-        Navigator.pop(context);
-      }
+      if (!context.mounted) return;
+      Navigator.pop(context);
     } catch (error) {
+      if (!context.mounted) return;
       _showMessage(context, 'Unable to create challenge. $error');
     } finally {
       if (mounted) {

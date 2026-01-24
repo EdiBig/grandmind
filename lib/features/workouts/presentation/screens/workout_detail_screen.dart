@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../domain/models/workout.dart';
 import '../../domain/models/exercise.dart';
 import '../providers/workout_providers.dart';
@@ -29,7 +30,7 @@ class WorkoutDetailScreen extends ConsumerWidget {
             );
           }
 
-          return _buildWorkoutContent(context, workout);
+          return _buildWorkoutContent(context, ref, workout);
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(
@@ -55,7 +56,7 @@ class WorkoutDetailScreen extends ConsumerWidget {
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppColors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -78,7 +79,11 @@ class WorkoutDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildWorkoutContent(BuildContext context, Workout workout) {
+  Widget _buildWorkoutContent(
+    BuildContext context,
+    WidgetRef ref,
+    Workout workout,
+  ) {
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -88,8 +93,84 @@ class WorkoutDetailScreen extends ConsumerWidget {
           _buildInfo(context, workout),
           const SizedBox(height: 24),
           _buildExercisesList(context, workout),
+          const SizedBox(height: 24),
+          _buildAttributionSection(context, ref),
         ],
       ),
+    );
+  }
+
+  Widget _buildAttributionSection(BuildContext context, WidgetRef ref) {
+    final attributionAsync = ref.watch(workoutAttributionProvider(workoutId));
+    return attributionAsync.when(
+      data: (attribution) {
+        if (attribution == null) return const SizedBox.shrink();
+        final source = attribution['source']?.toString() ?? 'wger';
+        final licenseName = attribution['licenseName']?.toString();
+        final licenseUrl = attribution['licenseUrl']?.toString();
+        final author = attribution['author']?.toString();
+        final sourceUrl = attribution['sourceUrl']?.toString();
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Attribution',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Source: $source',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              if (author != null && author.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Author: $author',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+              if (licenseName != null && licenseName.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'License: $licenseName',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+              if (licenseUrl != null && licenseUrl.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  licenseUrl,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                ),
+              ],
+              if (sourceUrl != null && sourceUrl.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  sourceUrl,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 
@@ -114,13 +195,13 @@ class WorkoutDetailScreen extends ConsumerWidget {
               Icon(
                 _getCategoryIcon(workout.category),
                 size: 64,
-                color: Colors.white,
+                color: AppColors.white,
               ),
               const SizedBox(height: 16),
               Text(
                 workout.name,
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: Colors.white,
+                      color: AppColors.white,
                       fontWeight: FontWeight.bold,
                     ),
                 textAlign: TextAlign.center,
@@ -148,7 +229,7 @@ class WorkoutDetailScreen extends ConsumerWidget {
           Text(
             workout.description,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Colors.grey[700],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   height: 1.5,
                 ),
           ),
@@ -338,8 +419,8 @@ class WorkoutDetailScreen extends ConsumerWidget {
               child: Center(
                 child: Text(
                   '$number',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: AppColors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
                   ),
@@ -436,13 +517,13 @@ class WorkoutDetailScreen extends ConsumerWidget {
       case WorkoutCategory.yoga:
         return Theme.of(context).colorScheme.tertiary;
       case WorkoutCategory.hiit:
-        return Colors.orange;
+        return AppColors.warning;
       case WorkoutCategory.flexibility:
-        return Colors.purple;
+        return AppColors.workoutFlexibility;
       case WorkoutCategory.sports:
-        return Colors.green;
+        return AppColors.success;
       case WorkoutCategory.other:
-        return Colors.grey;
+        return AppColors.grey;
     }
   }
 

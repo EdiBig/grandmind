@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../../../../core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -100,17 +102,17 @@ class _WeightInputDialogState extends ConsumerState<WeightInputDialog> {
 
       if (success != null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Weight logged successfully!'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: const Text('Weight logged successfully!'),
+            backgroundColor: AppColors.success,
           ),
         );
         Navigator.pop(context);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to log weight. Please try again.'),
-            backgroundColor: Colors.red,
+          SnackBar(
+            content: const Text('Failed to log weight. Please try again.'),
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -129,17 +131,17 @@ class _WeightInputDialogState extends ConsumerState<WeightInputDialog> {
 
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Weight updated successfully!'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: const Text('Weight updated successfully!'),
+            backgroundColor: AppColors.success,
           ),
         );
         Navigator.pop(context);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to update weight. Please try again.'),
-            backgroundColor: Colors.red,
+          SnackBar(
+            content: const Text('Failed to update weight. Please try again.'),
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -148,11 +150,12 @@ class _WeightInputDialogState extends ConsumerState<WeightInputDialog> {
 
   /// Pick a date
   Future<void> _pickDate() async {
+    final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now(),
+      firstDate: now.subtract(const Duration(days: 365)), // Max 1 year ago
+      lastDate: now,
     );
 
     if (picked != null) {
@@ -186,7 +189,7 @@ class _WeightInputDialogState extends ConsumerState<WeightInputDialog> {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 20),
                 decoration: BoxDecoration(
-                  color: Colors.grey[300],
+                  color: Theme.of(context).colorScheme.outlineVariant,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -209,9 +212,12 @@ class _WeightInputDialogState extends ConsumerState<WeightInputDialog> {
                   child: TextFormField(
                     controller: _weightController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,1}')),
+                    ],
                     decoration: InputDecoration(
                       labelText: 'Weight',
-                      hintText: 'Enter weight',
+                      hintText: _useKg ? '30-300' : '66-660',
                       border: const OutlineInputBorder(),
                       suffixText: _useKg ? 'kg' : 'lbs',
                     ),
@@ -220,8 +226,16 @@ class _WeightInputDialogState extends ConsumerState<WeightInputDialog> {
                         return 'Please enter your weight';
                       }
                       final weight = double.tryParse(value);
-                      if (weight == null || weight <= 0) {
-                        return 'Please enter a valid weight';
+                      if (weight == null) {
+                        return 'Please enter a valid number';
+                      }
+                      // Validate based on unit
+                      if (_useKg) {
+                        if (weight < 30) return 'Weight must be at least 30 kg';
+                        if (weight > 300) return 'Weight cannot exceed 300 kg';
+                      } else {
+                        if (weight < 66) return 'Weight must be at least 66 lbs';
+                        if (weight > 660) return 'Weight cannot exceed 660 lbs';
                       }
                       return null;
                     },

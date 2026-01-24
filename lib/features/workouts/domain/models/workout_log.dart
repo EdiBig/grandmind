@@ -9,6 +9,8 @@ part 'workout_log.g.dart';
 /// Workout log model for completed workouts
 @freezed
 class WorkoutLog with _$WorkoutLog {
+  // ignore: invalid_annotation_target
+  @JsonSerializable(explicitToJson: true)
   const factory WorkoutLog({
     required String id,
     required String userId,
@@ -31,6 +33,8 @@ class WorkoutLog with _$WorkoutLog {
 /// Exercise log for individual exercises in a workout
 @freezed
 class ExerciseLog with _$ExerciseLog {
+  // ignore: invalid_annotation_target
+  @JsonSerializable(explicitToJson: true)
   const factory ExerciseLog({
     required String exerciseId,
     required String exerciseName,

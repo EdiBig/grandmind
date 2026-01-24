@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../domain/models/progress_goal.dart';
 
 /// Card widget displaying goal progress with visual indicator
@@ -21,8 +22,8 @@ class GoalProgressCard extends StatelessWidget {
     final isOverdue = goal.isOverdue;
 
     Color getStatusColor() {
-      if (isCompleted) return Colors.green;
-      if (isOverdue) return Colors.red;
+      if (isCompleted) return AppColors.success;
+      if (isOverdue) return AppColors.error;
       if (progress >= 0.75) return colorScheme.tertiary;
       if (progress >= 0.5) return colorScheme.primary;
       return colorScheme.secondary;
@@ -87,7 +88,7 @@ class GoalProgressCard extends StatelessWidget {
                       Text(
                         goal.type.displayName,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey[600],
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                       ),
                     ],
@@ -101,18 +102,18 @@ class GoalProgressCard extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.green,
+                      color: AppColors.success,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.check, color: Colors.white, size: 14),
-                        SizedBox(width: 4),
+                        Icon(Icons.check, color: AppColors.white, size: 14),
+                        const SizedBox(width: 4),
                         Text(
                           'Done',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: AppColors.white,
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                           ),
@@ -127,13 +128,13 @@ class GoalProgressCard extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.red.shade100,
+                      color: AppColors.error.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       'Overdue',
                       style: TextStyle(
-                        color: Colors.red.shade900,
+                        color: AppColors.error,
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
@@ -171,7 +172,7 @@ class GoalProgressCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                   child: LinearProgressIndicator(
                     value: progress.clamp(0.0, 1.0),
-                    backgroundColor: Colors.grey[200],
+                    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
                     valueColor: AlwaysStoppedAnimation<Color>(getStatusColor()),
                     minHeight: 8,
                   ),
@@ -205,7 +206,7 @@ class GoalProgressCard extends StatelessWidget {
                           ? 'Overdue'
                           : '${goal.daysRemaining} days',
                       value: DateFormat('MMM d').format(goal.targetDate!),
-                      color: isOverdue ? Colors.red : null,
+                      color: isOverdue ? AppColors.error : null,
                     ),
                   )
                 else
@@ -226,18 +227,18 @@ class GoalProgressCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.note, size: 16, color: Colors.grey[600]),
+                    Icon(Icons.note, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         goal.notes!,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey[700],
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                               fontStyle: FontStyle.italic,
                             ),
                         maxLines: 2,
@@ -261,12 +262,12 @@ class GoalProgressCard extends StatelessWidget {
     required String value,
     Color? color,
   }) {
-    final chipColor = color ?? Colors.grey[600];
+    final chipColor = color ?? Theme.of(context).colorScheme.onSurfaceVariant;
 
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: (color ?? Colors.grey).withValues(alpha: 0.1),
+        color: (color ?? AppColors.grey).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(

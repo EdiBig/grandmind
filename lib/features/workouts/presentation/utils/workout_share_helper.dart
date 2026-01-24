@@ -1,5 +1,6 @@
 import 'package:share_plus/share_plus.dart';
 import '../../domain/models/workout_library_entry.dart';
+import '../../domain/models/workout.dart';
 
 class WorkoutShareHelper {
   const WorkoutShareHelper._();
@@ -32,6 +33,36 @@ class WorkoutShareHelper {
       buildShareMessage(entry, note: note),
       subject: entry.name,
     );
+  }
+
+  static String buildShareMessageFromTemplate(
+    Workout workout, {
+    String? note,
+  }) {
+    final buffer = StringBuffer();
+    buffer.writeln('Check out this workout on Kinesa: ${workout.name}');
+    if (note != null && note.trim().isNotEmpty) {
+      buffer.writeln();
+      buffer.writeln(note.trim());
+    }
+    buffer.writeln();
+    buffer.writeln(_buildWorkoutUrl(workout.name));
+    return buffer.toString();
+  }
+
+  static Future<void> shareWorkoutFromTemplate(
+    Workout workout, {
+    String? note,
+  }) async {
+    await Share.share(
+      buildShareMessageFromTemplate(workout, note: note),
+      subject: workout.name,
+    );
+  }
+
+  static String _buildWorkoutUrl(String workoutName) {
+    final slug = _slugify(workoutName);
+    return 'https://kinesa.app/workout/$slug';
   }
 
   static String _slugify(String input) {

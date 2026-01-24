@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/route_constants.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../data/services/account_deletion_service.dart';
 
 class DeleteAccountScreen extends ConsumerStatefulWidget {
@@ -27,11 +28,17 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    final providerIds = user?.providerData.map((info) => info.providerId).toSet() ?? {};
+    final hasPasswordProvider = providerIds.contains('password');
+    final hasGoogleProvider = providerIds.contains('google.com');
+    final hasAppleProvider = providerIds.contains('apple.com');
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Delete Account'),
-        backgroundColor: Colors.red,
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.error,
+        foregroundColor: AppColors.white,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -44,9 +51,9 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.red.shade50,
+                  color: AppColors.error.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.red.shade200, width: 2),
+                  border: Border.all(color: AppColors.error.withValues(alpha: 0.3), width: 2),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -54,14 +61,14 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
                     Row(
                       children: [
                         Icon(Icons.warning_amber_rounded,
-                            color: Colors.red.shade700, size: 32),
+                            color: AppColors.error, size: 32),
                         const SizedBox(width: 12),
                         Text(
                           'Warning',
                           style:
                               Theme.of(context).textTheme.titleLarge?.copyWith(
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.red.shade900,
+                                    color: AppColors.error,
                                   ),
                         ),
                       ],
@@ -71,14 +78,14 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
                       'This action is permanent and cannot be undone!',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                             fontWeight: FontWeight.w600,
-                            color: Colors.red.shade900,
+                            color: AppColors.error,
                           ),
                     ),
                     const SizedBox(height: 12),
                     Text(
                       'Deleting your account will:',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.red.shade800,
+                            color: AppColors.error,
                           ),
                     ),
                   ],
@@ -91,77 +98,146 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
               const SizedBox(height: 32),
 
               // Password Confirmation
-              Text(
-                'Confirm Your Password',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'For security, please enter your password to confirm account deletion.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
-                    ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _passwordController,
-                obscureText: _obscurePassword,
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                    ),
-                    onPressed: () {
-                      setState(() => _obscurePassword = !_obscurePassword);
-                    },
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+              if (hasPasswordProvider) ...[
+                Text(
+                  'Confirm Your Password',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your password';
-                  }
-                  if (value.length < 6) {
-                    return 'Password must be at least 6 characters';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 32),
-
-              // Delete Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _isDeleting ? null : _confirmDeletion,
-                  icon: _isDeleting
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : const Icon(Icons.delete_forever),
-                  label: Text(_isDeleting ? 'Deleting...' : 'Delete My Account'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
+                const SizedBox(height: 8),
+                Text(
+                  'For security, please enter your password to confirm account deletion.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: _obscurePassword,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    prefixIcon: Icon(Icons.lock_outline),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                      ),
+                      onPressed: () {
+                        setState(() => _obscurePassword = !_obscurePassword);
+                      },
+                    ),
+                    border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
+                  validator: (value) {
+                    if (!hasPasswordProvider) return null;
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your password';
+                    }
+                    if (value.length < 6) {
+                      return 'Password must be at least 6 characters';
+                    }
+                    return null;
+                  },
                 ),
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _isDeleting
+                        ? null
+                        : () => _confirmDeletion(
+                              reauth: () async {
+                                final deletionService = AccountDeletionService();
+                                await deletionService.reauthenticateUser(
+                                  user?.email ?? '',
+                                  _passwordController.text,
+                                );
+                              },
+                            ),
+                    icon: _isDeleting
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(AppColors.white),
+                            ),
+                          )
+                        : const Icon(Icons.delete_forever),
+                    label:
+                        Text(_isDeleting ? 'Deleting...' : 'Delete My Account'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.error,
+                      foregroundColor: AppColors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              if (!hasPasswordProvider && (hasGoogleProvider || hasAppleProvider)) ...[
+                Text(
+                  'Re-authenticate to continue',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Confirm your identity with your sign-in provider to delete your account.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
+                const SizedBox(height: 16),
+                if (hasGoogleProvider)
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: _isDeleting
+                          ? null
+                          : () => _confirmDeletion(
+                                reauth: () async {
+                                  final deletionService =
+                                      AccountDeletionService();
+                                  await deletionService.reauthenticateWithGoogle();
+                                },
+                              ),
+                      icon: const Icon(Icons.account_circle),
+                      label: const Text('Continue with Google'),
+                    ),
+                  ),
+                if (hasAppleProvider) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: _isDeleting
+                          ? null
+                          : () => _confirmDeletion(
+                                reauth: () async {
+                                  final deletionService =
+                                      AccountDeletionService();
+                                  await deletionService.reauthenticateWithApple();
+                                },
+                              ),
+                      icon: const Icon(Icons.apple),
+                      label: const Text('Continue with Apple'),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 16),
+              ],
 
               // Cancel Button
               SizedBox(
@@ -248,10 +324,10 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.red.shade50,
+              color: AppColors.error.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(item.icon, color: Colors.red.shade700, size: 20),
+            child: Icon(item.icon, color: AppColors.error, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -268,7 +344,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
                 Text(
                   item.description,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                 ),
               ],
@@ -279,8 +355,13 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
     );
   }
 
-  Future<void> _confirmDeletion() async {
-    if (!_formKey.currentState!.validate()) return;
+  Future<void> _confirmDeletion({
+    required Future<void> Function() reauth,
+  }) async {
+    if (_formKey.currentState != null &&
+        !_formKey.currentState!.validate()) {
+      return;
+    }
 
     // Show final confirmation dialog
     final confirmed = await showDialog<bool>(
@@ -289,7 +370,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
       builder: (context) => AlertDialog(
         title: const Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.red),
+            Icon(Icons.warning_amber_rounded, color: AppColors.error),
             SizedBox(width: 12),
             Text('Final Confirmation'),
           ],
@@ -306,8 +387,8 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+              backgroundColor: AppColors.error,
+              foregroundColor: AppColors.white,
             ),
             child: const Text('Yes, Delete My Account'),
           ),
@@ -326,13 +407,10 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
       }
 
       // Re-authenticate user
-      final deletionService = AccountDeletionService();
-      await deletionService.reauthenticateUser(
-        user.email!,
-        _passwordController.text,
-      );
+      await reauth();
 
       // Delete account
+      final deletionService = AccountDeletionService();
       await deletionService.deleteAccount();
 
       if (mounted) {
@@ -340,7 +418,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Account successfully deleted'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.success,
           ),
         );
 
@@ -359,7 +437,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(message),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -368,7 +446,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }

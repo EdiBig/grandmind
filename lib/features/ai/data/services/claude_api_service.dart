@@ -1,7 +1,5 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 import 'package:kinesa/core/config/ai_config.dart';
 import 'package:kinesa/features/ai/data/repositories/ai_cache_repository.dart';
@@ -108,12 +106,11 @@ class ClaudeAPIException implements Exception {
   }
 }
 
-/// Service for interacting with Claude API
+/// Service for interacting with Claude API via Cloud Functions proxy
 class ClaudeAPIService {
   final Dio _dio;
   final AICacheRepository? _cacheRepository;
   final Logger _logger = Logger();
-  String? _apiKey;
 
   ClaudeAPIService({
     Dio? dio,
@@ -122,15 +119,12 @@ class ClaudeAPIService {
   })  : _dio = dio ?? Dio(),
         _cacheRepository = cacheRepository {
     _configureDio();
-    if (apiKey != null && apiKey.isNotEmpty) {
-      _apiKey = apiKey;
-      _dio.options.headers['x-api-key'] = _apiKey;
-      _dio.options.headers['anthropic-version'] = AIConfig.apiVersion;
-    }
+    // API key is no longer needed on client - Cloud Functions proxy handles authentication
   }
 
   void _configureDio() {
-    _dio.options.baseUrl = AIConfig.apiBaseUrl;
+    // Always use Cloud Functions proxy - API key is stored securely on the server
+    _dio.options.baseUrl = AIConfig.getProxyUrl();
     _dio.options.connectTimeout = const Duration(seconds: 30);
     _dio.options.receiveTimeout = const Duration(seconds: 60);
     _dio.options.headers = {
@@ -165,31 +159,10 @@ class ClaudeAPIService {
     );
   }
 
-  /// Initialize the service with API key
+  /// Initialize the service
+  /// API key is handled server-side via Cloud Functions proxy
   Future<void> initialize() async {
-    if (kIsWeb) {
-      _logger.i('ClaudeAPIService initialized for web proxy');
-      return;
-    }
-
-    if (_apiKey != null && _apiKey!.isNotEmpty) {
-      _dio.options.headers['x-api-key'] = _apiKey;
-      _dio.options.headers['anthropic-version'] = AIConfig.apiVersion;
-      _logger.i('ClaudeAPIService already configured');
-      return;
-    }
-
-    _apiKey = await AIConfig.getApiKey();
-
-    if (_apiKey == null) {
-      _logger.w('Claude API key not configured');
-      throw ClaudeAPIException('API key not configured');
-    }
-
-    _dio.options.headers['x-api-key'] = _apiKey;
-    _dio.options.headers['anthropic-version'] = AIConfig.apiVersion;
-
-    _logger.i('ClaudeAPIService initialized');
+    _logger.i('ClaudeAPIService initialized (using Cloud Functions proxy)');
   }
 
   /// Send a message to Claude and get a response
@@ -205,10 +178,6 @@ class ClaudeAPIService {
     bool bypassCache = false,
   }) async {
     try {
-      // Ensure initialized
-      if (_apiKey == null) {
-        await initialize();
-      }
 
       // Check cache first (if available and not bypassed)
       if (_cacheRepository != null && !bypassCache) {
@@ -264,16 +233,11 @@ class ClaudeAPIService {
       _logger.d('Model: ${requestBody['model']}');
       _logger.d('Max tokens: ${requestBody['max_tokens']}');
 
-      // Make API request
-      final response = kIsWeb
-          ? await _dio.post(
-              AIConfig.getProxyUrl(),
-              data: requestBody,
-            )
-          : await _dio.post(
-              '/messages',
-              data: requestBody,
-            );
+      // Make API request via Cloud Functions proxy
+      final response = await _dio.post(
+        '',  // Base URL is already set to proxy URL
+        data: requestBody,
+      );
 
       // Parse response
       final responseData = response.data as Map<String, dynamic>;
@@ -333,6 +297,7 @@ class ClaudeAPIService {
   }
 
   /// Send a message with streaming response
+  /// Note: Streaming requires the Cloud Functions proxy to support SSE
   Stream<String> sendMessageStream({
     required String prompt,
     List<ClaudeMessage>? conversationHistory,
@@ -341,90 +306,11 @@ class ClaudeAPIService {
     double? temperature,
     int? maxTokens,
   }) async* {
-    try {
-      if (kIsWeb) {
-        throw ClaudeAPIException('Streaming is not available on web.');
-      }
-
-      // Ensure initialized
-      if (_apiKey == null) {
-        await initialize();
-      }
-
-      // Build messages array
-      final messages = <Map<String, dynamic>>[];
-
-      // Add conversation history
-      if (conversationHistory != null) {
-        messages.addAll(conversationHistory.map((m) => m.toJson()));
-      }
-
-      // Add current user message
-      messages.add(ClaudeMessage.user(prompt).toJson());
-
-      // Build request body
-      final requestBody = {
-        'model': model ?? AIConfig.defaultModel,
-        'messages': messages,
-        'max_tokens': maxTokens ?? AIConfig.streamingMaxTokens,
-        'temperature': temperature ?? AIConfig.defaultTemperature,
-        'stream': true,  // Enable streaming
-      };
-
-      // Add system prompt if provided
-      if (systemPrompt != null && systemPrompt.isNotEmpty) {
-        requestBody['system'] = systemPrompt;
-      }
-
-      _logger.i('Starting streaming request to Claude API');
-
-      // Make streaming request
-      final response = await _dio.post(
-        '/messages',
-        data: requestBody,
-        options: Options(
-          responseType: ResponseType.stream,
-        ),
-      );
-
-      // Process streaming response
-      final stream = response.data.stream;
-
-      await for (final chunk in stream) {
-        final lines = utf8.decode(chunk).split('\n');
-
-        for (final line in lines) {
-          if (line.startsWith('data: ')) {
-            final data = line.substring(6);
-
-            if (data == '[DONE]') {
-              _logger.i('Streaming completed');
-              break;
-            }
-
-            try {
-              final json = jsonDecode(data) as Map<String, dynamic>;
-
-              // Check for content delta
-              if (json['type'] == 'content_block_delta') {
-                final delta = json['delta'] as Map<String, dynamic>;
-                if (delta['type'] == 'text_delta') {
-                  yield delta['text'] as String;
-                }
-              }
-            } catch (e) {
-              _logger.w('Error parsing streaming chunk: $e');
-            }
-          }
-        }
-      }
-    } on DioException catch (e) {
-      _logger.e('Dio error in streaming: ${e.message}', error: e);
-      throw _handleDioError(e);
-    } catch (e, stackTrace) {
-      _logger.e('Unexpected error in streaming', error: e, stackTrace: stackTrace);
-      throw ClaudeAPIException('Unexpected streaming error: $e');
-    }
+    // Streaming via proxy requires SSE support in Cloud Function
+    // For now, streaming is not supported through the proxy
+    throw ClaudeAPIException(
+      'Streaming is not yet supported via Cloud Functions proxy. Use non-streaming API instead.',
+    );
   }
 
   /// Handle Dio errors and convert to ClaudeAPIException

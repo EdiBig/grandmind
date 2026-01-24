@@ -44,13 +44,13 @@ class NotificationRepository {
       await docRef.set(newPreference.toJson());
 
       if (kDebugMode) {
-        print('Notification preference created: ${newPreference.id}');
+        debugPrint('Notification preference created: ${newPreference.id}');
       }
 
       return newPreference;
     } catch (e) {
       if (kDebugMode) {
-        print('Error creating notification preference: $e');
+        debugPrint('Error creating notification preference: $e');
       }
       rethrow;
     }
@@ -70,7 +70,7 @@ class NotificationRepository {
       return NotificationPreference.fromJson(doc.data()!);
     } catch (e) {
       if (kDebugMode) {
-        print('Error fetching notification preference: $e');
+        debugPrint('Error fetching notification preference: $e');
       }
       return null;
     }
@@ -88,7 +88,7 @@ class NotificationRepository {
           .toList();
     } catch (e) {
       if (kDebugMode) {
-        print('Error fetching notification preferences: $e');
+        debugPrint('Error fetching notification preferences: $e');
       }
       return [];
     }
@@ -110,7 +110,7 @@ class NotificationRepository {
           .toList();
     } catch (e) {
       if (kDebugMode) {
-        print('Error fetching preferences by type: $e');
+        debugPrint('Error fetching preferences by type: $e');
       }
       return [];
     }
@@ -131,7 +131,7 @@ class NotificationRepository {
           .toList();
     } catch (e) {
       if (kDebugMode) {
-        print('Error fetching enabled preferences: $e');
+        debugPrint('Error fetching enabled preferences: $e');
       }
       return [];
     }
@@ -152,11 +152,11 @@ class NotificationRepository {
           .update(updatedPreference.toJson());
 
       if (kDebugMode) {
-        print('Notification preference updated: ${preference.id}');
+        debugPrint('Notification preference updated: ${preference.id}');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Error updating notification preference: $e');
+        debugPrint('Error updating notification preference: $e');
       }
       rethrow;
     }
@@ -175,11 +175,11 @@ class NotificationRepository {
       });
 
       if (kDebugMode) {
-        print('Notification preference toggled: $preferenceId to $enabled');
+        debugPrint('Notification preference toggled: $preferenceId to $enabled');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Error toggling notification preference: $e');
+        debugPrint('Error toggling notification preference: $e');
       }
       rethrow;
     }
@@ -191,11 +191,11 @@ class NotificationRepository {
       await _preferencesCollection(userId).doc(preferenceId).delete();
 
       if (kDebugMode) {
-        print('Notification preference deleted: $preferenceId');
+        debugPrint('Notification preference deleted: $preferenceId');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Error deleting notification preference: $e');
+        debugPrint('Error deleting notification preference: $e');
       }
       rethrow;
     }
@@ -227,11 +227,11 @@ class NotificationRepository {
       await docRef.set(newHistory.toJson());
 
       if (kDebugMode) {
-        print('Notification logged: ${newHistory.id}');
+        debugPrint('Notification logged: ${newHistory.id}');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Error logging notification: $e');
+        debugPrint('Error logging notification: $e');
       }
     }
   }
@@ -244,7 +244,7 @@ class NotificationRepository {
       });
     } catch (e) {
       if (kDebugMode) {
-        print('Error marking notification as read: $e');
+        debugPrint('Error marking notification as read: $e');
       }
     }
   }
@@ -262,7 +262,7 @@ class NotificationRepository {
       });
     } catch (e) {
       if (kDebugMode) {
-        print('Error marking notification as actioned: $e');
+        debugPrint('Error marking notification as actioned: $e');
       }
     }
   }
@@ -283,7 +283,7 @@ class NotificationRepository {
           .toList();
     } catch (e) {
       if (kDebugMode) {
-        print('Error fetching notification history: $e');
+        debugPrint('Error fetching notification history: $e');
       }
       return [];
     }
@@ -299,7 +299,7 @@ class NotificationRepository {
       return snapshot.docs.length;
     } catch (e) {
       if (kDebugMode) {
-        print('Error fetching unread count: $e');
+        debugPrint('Error fetching unread count: $e');
       }
       return 0;
     }
@@ -337,11 +337,11 @@ class NotificationRepository {
       await batch.commit();
 
       if (kDebugMode) {
-        print('Cleared ${snapshot.docs.length} old notifications');
+        debugPrint('Cleared ${snapshot.docs.length} old notifications');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Error clearing old history: $e');
+        debugPrint('Error clearing old history: $e');
       }
     }
   }

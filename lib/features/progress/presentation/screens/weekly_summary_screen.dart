@@ -134,7 +134,7 @@ class WeeklySummaryScreen extends ConsumerWidget {
   }
 
   static int _weeklyGoalFromUser(UserModel? user) {
-    final onboarding = user?.onboarding as Map<String, dynamic>?;
+    final onboarding = user?.onboarding;
     final value = onboarding?['weeklyWorkouts'];
     if (value is num) {
       final goal = value.toInt();
@@ -146,7 +146,7 @@ class WeeklySummaryScreen extends ConsumerWidget {
   }
 
   static String? _coachToneFromUser(UserModel? user) {
-    final onboarding = user?.onboarding as Map<String, dynamic>?;
+    final onboarding = user?.onboarding;
     final value = onboarding?['coachTone'];
     return value is String ? value.toLowerCase() : null;
   }
@@ -247,7 +247,7 @@ class WeeklySummaryScreen extends ConsumerWidget {
 
     final tagCounts = <String, int>{};
     for (final log in logs) {
-      for (final tag in log.tags) {
+      for (final tag in log.contextTags) {
         if (tag.trim().isEmpty) continue;
         tagCounts[tag] = (tagCounts[tag] ?? 0) + 1;
       }
@@ -381,7 +381,7 @@ class _NoDataCard extends StatelessWidget {
                   const SizedBox(height: 12),
                   ElevatedButton.icon(
                     onPressed: onLogActivity,
-                    icon: const Icon(Icons.add_task),
+                    icon: Icon(Icons.add_task),
                     label: const Text('Log Today\'s Activity'),
                   ),
                 ],
@@ -725,7 +725,7 @@ class _NextWeekCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           DropdownButtonFormField<int>(
-            value: weeklyGoal,
+            initialValue: weeklyGoal,
             items: List.generate(
               7,
               (index) => DropdownMenuItem(
@@ -734,7 +734,7 @@ class _NextWeekCard extends StatelessWidget {
               ),
             ),
             onChanged: onGoalUpdated,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               border: OutlineInputBorder(),
               isDense: true,
             ),

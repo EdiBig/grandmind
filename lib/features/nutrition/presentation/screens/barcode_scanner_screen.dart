@@ -1,11 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../data/services/openfoodfacts_service.dart';
 import '../../domain/models/food_item.dart';
 
-/// Barcode Scanner Screen
-/// Allows users to scan product barcodes to quickly add food items
+/// Barcode Lookup Screen
+/// Manual barcode entry to avoid native ML Kit dependencies.
 class BarcodeScannerScreen extends StatefulWidget {
   const BarcodeScannerScreen({super.key});
 
@@ -14,128 +13,73 @@ class BarcodeScannerScreen extends StatefulWidget {
 }
 
 class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
-  final MobileScannerController _controller = MobileScannerController();
+  final TextEditingController _barcodeController = TextEditingController();
   final OpenFoodFactsService _openFoodFactsService = OpenFoodFactsService();
 
   bool _isProcessing = false;
-  bool _hasScanned = false;
 
   @override
   void dispose() {
-    _controller.dispose();
+    _barcodeController.dispose();
     super.dispose();
   }
 
-  void _onBarcodeDetect(BarcodeCapture capture) async {
-    if (_isProcessing || _hasScanned) return;
+  Future<void> _lookupBarcode() async {
+    if (_isProcessing) return;
+    final code = _barcodeController.text.trim();
+    if (code.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter a barcode first')),
+      );
+      return;
+    }
 
-    final List<Barcode> barcodes = capture.barcodes;
-    if (barcodes.isEmpty) return;
-
-    final String? code = barcodes.first.rawValue;
-    if (code == null || code.isEmpty) return;
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please sign in to look up products')),
+      );
+      return;
+    }
 
     setState(() {
       _isProcessing = true;
-      _hasScanned = true;
     });
-
-    // Stop the scanner
-    await _controller.stop();
-
-    // Show loading dialog
-    if (mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(
-          child: Card(
-            child: Padding(
-              padding: EdgeInsets.all(32),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Looking up product...'),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    // Look up the product
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId == null) {
-      if (mounted) {
-        Navigator.of(context).pop(); // Close loading dialog
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please sign in to scan products')),
-        );
-        Navigator.of(context).pop(); // Close scanner
-      }
-      return;
-    }
 
     final FoodItem? foodItem =
         await _openFoodFactsService.getProductByBarcode(code, userId);
 
-    if (mounted) {
-      Navigator.of(context).pop(); // Close loading dialog
+    if (!mounted) return;
+    setState(() {
+      _isProcessing = false;
+    });
 
-      if (foodItem != null) {
-        // Show product details and allow selection
-        final shouldSelect = await showDialog<bool>(
-          context: context,
-          builder: (context) => _ProductDetailsDialog(foodItem: foodItem),
-        );
+    if (foodItem != null) {
+      final shouldSelect = await showDialog<bool>(
+        context: context,
+        builder: (context) => _ProductDetailsDialog(foodItem: foodItem),
+      );
 
-        if (shouldSelect == true && mounted) {
-          // Return the food item to the previous screen
-          Navigator.of(context).pop(foodItem);
-        } else {
-          // Resume scanning
-          setState(() {
-            _isProcessing = false;
-            _hasScanned = false;
-          });
-          await _controller.start();
-        }
-      } else {
-        // Product not found
-        final shouldRetry = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Product Not Found'),
-            content: Text(
-              'Could not find product with barcode: $code\n\nWould you like to try scanning again or create a custom food item?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Try Again'),
-              ),
-            ],
-          ),
-        );
-
-        if (shouldRetry == true && mounted) {
-          // Resume scanning
-          setState(() {
-            _isProcessing = false;
-            _hasScanned = false;
-          });
-          await _controller.start();
-        } else if (mounted) {
-          Navigator.of(context).pop(); // Close scanner
-        }
+      if (shouldSelect == true && mounted) {
+        Navigator.of(context).pop(foodItem);
       }
+    } else {
+      await showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Product Not Found'),
+          content: Text(
+            'Could not find product with barcode: $code\n\n'
+            'Please try again or add a custom food item.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
     }
   }
 
@@ -143,168 +87,58 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Scan Barcode'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.flash_on),
-            onPressed: () => _controller.toggleTorch(),
-          ),
-          IconButton(
-            icon: const Icon(Icons.flip_camera_ios),
-            onPressed: () => _controller.switchCamera(),
-          ),
-        ],
+        title: const Text('Barcode Lookup'),
       ),
-      body: Stack(
-        children: [
-          MobileScanner(
-            controller: _controller,
-            onDetect: _onBarcodeDetect,
-          ),
-          // Scanner overlay
-          CustomPaint(
-            painter: _ScannerOverlay(),
-            size: Size.infinite,
-          ),
-          // Instructions
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withValues(alpha: 0.7),
-                  ],
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Enter a barcode',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _barcodeController,
+              keyboardType: TextInputType.number,
+              textInputAction: TextInputAction.search,
+              onSubmitted: (_) => _lookupBarcode(),
+              decoration: InputDecoration(
+                hintText: 'e.g. 0123456789012',
+                filled: true,
+                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
                 ),
               ),
-              child: const Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.qr_code_scanner,
-                    color: Colors.white,
-                    size: 48,
-                  ),
-                  SizedBox(height: 12),
-                  Text(
-                    'Position the barcode within the frame',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'The barcode will be scanned automatically',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _isProcessing ? null : _lookupBarcode,
+                icon: _isProcessing
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(Icons.search),
+                label: Text(_isProcessing ? 'Looking up...' : 'Look Up'),
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            Text(
+              'Tip: You can paste a barcode from the label.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
       ),
     );
   }
-}
-
-/// Custom painter for scanner overlay
-class _ScannerOverlay extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.5)
-      ..style = PaintingStyle.fill;
-
-    final double scanAreaSize = size.width * 0.7;
-    final double left = (size.width - scanAreaSize) / 2;
-    final double top = (size.height - scanAreaSize) / 2;
-
-    // Draw dark overlay
-    final outerPath = Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
-    final innerPath = Path()
-      ..addRRect(RRect.fromRectAndRadius(
-        Rect.fromLTWH(left, top, scanAreaSize, scanAreaSize),
-        const Radius.circular(12),
-      ));
-
-    canvas.drawPath(
-      Path.combine(PathOperation.difference, outerPath, innerPath),
-      paint,
-    );
-
-    // Draw corner brackets
-    final bracketPaint = Paint()
-      ..color = Colors.green
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4
-      ..strokeCap = StrokeCap.round;
-
-    final double bracketLength = 30;
-
-    // Top-left
-    canvas.drawLine(
-      Offset(left, top + bracketLength),
-      Offset(left, top),
-      bracketPaint,
-    );
-    canvas.drawLine(
-      Offset(left, top),
-      Offset(left + bracketLength, top),
-      bracketPaint,
-    );
-
-    // Top-right
-    canvas.drawLine(
-      Offset(left + scanAreaSize - bracketLength, top),
-      Offset(left + scanAreaSize, top),
-      bracketPaint,
-    );
-    canvas.drawLine(
-      Offset(left + scanAreaSize, top),
-      Offset(left + scanAreaSize, top + bracketLength),
-      bracketPaint,
-    );
-
-    // Bottom-left
-    canvas.drawLine(
-      Offset(left, top + scanAreaSize - bracketLength),
-      Offset(left, top + scanAreaSize),
-      bracketPaint,
-    );
-    canvas.drawLine(
-      Offset(left, top + scanAreaSize),
-      Offset(left + bracketLength, top + scanAreaSize),
-      bracketPaint,
-    );
-
-    // Bottom-right
-    canvas.drawLine(
-      Offset(left + scanAreaSize - bracketLength, top + scanAreaSize),
-      Offset(left + scanAreaSize, top + scanAreaSize),
-      bracketPaint,
-    );
-    canvas.drawLine(
-      Offset(left + scanAreaSize, top + scanAreaSize - bracketLength),
-      Offset(left + scanAreaSize, top + scanAreaSize),
-      bracketPaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 /// Product details dialog
@@ -318,7 +152,7 @@ class _ProductDetailsDialog extends StatelessWidget {
     return AlertDialog(
       title: Text(
         foodItem.name,
-        style: const TextStyle(fontSize: 18),
+        style: TextStyle(fontSize: 18),
       ),
       content: SingleChildScrollView(
         child: Column(
@@ -330,21 +164,21 @@ class _ProductDetailsDialog extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Row(
                   children: [
-                    const Icon(Icons.business, size: 16),
+                    Icon(Icons.business, size: 16),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         foodItem.brand!,
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.grey.shade700,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-            const Divider(),
+            Divider(),
             const Text(
               'Nutrition Facts',
               style: TextStyle(
@@ -357,7 +191,7 @@ class _ProductDetailsDialog extends StatelessWidget {
               'Per ${foodItem.servingSizeGrams.toStringAsFixed(0)}${foodItem.servingSizeUnit ?? "g"}',
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.grey.shade600,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 12),

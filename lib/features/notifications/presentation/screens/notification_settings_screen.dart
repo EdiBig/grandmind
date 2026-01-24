@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../domain/models/notification_preference.dart';
 import '../providers/notification_providers.dart';
 import 'create_reminder_screen.dart';
@@ -17,7 +18,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
         title: const Text('Notifications'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.info_outline),
+            icon: Icon(Icons.info_outline),
             onPressed: () => _showInfoDialog(context),
             tooltip: 'Info',
           ),
@@ -155,12 +156,18 @@ class NotificationSettingsScreen extends ConsumerWidget {
                   label: 'Meditation',
                   onTap: () => operations.createDefaultMeditationReminder(),
                 ),
+                _buildQuickActionChip(
+                  context,
+                  icon: Icons.mood,
+                  label: 'Mood Check-in',
+                  onTap: () => operations.createDefaultMoodEnergyReminder(),
+                ),
               ],
             ),
             const SizedBox(height: 12),
             TextButton.icon(
               onPressed: () => operations.sendTestNotification(),
-              icon: const Icon(Icons.notifications_active),
+              icon: Icon(Icons.notifications_active),
               label: const Text('Send Test Notification'),
             ),
           ],
@@ -198,14 +205,14 @@ class NotificationSettingsScreen extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: preference.enabled
-              ? primary.withValues(alpha: 0.2)
-              : Colors.grey.shade200,
-          child: Icon(
-            _getTypeIcon(preference.type),
-            color: preference.enabled ? primary : Colors.grey,
+            backgroundColor: preference.enabled
+                ? primary.withValues(alpha: 0.2)
+                : Theme.of(context).colorScheme.outlineVariant,
+            child: Icon(
+              _getTypeIcon(preference.type),
+              color: preference.enabled ? primary : onSurfaceVariant,
+            ),
           ),
-        ),
         title: Text(
           preference.title,
           style: TextStyle(
@@ -258,7 +265,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
               activeThumbColor: primary,
             ),
             IconButton(
-              icon: const Icon(Icons.more_vert),
+              icon: Icon(Icons.more_vert),
               onPressed: () => _showOptionsBottomSheet(
                 context,
                 preference,
@@ -285,7 +292,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
             Icon(
               Icons.notifications_none,
               size: 80,
-              color: Colors.grey.shade400,
+              color: Theme.of(context).colorScheme.outlineVariant,
             ),
             const SizedBox(height: 24),
             Text(
@@ -311,11 +318,11 @@ class NotificationSettingsScreen extends ConsumerWidget {
                   ),
                 );
               },
-              icon: const Icon(Icons.add),
+              icon: Icon(Icons.add),
               label: const Text('Create Your First Reminder'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.white,
                 padding:
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               ),
@@ -338,7 +345,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
+            Icon(Icons.error_outline, size: 64, color: AppColors.error.withValues(alpha: 0.7)),
             const SizedBox(height: 16),
             Text(
               'Error Loading Reminders',
@@ -384,8 +391,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.delete, color: Colors.red),
-              title: const Text('Delete Reminder', style: TextStyle(color: Colors.red)),
+              leading: Icon(Icons.delete, color: AppColors.error),
+              title: Text('Delete Reminder', style: TextStyle(color: AppColors.error)),
               onTap: () async {
                 Navigator.pop(context);
                 final confirmed = await showDialog<bool>(
@@ -402,7 +409,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
                       TextButton(
                         onPressed: () => Navigator.pop(context, true),
                         style: TextButton.styleFrom(
-                          foregroundColor: Colors.red,
+                          foregroundColor: AppColors.error,
                         ),
                         child: const Text('Delete'),
                       ),
@@ -449,6 +456,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
               Text('• Meal Reminders - Maintain regular eating schedule'),
               Text('• Sleep Reminders - Get quality rest'),
               Text('• Meditation Reminders - Practice mindfulness'),
+              Text('• Mood & Energy - Track how you feel daily'),
               SizedBox(height: 16),
               Text(
                 '💡 Tips:',
@@ -486,6 +494,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
         return '😴 Sleep';
       case ReminderType.meditation:
         return '🧘 Meditation';
+      case ReminderType.moodEnergy:
+        return '😊 Mood & Energy';
       case ReminderType.custom:
         return '🔔 Custom';
     }
@@ -505,6 +515,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
         return Icons.bedtime;
       case ReminderType.meditation:
         return Icons.self_improvement;
+      case ReminderType.moodEnergy:
+        return Icons.mood;
       case ReminderType.custom:
         return Icons.notifications;
     }

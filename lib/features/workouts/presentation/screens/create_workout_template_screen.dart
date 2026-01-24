@@ -173,7 +173,7 @@ class _CreateWorkoutTemplateScreenState
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<WorkoutCategory>(
-                value: _category,
+                initialValue: _category,
                 decoration: const InputDecoration(labelText: 'Category'),
                 items: WorkoutCategory.values
                     .map(
@@ -191,7 +191,7 @@ class _CreateWorkoutTemplateScreenState
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<WorkoutDifficulty>(
-                value: _difficulty,
+                initialValue: _difficulty,
                 decoration: const InputDecoration(labelText: 'Difficulty'),
                 items: WorkoutDifficulty.values
                     .map(

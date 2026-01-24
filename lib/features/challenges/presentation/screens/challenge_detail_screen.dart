@@ -59,7 +59,7 @@ class _ChallengeDetailScreenState extends ConsumerState<ChallengeDetailScreen> {
             actions: [
               IconButton(
                 onPressed: () => _shareChallenge(challenge),
-                icon: const Icon(Icons.share_outlined),
+                icon: Icon(Icons.share_outlined),
                 tooltip: 'Share',
               ),
             ],
@@ -299,7 +299,7 @@ class _ChallengeDetailScreenState extends ConsumerState<ChallengeDetailScreen> {
               RouteConstants.challengeRankings
                   .replaceFirst(':id', challenge.id),
             ),
-            icon: const Icon(Icons.leaderboard_outlined),
+            icon: Icon(Icons.leaderboard_outlined),
             label: const Text('View Rankings'),
           ),
         if (challenge.hasActivityFeed)
@@ -370,17 +370,20 @@ class _ChallengeDetailScreenState extends ConsumerState<ChallengeDetailScreen> {
     }
 
     final isEligible = await _confirmAgeEligibility();
+    if (!context.mounted) return;
     if (!isEligible) {
       _showMessage('Age verification required before joining.');
       return;
     }
 
     final disclaimerAccepted = await _showHealthDisclaimer(context);
+    if (!context.mounted) return;
     if (!disclaimerAccepted) {
       return;
     }
 
     final consent = await _showDataConsent(context);
+    if (!context.mounted) return;
     if (consent == null) {
       return;
     }
@@ -397,8 +400,10 @@ class _ChallengeDetailScreenState extends ConsumerState<ChallengeDetailScreen> {
             healthDisclaimerAccepted: true,
             dataSharingConsent: consent.dataSharingConsent,
           );
+      if (!context.mounted) return;
       _showMessage('You have joined the challenge.');
     } catch (error) {
+      if (!context.mounted) return;
       _showMessage('Unable to join. ${error.toString()}');
     } finally {
       if (mounted) {
@@ -422,8 +427,10 @@ class _ChallengeDetailScreenState extends ConsumerState<ChallengeDetailScreen> {
             challengeId: challenge.id,
             userId: userId,
           );
+      if (!context.mounted) return;
       _showMessage('You have left the challenge.');
     } catch (error) {
+      if (!context.mounted) return;
       _showMessage('Unable to leave. ${error.toString()}');
     } finally {
       if (mounted) {
@@ -435,7 +442,7 @@ class _ChallengeDetailScreenState extends ConsumerState<ChallengeDetailScreen> {
   Future<bool> _confirmAgeEligibility() async {
     final user = ref.read(currentUserProvider).asData?.value;
     final preferences = ref.read(sharedPreferencesProvider);
-    final stored = preferences.getBool('together_age_verified') ?? false;
+    final stored = preferences.getBool('unity_age_verified') ?? false;
     if (stored) {
       return true;
     }
@@ -446,13 +453,13 @@ class _ChallengeDetailScreenState extends ConsumerState<ChallengeDetailScreen> {
         await _showAgeRestrictionDialog();
         return false;
       }
-      preferences.setBool('together_age_verified', true);
+      preferences.setBool('unity_age_verified', true);
       return true;
     }
 
     final confirmed = await _showAgeConfirmDialog();
     if (confirmed) {
-      preferences.setBool('together_age_verified', true);
+      preferences.setBool('unity_age_verified', true);
     }
     return confirmed;
   }

@@ -1,11 +1,21 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:health/health.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../../../core/providers/analytics_provider.dart';
 import '../../data/services/health_service.dart';
+import '../../data/services/health_insights_service.dart';
 import '../../data/repositories/health_repository.dart';
 import '../../domain/models/health_data.dart';
+import '../../domain/models/health_insights.dart';
 import '../../domain/models/weekly_health_stats.dart';
+import '../../../ai/data/services/claude_api_service.dart';
+import '../../../mood_energy/domain/models/energy_log.dart';
+import '../../../mood_energy/data/repositories/mood_energy_repository.dart';
+import '../../../workouts/domain/models/workout_log.dart';
+import '../../../workouts/data/repositories/workout_repository.dart';
 
 // ========== SERVICE PROVIDER ==========
 
@@ -17,8 +27,56 @@ final healthServiceProvider = Provider<HealthService>((ref) {
 /// Provider for HealthRepository
 final healthRepositoryProvider = Provider<HealthRepository>((ref) {
   final healthService = ref.watch(healthServiceProvider);
-  return HealthRepository(healthService: healthService);
+  final analytics = ref.watch(analyticsProvider);
+  return HealthRepository(healthService: healthService, analytics: analytics);
 });
+
+const String _healthSummaryCacheKey = 'health_summary_cache';
+
+Future<HealthSummary?> _loadCachedSummary() async {
+  final prefs = await SharedPreferences.getInstance();
+  final raw = prefs.getString(_healthSummaryCacheKey);
+  if (raw == null || raw.isEmpty) return null;
+  try {
+    final data = jsonDecode(raw) as Map<String, dynamic>;
+    final dateMs = data['date'] as int?;
+    if (dateMs == null) return null;
+    return HealthSummary(
+      steps: data['steps'] as int? ?? 0,
+      distanceMeters: (data['distanceMeters'] as num?)?.toDouble() ?? 0.0,
+      caloriesBurned: (data['caloriesBurned'] as num?)?.toDouble() ?? 0.0,
+      averageHeartRate: (data['averageHeartRate'] as num?)?.toDouble(),
+      sleepHours: (data['sleepHours'] as num?)?.toDouble() ?? 0.0,
+      date: DateTime.fromMillisecondsSinceEpoch(dateMs),
+    );
+  } catch (_) {
+    return null;
+  }
+}
+
+Future<void> _saveCachedSummary(HealthSummary summary) async {
+  final prefs = await SharedPreferences.getInstance();
+  final data = <String, dynamic>{
+    'steps': summary.steps,
+    'distanceMeters': summary.distanceMeters,
+    'caloriesBurned': summary.caloriesBurned,
+    'averageHeartRate': summary.averageHeartRate,
+    'sleepHours': summary.sleepHours,
+    'date': summary.date.millisecondsSinceEpoch,
+  };
+  await prefs.setString(_healthSummaryCacheKey, jsonEncode(data));
+}
+
+HealthSummary _emptySummary() {
+  return HealthSummary(
+    steps: 0,
+    distanceMeters: 0.0,
+    caloriesBurned: 0.0,
+    averageHeartRate: null,
+    sleepHours: 0.0,
+    date: DateTime.now(),
+  );
+}
 
 // ========== PERMISSION PROVIDERS ==========
 
@@ -41,25 +99,47 @@ final healthConnectStatusProvider = FutureProvider<HealthConnectSdkStatus?>((ref
 
 // ========== HEALTH DATA PROVIDERS ==========
 
-/// Provider for today's health summary
-final todayHealthSummaryProvider = FutureProvider<HealthSummary>((ref) async {
-  final healthService = ref.watch(healthServiceProvider);
-
-  // Check permissions first
-  final hasPermissions = await healthService.hasPermissions();
-  if (!hasPermissions) {
-    // Return empty summary if no permissions
-    return HealthSummary(
-      steps: 0,
-      distanceMeters: 0.0,
-      caloriesBurned: 0.0,
-      averageHeartRate: null,
-      sleepHours: 0.0,
-      date: DateTime.now(),
-    );
+class HealthSummaryController extends StateNotifier<AsyncValue<HealthSummary>> {
+  HealthSummaryController(this._healthService)
+      : super(const AsyncValue.loading()) {
+    _load();
   }
 
-  return await healthService.getTodaySummary();
+  final HealthService _healthService;
+
+  Future<void> _load() async {
+    final cached = await _loadCachedSummary();
+    state = AsyncValue.data(cached ?? _emptySummary());
+    await refresh();
+  }
+
+  Future<void> refresh({bool force = false}) async {
+    final hasPermissions = await _healthService.hasPermissions();
+    if (!hasPermissions) {
+      return;
+    }
+
+    try {
+      final summary = await _healthService.getTodaySummary();
+      final shouldCache = summary.hasMeaningfulData || force;
+      if (shouldCache) {
+        await _saveCachedSummary(summary);
+        state = AsyncValue.data(summary);
+      } else if (state.asData?.value == null) {
+        state = AsyncValue.data(summary);
+      }
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+}
+
+/// Provider for today's health summary (cache-first, refreshes in background)
+final healthSummaryProvider =
+    StateNotifierProvider<HealthSummaryController, AsyncValue<HealthSummary>>(
+        (ref) {
+  final healthService = ref.watch(healthServiceProvider);
+  return HealthSummaryController(healthService);
 });
 
 /// Provider for today's steps count
@@ -134,7 +214,7 @@ final healthSyncProvider = FutureProvider<bool>((ref) async {
     await prefs.setInt('last_health_sync', DateTime.now().millisecondsSinceEpoch);
 
     // Invalidate data providers to refresh
-    ref.invalidate(todayHealthSummaryProvider);
+    ref.read(healthSummaryProvider.notifier).refresh(force: true);
     ref.invalidate(todayStepsProvider);
     ref.invalidate(weeklyStepsProvider);
     ref.invalidate(syncedTodayHealthDataProvider);
@@ -166,7 +246,7 @@ class HealthOperations extends StateNotifier<AsyncValue<void>> {
       state = const AsyncValue.data(null);
 
       // Refresh health data
-      _ref.invalidate(todayHealthSummaryProvider);
+      _ref.read(healthSummaryProvider.notifier).refresh(force: true);
 
       return success;
     } catch (e, st) {
@@ -199,7 +279,7 @@ class HealthOperations extends StateNotifier<AsyncValue<void>> {
       state = const AsyncValue.data(null);
 
       // Refresh health data
-      _ref.invalidate(todayHealthSummaryProvider);
+      _ref.read(healthSummaryProvider.notifier).refresh(force: true);
       _ref.invalidate(todayStepsProvider);
 
       return success;
@@ -335,6 +415,86 @@ final watchHealthDataRangeProvider = StreamProvider.family<List<HealthData>, Dat
 
   final repository = ref.watch(healthRepositoryProvider);
   return repository.watchHealthDataRange(userId, dateRange.start, dateRange.end);
+});
+
+// ========== HEALTH INSIGHTS PROVIDERS ==========
+
+/// Provider for HealthInsightsService
+final healthInsightsServiceProvider = Provider<HealthInsightsService>((ref) {
+  // Try to get ClaudeAPIService if available (optional)
+  ClaudeAPIService? claudeService;
+  try {
+    claudeService = ref.watch(claudeApiServiceProvider);
+  } catch (_) {
+    // AI service not available, insights will use fallback
+  }
+  return HealthInsightsService(claudeService: claudeService);
+});
+
+/// Provider for ClaudeAPIService (can fail if not configured)
+final claudeApiServiceProvider = Provider<ClaudeAPIService>((ref) {
+  return ClaudeAPIService();
+});
+
+/// Provider for health insights (30-day analysis)
+final healthInsightsProvider = FutureProvider.autoDispose<HealthInsights>((ref) async {
+  final userId = ref.watch(_currentUserIdProvider);
+  if (userId == null) {
+    throw Exception('User not authenticated');
+  }
+
+  // Get health data (last 30 days)
+  final healthData = await ref.watch(last30DaysHealthDataProvider.future);
+
+  // Get energy logs (last 30 days)
+  final energyLogs = await ref.watch(energyLogsLast30DaysProvider.future);
+
+  // Get workout logs (last 30 days)
+  final workoutLogs = await ref.watch(workoutLogsLast30DaysProvider.future);
+
+  // Generate insights
+  final insightsService = ref.watch(healthInsightsServiceProvider);
+  return await insightsService.generateInsights(
+    healthData: healthData,
+    energyLogs: energyLogs,
+    workoutLogs: workoutLogs,
+  );
+});
+
+/// Provider for energy logs (last 30 days)
+final energyLogsLast30DaysProvider = FutureProvider<List<EnergyLog>>((ref) async {
+  final userId = ref.watch(_currentUserIdProvider);
+  if (userId == null) return [];
+
+  final now = DateTime.now();
+  final startDate = now.subtract(const Duration(days: 30));
+
+  try {
+    final repository = ref.watch(moodEnergyRepositoryProvider);
+    return await repository.getLogsInRange(userId, startDate, now);
+  } catch (_) {
+    return [];
+  }
+});
+
+/// Provider for workout logs (last 30 days)
+final workoutLogsLast30DaysProvider = FutureProvider<List<WorkoutLog>>((ref) async {
+  final userId = ref.watch(_currentUserIdProvider);
+  if (userId == null) return [];
+
+  final now = DateTime.now();
+  final startDate = now.subtract(const Duration(days: 30));
+
+  try {
+    final repository = ref.watch(workoutRepositoryProvider);
+    return await repository.getUserWorkoutLogs(
+      userId,
+      startDate: startDate,
+      endDate: now,
+    );
+  } catch (_) {
+    return [];
+  }
 });
 
 // ========== HELPER MODELS ==========

@@ -127,7 +127,7 @@ class _CreateCustomFoodScreenState
           children: [
             TextFormField(
               controller: _nameController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Food Name',
                 border: OutlineInputBorder(),
               ),

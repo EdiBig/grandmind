@@ -33,7 +33,7 @@ Map<String, dynamic> _$$ExerciseImplToJson(_$ExerciseImpl instance) =>
       'type': _$ExerciseTypeEnumMap[instance.type]!,
       'muscleGroups': instance.muscleGroups,
       'equipment': instance.equipment,
-      'metrics': instance.metrics,
+      'metrics': instance.metrics?.toJson(),
     };
 
 const _$ExerciseTypeEnumMap = {

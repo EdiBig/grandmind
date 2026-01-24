@@ -3,8 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/route_constants.dart';
 import '../../../../core/theme/app_gradients.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../data/services/health_service.dart';
+import '../../domain/models/health_data.dart';
 import '../providers/health_providers.dart';
+
+final _dashboardRefreshingProvider = StateProvider<bool>((ref) => false);
 
 /// Health Dashboard Card - displays today's health metrics
 class HealthDashboardCard extends ConsumerWidget {
@@ -12,8 +16,10 @@ class HealthDashboardCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final healthSummaryAsync = ref.watch(todayHealthSummaryProvider);
+    final healthSummaryAsync = ref.watch(healthSummaryProvider);
     final permissionsAsync = ref.watch(healthPermissionsProvider);
+    final lastSyncAsync = ref.watch(lastHealthSyncProvider);
+    final isRefreshing = ref.watch(_dashboardRefreshingProvider);
     final primary = Theme.of(context).colorScheme.primary;
     final gradients = Theme.of(context).extension<AppGradients>()!;
 
@@ -39,7 +45,13 @@ class HealthDashboardCard extends ConsumerWidget {
           }
 
           return healthSummaryAsync.when(
-            data: (summary) => _buildHealthData(context, summary, ref),
+            data: (summary) => _buildHealthData(
+              context,
+              summary,
+              lastSyncAsync,
+              isRefreshing,
+              ref,
+            ),
             loading: () => _buildLoading(),
             error: (error, stack) => _buildError(context, ref),
           );
@@ -51,7 +63,16 @@ class HealthDashboardCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildHealthData(BuildContext context, HealthSummary summary, WidgetRef ref) {
+  Widget _buildHealthData(
+    BuildContext context,
+    HealthSummary summary,
+    AsyncValue<DateTime?> lastSyncAsync,
+    bool isRefreshing,
+    WidgetRef ref,
+  ) {
+    final healthService = ref.read(healthServiceProvider);
+    final currentSource = healthService.getCurrentSource();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -61,24 +82,84 @@ class HealthDashboardCard extends ConsumerWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.favorite, color: Colors.white, size: 20),
+                Icon(Icons.favorite, color: AppColors.white, size: 20),
                 const SizedBox(width: 8),
                 Text(
                   'Today\'s Health',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Colors.white,
+                        color: AppColors.white,
                         fontWeight: FontWeight.bold,
                       ),
                 ),
+                const SizedBox(width: 8),
+                _buildSourceIndicator(currentSource),
               ],
             ),
-            IconButton(
-              icon: const Icon(Icons.refresh, color: Colors.white, size: 20),
-              onPressed: () {
-                ref.invalidate(todayHealthSummaryProvider);
-                ref.invalidate(healthSyncProvider);
-              },
-              tooltip: 'Refresh health data',
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                lastSyncAsync.when(
+                  data: (timestamp) => Text(
+                    _formatLastSyncCompact(timestamp),
+                    style: TextStyle(
+                      color: AppColors.white.withValues(alpha: 0.7),
+                      fontSize: 10,
+                    ),
+                  ),
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      switchInCurve: Curves.easeOut,
+                      switchOutCurve: Curves.easeIn,
+                      transitionBuilder: (child, animation) {
+                        return FadeTransition(opacity: animation, child: child);
+                      },
+                      child: isRefreshing
+                          ? SizedBox(
+                              key: const ValueKey('refreshing'),
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  AppColors.white.withValues(alpha: 0.7),
+                                ),
+                              ),
+                            )
+                          : const SizedBox(
+                              key: ValueKey('idle'),
+                              width: 14,
+                              height: 14,
+                            ),
+                    ),
+                    IconButton(
+                      icon:
+                          Icon(Icons.refresh, color: AppColors.white, size: 20),
+                      onPressed: () async {
+                        ref
+                            .read(_dashboardRefreshingProvider.notifier)
+                            .state = true;
+                        try {
+                          await ref.read(healthSyncProvider.future);
+                          await ref
+                              .read(healthSummaryProvider.notifier)
+                              .refresh(force: true);
+                        } finally {
+                          ref
+                              .read(_dashboardRefreshingProvider.notifier)
+                              .state = false;
+                        }
+                      },
+                      tooltip: 'Refresh health data',
+                    ),
+                  ],
+                ),
+              ],
             ),
           ],
         ),
@@ -147,17 +228,17 @@ class HealthDashboardCard extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.15),
+        color: AppColors.white.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         children: [
-          Icon(icon, color: Colors.white, size: 24),
+          Icon(icon, color: AppColors.white, size: 24),
           const SizedBox(height: 8),
           Text(
             value,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: AppColors.white,
               fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
@@ -166,7 +247,7 @@ class HealthDashboardCard extends ConsumerWidget {
           Text(
             label,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.9),
+              color: AppColors.white.withValues(alpha: 0.9),
               fontSize: 12,
             ),
           ),
@@ -183,14 +264,14 @@ class HealthDashboardCard extends ConsumerWidget {
           children: [
             Icon(
               Icons.info_outline,
-              color: Colors.white.withValues(alpha: 0.7),
+              color: AppColors.white.withValues(alpha: 0.7),
               size: 32,
             ),
             const SizedBox(height: 8),
             Text(
               'No health data available yet',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.9),
+                color: AppColors.white.withValues(alpha: 0.9),
                 fontSize: 14,
               ),
             ),
@@ -198,7 +279,7 @@ class HealthDashboardCard extends ConsumerWidget {
             Text(
               'Stay active and check back later!',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.7),
+                color: AppColors.white.withValues(alpha: 0.7),
                 fontSize: 12,
               ),
             ),
@@ -214,12 +295,12 @@ class HealthDashboardCard extends ConsumerWidget {
       children: [
         Row(
           children: [
-            const Icon(Icons.health_and_safety, color: Colors.white, size: 20),
+            const Icon(Icons.health_and_safety, color: AppColors.white, size: 20),
             const SizedBox(width: 8),
             Text(
               'Health Integration',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.white,
+                    color: AppColors.white,
                     fontWeight: FontWeight.bold,
                   ),
             ),
@@ -229,7 +310,7 @@ class HealthDashboardCard extends ConsumerWidget {
         Text(
           'Track your daily activity, sleep, and more!',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.9),
+            color: AppColors.white.withValues(alpha: 0.9),
             fontSize: 14,
           ),
         ),
@@ -242,13 +323,16 @@ class HealthDashboardCard extends ConsumerWidget {
             if (granted) {
               // Refresh providers
               ref.invalidate(healthPermissionsProvider);
-              ref.invalidate(todayHealthSummaryProvider);
+              await ref.read(healthSyncProvider.future);
+              await ref
+                  .read(healthSummaryProvider.notifier)
+                  .refresh(force: true);
             }
           },
-          icon: const Icon(Icons.lock_open, size: 18),
+          icon: Icon(Icons.lock_open, size: 18),
           label: const Text('Enable Health Sync'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.white,
+            backgroundColor: AppColors.white,
             foregroundColor: Theme.of(context).colorScheme.primary,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           ),
@@ -262,7 +346,7 @@ class HealthDashboardCard extends ConsumerWidget {
       child: Padding(
         padding: EdgeInsets.all(24),
         child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          valueColor: AlwaysStoppedAnimation<Color>(AppColors.white),
           strokeWidth: 2,
         ),
       ),
@@ -275,12 +359,12 @@ class HealthDashboardCard extends ConsumerWidget {
       children: [
         Row(
           children: [
-            const Icon(Icons.error_outline, color: Colors.white, size: 20),
+            Icon(Icons.error_outline, color: AppColors.white, size: 20),
             const SizedBox(width: 8),
             Text(
               'Health Data Error',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.white,
+                    color: AppColors.white,
                     fontWeight: FontWeight.bold,
                   ),
             ),
@@ -290,19 +374,19 @@ class HealthDashboardCard extends ConsumerWidget {
         Text(
           'Unable to load health data',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.9),
+            color: AppColors.white.withValues(alpha: 0.9),
             fontSize: 14,
           ),
         ),
         const SizedBox(height: 16),
         TextButton.icon(
           onPressed: () {
-            ref.invalidate(todayHealthSummaryProvider);
+            ref.read(healthSummaryProvider.notifier).refresh(force: true);
           },
-          icon: const Icon(Icons.refresh, color: Colors.white, size: 18),
+          icon: const Icon(Icons.refresh, color: AppColors.white, size: 18),
           label: const Text(
             'Try Again',
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: AppColors.white),
           ),
         ),
       ],
@@ -314,5 +398,70 @@ class HealthDashboardCard extends ConsumerWidget {
       return '${(number / 1000).toStringAsFixed(1)}k';
     }
     return number.toString();
+  }
+
+  String _formatLastSyncCompact(DateTime? timestamp) {
+    if (timestamp == null) {
+      return 'Updated: --';
+    }
+
+    final now = DateTime.now();
+    final difference = now.difference(timestamp);
+
+    if (difference.inMinutes < 1) {
+      return 'Updated: now';
+    }
+    if (difference.inMinutes < 60) {
+      return 'Updated: ${difference.inMinutes}m';
+    }
+    if (difference.inHours < 24) {
+      return 'Updated: ${difference.inHours}h';
+    }
+    return 'Updated: ${timestamp.month.toString().padLeft(2, '0')}/${timestamp.day.toString().padLeft(2, '0')}';
+  }
+
+  Widget _buildSourceIndicator(HealthDataSource source) {
+    IconData icon;
+    String label;
+
+    switch (source) {
+      case HealthDataSource.appleHealth:
+        icon = Icons.apple;
+        label = 'Apple';
+        break;
+      case HealthDataSource.googleFit:
+        icon = Icons.fitness_center;
+        label = 'Fit';
+        break;
+      case HealthDataSource.manual:
+        icon = Icons.edit;
+        label = 'Manual';
+        break;
+      case HealthDataSource.unknown:
+        return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: AppColors.white.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: AppColors.white, size: 12),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: AppColors.white,
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

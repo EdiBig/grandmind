@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_colors.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import '../../domain/models/progress_goal.dart';
@@ -127,7 +128,7 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
                 const SizedBox(height: 8),
                 DropdownButtonFormField<MeasurementType>(
                   initialValue: _selectedMeasurementType,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     border: OutlineInputBorder(),
                     hintText: 'Select measurement',
                   ),
@@ -256,9 +257,9 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
                 contentPadding: EdgeInsets.zero,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
-                  side: BorderSide(color: Colors.grey[400]!),
+                  side: BorderSide(color: Theme.of(context).colorScheme.outline),
                 ),
-                leading: const Icon(Icons.calendar_today),
+                leading: Icon(Icons.calendar_today),
                 title: Text(
                   _targetDate == null
                       ? 'No target date (open-ended)'
@@ -406,17 +407,17 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
     if (mounted) {
       if (goalId != null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Goal created successfully!'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: const Text('Goal created successfully!'),
+            backgroundColor: AppColors.success,
           ),
         );
         Navigator.pop(context);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to create goal. Please try again.'),
-            backgroundColor: Colors.red,
+          SnackBar(
+            content: const Text('Failed to create goal. Please try again.'),
+            backgroundColor: AppColors.error,
           ),
         );
       }

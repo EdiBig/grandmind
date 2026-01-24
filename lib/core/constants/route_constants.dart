@@ -25,16 +25,31 @@ class RouteConstants {
   static const String habits = '/habits';
   static const String createHabit = '/habits/create';
   static const String editHabit = '/habits/:id/edit';
-  static const String together = '/together';
-  static const String createChallenge = '/together/create';
-  static const String challengeDetail = '/together/:id';
-  static const String challengeRankings = '/together/:id/rankings';
-  static const String challengeFeed = '/together/:id/feed';
+  static const String habitCalendar = '/habits/calendar';
+  static const String habitHistory = '/habits/history';
+  static const String habitDetailHistory = '/habits/:id/history';
+  static const String unity = '/unity';
+  static const String createChallenge = '/unity/create';
+  static const String challengeDetail = '/unity/:id';
+  static const String challengeRankings = '/unity/:id/rankings';
+  static const String challengeFeed = '/unity/:id/feed';
+  static const String challengePrivacy = '/unity/privacy';
+  static const String challengeModeration = '/unity/:id/moderation';
+  static const String blockedUsers = '/unity/blocked-users';
   static const String progress = '/progress';
   static const String progressInsights = '/progress/insights';
   static const String progressDashboard = '/progress/dashboard';
   static const String achievements = '/progress/achievements';
   static const String weeklySummary = '/progress/weekly-summary';
+  static const String weightTracking = '/progress/weight';
+  static const String measurements = '/progress/measurements';
+  static const String goals = '/progress/goals';
+  static const String createGoal = '/progress/goals/create';
+  static const String progressPhotos = '/progress/photos';
+  static const String photoComparison = '/progress/photos/compare';
+  static const String personalBests = '/progress/personal-bests';
+  static const String activityCalendar = '/progress/calendar';
+  static const String streaks = '/progress/streaks';
   static const String plan = '/plan';
   static const String profile = '/profile';
   static const String settings = '/settings';
@@ -60,10 +75,12 @@ class RouteConstants {
   static const String help = '/settings/help';
   static const String termsOfService = '/settings/terms';
   static const String privacyPolicy = '/settings/privacy-policy';
-  static const String apiKeySetup = '/settings/api-key-setup';
+  static const String workoutAdmin = '/settings/workout-admin';
+  static const String wgerExercises = '/workouts/exercises';
 
   // AI Features
   static const String aiCoach = '/ai-coach';
+  static const String aiCoachHistory = '/ai-coach/history';
   static const String aiInsights = '/ai-insights';
   static const String aiNutrition = '/ai-nutrition';
   static const String aiRecovery = '/ai-recovery';
@@ -75,4 +92,10 @@ class RouteConstants {
 
   // Health Routes
   static const String healthDetails = '/health/details';
+  static const String healthInsights = '/health/insights';
+
+  // Mood & Energy Routes
+  static const String logMoodEnergy = '/mood-energy/log';
+  static const String moodEnergyHistory = '/mood-energy/history';
+  static const String moodEnergyInsights = '/mood-energy/insights';
 }

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:kinesa/features/ai/data/models/ai_conversation_model.dart';
 import 'package:kinesa/features/ai/data/services/claude_api_service.dart';
 import 'package:kinesa/features/ai/data/services/prompt_builder_service.dart';
 import 'package:kinesa/features/ai/data/repositories/ai_cache_repository.dart';
@@ -10,6 +11,9 @@ import 'package:kinesa/features/ai/domain/usecases/get_form_check_usecase.dart';
 import 'package:kinesa/features/ai/presentation/providers/ai_coach_provider.dart';
 import 'package:kinesa/core/providers/shared_preferences_provider.dart';
 import 'package:kinesa/features/settings/presentation/providers/app_settings_provider.dart';
+import 'package:kinesa/features/nutrition/data/services/nutrition_ai_service.dart';
+import 'package:kinesa/features/nutrition/presentation/providers/nutrition_ai_provider.dart';
+import 'package:kinesa/features/ai/data/repositories/ai_conversation_repository.dart';
 
 /// Provider for Firestore
 final firestoreProvider = Provider<FirebaseFirestore>((ref) {
@@ -107,10 +111,49 @@ final aiCoachProviderOverride =
   final workoutRecommendationUseCase =
       ref.watch(getWorkoutRecommendationUseCaseProvider);
   final formCheckUseCase = ref.watch(getFormCheckUseCaseProvider);
+  final conversationRepository = ref.watch(aiConversationRepositoryProvider);
 
   return AICoachNotifier(
     sendMessageUseCase: sendMessageUseCase,
     workoutRecommendationUseCase: workoutRecommendationUseCase,
     formCheckUseCase: formCheckUseCase,
+    conversationRepository: conversationRepository,
+  );
+});
+
+/// Provider for AI conversation history stream
+final aiConversationHistoryProvider = StreamProvider.family<List<AIConversation>, String>((ref, userId) {
+  final repository = ref.watch(aiConversationRepositoryProvider);
+  return repository.getUserConversationsStream(
+    userId: userId,
+    conversationType: 'fitness_coach',
+    limit: 50,
+  );
+});
+
+/// Provider for Nutrition AI Service
+final nutritionAIServiceProviderOverride = Provider<NutritionAIService>((ref) {
+  final apiService = ref.watch(claudeAPIServiceProvider);
+
+  return NutritionAIService(
+    apiService: apiService,
+  );
+});
+
+/// Override for Nutrition Tips Provider with actual dependencies
+final nutritionTipsProviderOverride =
+    StateNotifierProvider<NutritionTipsNotifier, NutritionTipsState>((ref) {
+  final nutritionAIService = ref.watch(nutritionAIServiceProviderOverride);
+  return NutritionTipsNotifier(nutritionAIService: nutritionAIService);
+});
+
+/// Override for Nutritionist Chat Provider with actual dependencies
+final nutritionistChatProviderOverride =
+    StateNotifierProvider<NutritionistChatNotifier, NutritionistChatState>((ref) {
+  final nutritionAIService = ref.watch(nutritionAIServiceProviderOverride);
+  final conversationRepository = ref.watch(aiConversationRepositoryProvider);
+  return NutritionistChatNotifier(
+    nutritionAIService: nutritionAIService,
+    conversationRepository: conversationRepository,
   );
 });

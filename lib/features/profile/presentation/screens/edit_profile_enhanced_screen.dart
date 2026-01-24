@@ -5,7 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_gradients.dart';
+import '../../../../shared/services/image_cropper_service.dart';
 import '../../../home/presentation/providers/dashboard_provider.dart';
 import '../../../user/data/services/firestore_service.dart';
 import '../../data/services/profile_photo_service.dart';
@@ -49,6 +51,7 @@ class _EditProfileEnhancedScreenState
   File? _selectedImage;
   Uint8List? _selectedImageBytes;
   String? _currentPhotoUrl;
+  String? _removedPhotoUrl;
   bool _initialized = false;
   bool _isSaving = false;
   bool _isUploadingPhoto = false;
@@ -95,16 +98,16 @@ class _EditProfileEnhancedScreenState
                 height: 24,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.white),
                 ),
               ),
             )
           else
             TextButton(
               onPressed: () => _saveProfile(context),
-              child: const Text(
+              child: Text(
                 'Save',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: AppColors.white),
               ),
             ),
         ],
@@ -260,11 +263,11 @@ class _EditProfileEnhancedScreenState
                 // Save Button
                 ElevatedButton.icon(
                   onPressed: _isSaving ? null : () => _saveProfile(context),
-                  icon: const Icon(Icons.save),
+                  icon: Icon(Icons.save),
                   label: Text(_isSaving ? 'Saving...' : 'Save Changes'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: colorScheme.primary,
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppColors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -319,10 +322,10 @@ class _EditProfileEnhancedScreenState
                                 decoration: BoxDecoration(
                                   gradient: gradients.primary,
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.person,
                                   size: 70,
-                                  color: Colors.white,
+                                  color: AppColors.white,
                                 ),
                               ),
                             )
@@ -330,10 +333,10 @@ class _EditProfileEnhancedScreenState
                               decoration: BoxDecoration(
                                 gradient: gradients.primary,
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.person,
                                 size: 70,
-                                color: Colors.white,
+                                color: AppColors.white,
                               ),
                             ),
             ),
@@ -350,18 +353,18 @@ class _EditProfileEnhancedScreenState
                 child: Padding(
                   padding: const EdgeInsets.all(12),
                   child: _isUploadingPhoto
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.white),
                           ),
                         )
-                      : const Icon(
+                      : Icon(
                           Icons.camera_alt,
                           size: 20,
-                          color: Colors.white,
+                          color: AppColors.white,
                         ),
                 ),
               ),
@@ -399,11 +402,12 @@ class _EditProfileEnhancedScreenState
                 _selectedImage != null ||
                 _selectedImageBytes != null)
               ListTile(
-                leading: const Icon(Icons.delete, color: Colors.red),
-                title: const Text('Remove Photo', style: TextStyle(color: Colors.red)),
+                leading: Icon(Icons.delete, color: AppColors.error),
+                title: Text('Remove Photo', style: TextStyle(color: AppColors.error)),
                 onTap: () {
                   Navigator.pop(context);
                   setState(() {
+                    _removedPhotoUrl ??= _currentPhotoUrl;
                     _selectedImage = null;
                     _selectedImageBytes = null;
                     _currentPhotoUrl = null;
@@ -425,41 +429,69 @@ class _EditProfileEnhancedScreenState
         imageQuality: 85,
       );
 
-      if (pickedFile != null) {
-        if (kIsWeb) {
-          final bytes = await pickedFile.readAsBytes();
-          if (bytes.length > _maxPhotoBytes) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content:
-                      Text('Photo is too large. Please choose a smaller image.'),
-                ),
-              );
-            }
-            return;
+      if (pickedFile == null) return;
+
+      if (kIsWeb) {
+        final bytes = await pickedFile.readAsBytes();
+        if (bytes.length > _maxPhotoBytes) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content:
+                    Text('Photo is too large. Please choose a smaller image.'),
+              ),
+            );
           }
-          setState(() {
-            _selectedImageBytes = bytes;
-            _selectedImage = null;
-          });
+          return;
+        }
+        setState(() {
+          _selectedImageBytes = bytes;
+          _selectedImage = null;
+        });
+      } else {
+        final file = File(pickedFile.path);
+        final fileSize = await file.length();
+        if (fileSize > _maxPhotoBytes) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content:
+                    Text('Photo is too large. Please choose a smaller image.'),
+              ),
+            );
+          }
+          return;
+        }
+
+        // Directly open cropper for profile photos (square crop)
+        if (!mounted) return;
+        final cropperService = ImageCropperService();
+        final croppedFile = await cropperService.cropImage(
+          imageFile: file,
+          context: context,
+          config: CropConfig.profilePhoto,
+        );
+
+        if (croppedFile != null) {
+          if (mounted) {
+            setState(() {
+              _selectedImage = croppedFile;
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Photo cropped! Tap "Save Changes" to update your profile.'),
+                backgroundColor: AppColors.success,
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
         } else {
-          final file = File(pickedFile.path);
-          final fileSize = await file.length();
-          if (fileSize > _maxPhotoBytes) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content:
-                      Text('Photo is too large. Please choose a smaller image.'),
-                ),
-              );
-            }
-            return;
+          // User cancelled cropping, use original image
+          if (mounted) {
+            setState(() {
+              _selectedImage = file;
+            });
           }
-          setState(() {
-            _selectedImage = file;
-          });
         }
       }
     } catch (e) {
@@ -523,12 +555,12 @@ class _EditProfileEnhancedScreenState
       readOnly: true,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: Colors.grey),
+        prefixIcon: Icon(icon, color: AppColors.grey),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
         ),
         filled: true,
-        fillColor: Colors.grey[100],
+        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
       ),
     );
   }
@@ -695,12 +727,17 @@ class _EditProfileEnhancedScreenState
     if (!_formKey.currentState!.validate()) return;
     if (_isSaving) return;
 
-    final userId = FirebaseAuth.instance.currentUser?.uid;
+    final authUser = FirebaseAuth.instance.currentUser;
+    final userId = authUser?.uid;
+    if (kDebugMode) {
+      debugPrint('[EditProfile] save start authUser=${authUser?.uid} email=${authUser?.email}');
+    }
     if (userId == null) return;
 
     setState(() => _isSaving = true);
     try {
       String? photoUrl = _currentPhotoUrl;
+      final previousPhotoUrl = _currentPhotoUrl;
 
       // Upload new photo if selected
       if (_selectedImageBytes != null || _selectedImage != null) {
@@ -719,9 +756,22 @@ class _EditProfileEnhancedScreenState
         setState(() => _isUploadingPhoto = false);
 
         // Delete old photo if exists
-        if (_currentPhotoUrl != null && _currentPhotoUrl != photoUrl) {
-          await _profilePhotoService.deleteProfilePhoto(_currentPhotoUrl!);
+        if (previousPhotoUrl != null && previousPhotoUrl != photoUrl) {
+          await _profilePhotoService.deleteProfilePhoto(previousPhotoUrl);
         }
+        if (mounted) {
+          setState(() {
+            _currentPhotoUrl = photoUrl;
+            _removedPhotoUrl = null;
+            _selectedImage = null;
+            _selectedImageBytes = null;
+          });
+        }
+      }
+
+      if (photoUrl == null && _removedPhotoUrl != null) {
+        await _profilePhotoService.deleteProfilePhoto(_removedPhotoUrl!);
+        _removedPhotoUrl = null;
       }
 
       final unitPreference = _unitPreference ?? 'Metric';
@@ -760,36 +810,48 @@ class _EditProfileEnhancedScreenState
       };
 
       final firestoreService = ref.read(firestoreServiceProvider);
+      if (kDebugMode) {
+        debugPrint('[EditProfile] updateUser start userId=$userId dataKeys=${data.keys.toList()}');
+      }
       await firestoreService.updateUser(userId, data);
-
-      // Update Firebase Auth display name
-      final authUser = FirebaseAuth.instance.currentUser;
-      if (authUser != null) {
-        await authUser.updateDisplayName(data['displayName']);
-        if (photoUrl != null) {
-          await authUser.updatePhotoURL(photoUrl);
-        }
-        await authUser.reload();
+      if (kDebugMode) {
+        debugPrint('[EditProfile] updateUser success userId=$userId');
       }
 
-      // Invalidate provider to refresh
-      ref.invalidate(currentUserProvider);
+      // Update Firebase Auth display name
+      final updatedAuthUser = FirebaseAuth.instance.currentUser;
+      if (updatedAuthUser != null) {
+        await updatedAuthUser.updateDisplayName(data['displayName']);
+        if (photoUrl != null) {
+          await updatedAuthUser.updatePhotoURL(photoUrl);
+        }
+        await updatedAuthUser.reload();
+      }
+
+      // Invalidate provider to refresh (only if widget is still mounted)
+      if (mounted) {
+        ref.invalidate(currentUserProvider);
+      }
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Profile updated successfully!'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.success,
           ),
         );
         Navigator.of(context).pop();
       }
-    } catch (e) {
+    } catch (e, stack) {
+      if (kDebugMode) {
+        debugPrint('[EditProfile] save failed userId=$userId error=$e');
+        debugPrint(stack.toString());
+      }
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to update profile: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -843,6 +905,28 @@ class _EditProfileEnhancedScreenState
     try {
       final firestoreService = ref.read(firestoreServiceProvider);
       await firestoreService.sanitizeUserProfile(userId);
+
+      final authPhotoUrl = FirebaseAuth.instance.currentUser?.photoURL;
+      final candidateUrl = _currentPhotoUrl ?? authPhotoUrl;
+      final migratedUrl = await _profilePhotoService.migrateLegacyProfilePhoto(
+        userId: userId,
+        photoUrl: candidateUrl,
+      );
+      if (migratedUrl == null) return;
+
+      await firestoreService.updateUser(userId, {
+        'photoUrl': migratedUrl,
+        'photoURL': migratedUrl,
+      });
+
+      final authUser = FirebaseAuth.instance.currentUser;
+      if (authUser != null) {
+        await authUser.updatePhotoURL(migratedUrl);
+      }
+
+      if (mounted) {
+        setState(() => _currentPhotoUrl = migratedUrl);
+      }
     } catch (_) {
       // Best-effort cleanup; ignore failures.
     }

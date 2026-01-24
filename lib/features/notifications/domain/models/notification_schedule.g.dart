@@ -42,7 +42,7 @@ Map<String, dynamic> _$$NotificationScheduleImplToJson(
       'isRecurring': instance.isRecurring,
       'recurrencePattern': instance.recurrencePattern,
       'daysOfWeek': instance.daysOfWeek,
-      'timeOfDay': instance.timeOfDay,
+      'timeOfDay': instance.timeOfDay?.toJson(),
       'isActive': instance.isActive,
       'createdAt': const TimestampConverter().toJson(instance.createdAt),
       'updatedAt':
@@ -53,6 +53,7 @@ Map<String, dynamic> _$$NotificationScheduleImplToJson(
 const _$NotificationTypeEnumMap = {
   NotificationType.workoutReminder: 'workoutReminder',
   NotificationType.habitCheckIn: 'habitCheckIn',
+  NotificationType.moodEnergyCheckIn: 'moodEnergyCheckIn',
   NotificationType.motivational: 'motivational',
   NotificationType.achievement: 'achievement',
   NotificationType.goalMilestone: 'goalMilestone',

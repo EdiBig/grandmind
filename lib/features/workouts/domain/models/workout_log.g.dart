@@ -36,7 +36,7 @@ Map<String, dynamic> _$$WorkoutLogImplToJson(_$WorkoutLogImpl instance) =>
       'completedAt':
           const NullableTimestampConverter().toJson(instance.completedAt),
       'duration': instance.duration,
-      'exercises': instance.exercises,
+      'exercises': instance.exercises.map((e) => e.toJson()).toList(),
       'caloriesBurned': instance.caloriesBurned,
       'notes': instance.notes,
       'difficulty': _$WorkoutDifficultyEnumMap[instance.difficulty],
@@ -75,7 +75,7 @@ Map<String, dynamic> _$$ExerciseLogImplToJson(_$ExerciseLogImpl instance) =>
       'exerciseId': instance.exerciseId,
       'exerciseName': instance.exerciseName,
       'type': _$ExerciseTypeEnumMap[instance.type]!,
-      'sets': instance.sets,
+      'sets': instance.sets.map((e) => e.toJson()).toList(),
       'notes': instance.notes,
     };
 

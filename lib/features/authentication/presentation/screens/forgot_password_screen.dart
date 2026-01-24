@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_gradients.dart';
 import '../providers/auth_provider.dart';
 
@@ -42,7 +43,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(e.toString()),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       } finally {
@@ -60,7 +61,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
       ),
@@ -75,7 +76,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                     const Icon(
                       Icons.mark_email_read,
                       size: 64,
-                      color: Colors.green,
+                      color: AppColors.success,
                     ),
                     const SizedBox(height: 24),
                     Text(
@@ -89,7 +90,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                     Text(
                       'We sent a password reset link to ${_emailController.text.trim()}',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: Colors.grey,
+                            color: AppColors.grey,
                           ),
                       textAlign: TextAlign.center,
                     ),
@@ -103,7 +104,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                         ),
                         backgroundColor:
                             Theme.of(context).colorScheme.primary,
-                        foregroundColor: Colors.white,
+                        foregroundColor: AppColors.white,
                       ),
                       child: const Text(
                         'Back to Login',
@@ -129,10 +130,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                               .primary,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.lock_reset,
                           size: 64,
-                          color: Colors.white,
+                          color: AppColors.white,
                         ),
                       ),
                       const SizedBox(height: 32),
@@ -150,7 +151,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                       Text(
                         'Enter your email address and we\'ll send you a link to reset your password',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              color: Colors.grey,
+                              color: AppColors.grey,
                             ),
                         textAlign: TextAlign.center,
                       ),
@@ -161,7 +162,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                         decoration: InputDecoration(
                           labelText: 'Email',
                           hintText: 'Enter your email',
-                          prefixIcon: const Icon(Icons.email_outlined),
+                          prefixIcon: Icon(Icons.email_outlined),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -186,7 +187,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                           ),
                           backgroundColor:
                               Theme.of(context).colorScheme.primary,
-                          foregroundColor: Colors.white,
+                          foregroundColor: AppColors.white,
                         ),
                         child: _isSending
                             ? const SizedBox(
@@ -195,7 +196,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
                                   valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white,
+                                    AppColors.white,
                                   ),
                                 ),
                               )

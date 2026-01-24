@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../data/services/progress_correlation_service.dart';
 import '../../../habits/presentation/widgets/habit_icon_helper.dart';
 
@@ -22,14 +23,14 @@ class HelpfulHabitCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.green.withValues(alpha: 0.3),
+          color: AppColors.success.withValues(alpha: 0.3),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.green.withValues(alpha: 0.1),
+            color: AppColors.success.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -44,12 +45,12 @@ class HelpfulHabitCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.1),
+                  color: AppColors.success.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   habitIcon,
-                  color: Colors.green,
+                  color: AppColors.success,
                   size: 24,
                 ),
               ),
@@ -62,7 +63,7 @@ class HelpfulHabitCard extends StatelessWidget {
                   children: [
                     Text(
                       habit.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -88,18 +89,18 @@ class HelpfulHabitCard extends StatelessWidget {
                       child: CircularProgressIndicator(
                         value: completionRate / 100,
                         strokeWidth: 5,
-                        backgroundColor: Colors.grey[200],
+                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
                         valueColor: const AlwaysStoppedAnimation<Color>(
-                          Colors.green,
+                          AppColors.success,
                         ),
                       ),
                     ),
                     Text(
                       '${completionRate.toStringAsFixed(0)}%',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: Colors.green,
+                        color: AppColors.success,
                       ),
                     ),
                   ],
@@ -113,7 +114,7 @@ class HelpfulHabitCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.green.withValues(alpha: 0.05),
+              color: AppColors.success.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
@@ -122,7 +123,7 @@ class HelpfulHabitCard extends StatelessWidget {
                 Icon(
                   Icons.lightbulb_outline,
                   size: 16,
-                  color: Colors.green[700],
+                  color: AppColors.success,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -130,7 +131,7 @@ class HelpfulHabitCard extends StatelessWidget {
                     correlation.insight,
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey[700],
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       height: 1.4,
                     ),
                   ),
@@ -147,16 +148,16 @@ class HelpfulHabitCard extends StatelessWidget {
     Color badgeColor;
     switch (strengthLabel) {
       case 'Strong':
-        badgeColor = Colors.green;
+        badgeColor = AppColors.success;
         break;
       case 'Moderate':
-        badgeColor = Colors.orange;
+        badgeColor = AppColors.warning;
         break;
       case 'Weak':
-        badgeColor = Colors.amber;
+        badgeColor = AppColors.warning;
         break;
       default:
-        badgeColor = Colors.grey;
+        badgeColor = AppColors.grey;
     }
 
     return Container(

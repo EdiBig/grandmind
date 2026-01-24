@@ -1,6 +1,8 @@
 import 'package:health/health.dart';
 import 'package:flutter/foundation.dart';
 import 'package:android_intent_plus/android_intent.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import '../../domain/models/health_data.dart';
 
 /// Service for managing health data integration with HealthKit (iOS) and Health Connect (Android)
 class HealthService {
@@ -323,7 +325,7 @@ class HealthService {
       return success;
     } catch (e) {
       if (kDebugMode) {
-        print('Error writing workout: $e');
+        debugPrint('Error writing workout: $e');
       }
       return false;
     }
@@ -342,7 +344,7 @@ class HealthService {
       return success;
     } catch (e) {
       if (kDebugMode) {
-        print('Error writing weight: $e');
+        debugPrint('Error writing weight: $e');
       }
       return false;
     }
@@ -369,6 +371,74 @@ class HealthService {
       averageHeartRate: heartRate,
       sleepHours: sleep,
       date: startOfDay,
+    );
+  }
+
+  /// Get the current health data source based on platform
+  HealthDataSource getCurrentSource() {
+    if (kIsWeb) {
+      return HealthDataSource.unknown;
+    }
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      return HealthDataSource.appleHealth;
+    }
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return HealthDataSource.googleFit;
+    }
+    return HealthDataSource.unknown;
+  }
+
+  /// Get device information for source details
+  Future<HealthSourceDetails> getSourceDetails() async {
+    if (kIsWeb) {
+      return const HealthSourceDetails(
+        deviceName: 'Web Browser',
+        appName: 'Kinesa',
+      );
+    }
+
+    try {
+      final deviceInfo = DeviceInfoPlugin();
+
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        final iosInfo = await deviceInfo.iosInfo;
+        return HealthSourceDetails(
+          deviceName: iosInfo.name,
+          deviceModel: iosInfo.model,
+          appName: 'Kinesa',
+          originalTimestamp: DateTime.now(),
+        );
+      } else if (defaultTargetPlatform == TargetPlatform.android) {
+        final androidInfo = await deviceInfo.androidInfo;
+        return HealthSourceDetails(
+          deviceName: androidInfo.device,
+          deviceModel: androidInfo.model,
+          appName: 'Kinesa',
+          originalTimestamp: DateTime.now(),
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error getting device info: $e');
+      }
+    }
+
+    return HealthSourceDetails(
+      appName: 'Kinesa',
+      originalTimestamp: DateTime.now(),
+    );
+  }
+
+  /// Get today's health summary with source information
+  Future<HealthSummaryWithSource> getTodaySummaryWithSource() async {
+    final summary = await getTodaySummary();
+    final source = getCurrentSource();
+    final sourceDetails = await getSourceDetails();
+
+    return HealthSummaryWithSource(
+      summary: summary,
+      source: source,
+      sourceDetails: sourceDetails,
     );
   }
 
@@ -433,4 +503,17 @@ class HealthSummary {
 
   bool get hasMeaningfulData =>
       steps > 0 || distanceMeters > 0 || caloriesBurned > 0 || sleepHours > 0;
+}
+
+/// Model for health data summary with source information
+class HealthSummaryWithSource {
+  final HealthSummary summary;
+  final HealthDataSource source;
+  final HealthSourceDetails sourceDetails;
+
+  HealthSummaryWithSource({
+    required this.summary,
+    required this.source,
+    required this.sourceDetails,
+  });
 }

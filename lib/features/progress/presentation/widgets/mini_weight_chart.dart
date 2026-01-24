@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../domain/models/weight_entry.dart';
 
 class MiniWeightChart extends StatelessWidget {
@@ -18,14 +19,14 @@ class MiniWeightChart extends StatelessWidget {
       return Container(
         height: 100,
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.1),
+          color: AppColors.white.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Center(
           child: Text(
             'No data yet',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.7),
+              color: AppColors.white.withValues(alpha: 0.7),
               fontSize: 12,
             ),
           ),
@@ -48,15 +49,15 @@ class MiniWeightChart extends StatelessWidget {
             LineChartBarData(
               spots: _buildSpots(),
               isCurved: true,
-              color: Colors.white,
+              color: AppColors.white,
               barWidth: 2,
               dotData: const FlDotData(show: false),
               belowBarData: BarAreaData(
                 show: true,
                 gradient: LinearGradient(
                   colors: [
-                    Colors.white.withValues(alpha: 0.3),
-                    Colors.white.withValues(alpha: 0.0),
+                    AppColors.white.withValues(alpha: 0.3),
+                    AppColors.white.withValues(alpha: 0.0),
                   ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,

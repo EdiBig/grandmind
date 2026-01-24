@@ -4,6 +4,28 @@ import '../../../../core/utils/timestamp_converter.dart';
 part 'health_data.freezed.dart';
 part 'health_data.g.dart';
 
+/// Enum for health data source
+enum HealthDataSource {
+  appleHealth,
+  googleFit,
+  manual,
+  unknown,
+}
+
+/// Details about the source device/app
+@freezed
+class HealthSourceDetails with _$HealthSourceDetails {
+  const factory HealthSourceDetails({
+    String? deviceName,
+    String? deviceModel,
+    String? appName,
+    @TimestampConverter() DateTime? originalTimestamp,
+  }) = _HealthSourceDetails;
+
+  factory HealthSourceDetails.fromJson(Map<String, dynamic> json) =>
+      _$HealthSourceDetailsFromJson(json);
+}
+
 /// Model for daily health data
 @freezed
 class HealthData with _$HealthData {
@@ -17,6 +39,8 @@ class HealthData with _$HealthData {
     double? averageHeartRate,
     required double sleepHours,
     double? weight,
+    @Default(HealthDataSource.unknown) HealthDataSource source,
+    HealthSourceDetails? sourceDetails,
     @TimestampConverter() required DateTime syncedAt,
     @TimestampConverter() DateTime? createdAt,
     @TimestampConverter() DateTime? updatedAt,

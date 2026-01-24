@@ -12,6 +12,7 @@ enum ReminderType {
   meal,
   sleep,
   meditation,
+  moodEnergy,
   custom,
 }
 

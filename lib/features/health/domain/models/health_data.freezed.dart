@@ -14,6 +14,228 @@ T _$identity<T>(T value) => value;
 final _privateConstructorUsedError = UnsupportedError(
     'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
+HealthSourceDetails _$HealthSourceDetailsFromJson(Map<String, dynamic> json) {
+  return _HealthSourceDetails.fromJson(json);
+}
+
+/// @nodoc
+mixin _$HealthSourceDetails {
+  String? get deviceName => throw _privateConstructorUsedError;
+  String? get deviceModel => throw _privateConstructorUsedError;
+  String? get appName => throw _privateConstructorUsedError;
+  @TimestampConverter()
+  DateTime? get originalTimestamp => throw _privateConstructorUsedError;
+
+  /// Serializes this HealthSourceDetails to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of HealthSourceDetails
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $HealthSourceDetailsCopyWith<HealthSourceDetails> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $HealthSourceDetailsCopyWith<$Res> {
+  factory $HealthSourceDetailsCopyWith(
+          HealthSourceDetails value, $Res Function(HealthSourceDetails) then) =
+      _$HealthSourceDetailsCopyWithImpl<$Res, HealthSourceDetails>;
+  @useResult
+  $Res call(
+      {String? deviceName,
+      String? deviceModel,
+      String? appName,
+      @TimestampConverter() DateTime? originalTimestamp});
+}
+
+/// @nodoc
+class _$HealthSourceDetailsCopyWithImpl<$Res, $Val extends HealthSourceDetails>
+    implements $HealthSourceDetailsCopyWith<$Res> {
+  _$HealthSourceDetailsCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of HealthSourceDetails
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? deviceName = freezed,
+    Object? deviceModel = freezed,
+    Object? appName = freezed,
+    Object? originalTimestamp = freezed,
+  }) {
+    return _then(_value.copyWith(
+      deviceName: freezed == deviceName
+          ? _value.deviceName
+          : deviceName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      deviceModel: freezed == deviceModel
+          ? _value.deviceModel
+          : deviceModel // ignore: cast_nullable_to_non_nullable
+              as String?,
+      appName: freezed == appName
+          ? _value.appName
+          : appName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      originalTimestamp: freezed == originalTimestamp
+          ? _value.originalTimestamp
+          : originalTimestamp // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$HealthSourceDetailsImplCopyWith<$Res>
+    implements $HealthSourceDetailsCopyWith<$Res> {
+  factory _$$HealthSourceDetailsImplCopyWith(_$HealthSourceDetailsImpl value,
+          $Res Function(_$HealthSourceDetailsImpl) then) =
+      __$$HealthSourceDetailsImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {String? deviceName,
+      String? deviceModel,
+      String? appName,
+      @TimestampConverter() DateTime? originalTimestamp});
+}
+
+/// @nodoc
+class __$$HealthSourceDetailsImplCopyWithImpl<$Res>
+    extends _$HealthSourceDetailsCopyWithImpl<$Res, _$HealthSourceDetailsImpl>
+    implements _$$HealthSourceDetailsImplCopyWith<$Res> {
+  __$$HealthSourceDetailsImplCopyWithImpl(_$HealthSourceDetailsImpl _value,
+      $Res Function(_$HealthSourceDetailsImpl) _then)
+      : super(_value, _then);
+
+  /// Create a copy of HealthSourceDetails
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? deviceName = freezed,
+    Object? deviceModel = freezed,
+    Object? appName = freezed,
+    Object? originalTimestamp = freezed,
+  }) {
+    return _then(_$HealthSourceDetailsImpl(
+      deviceName: freezed == deviceName
+          ? _value.deviceName
+          : deviceName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      deviceModel: freezed == deviceModel
+          ? _value.deviceModel
+          : deviceModel // ignore: cast_nullable_to_non_nullable
+              as String?,
+      appName: freezed == appName
+          ? _value.appName
+          : appName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      originalTimestamp: freezed == originalTimestamp
+          ? _value.originalTimestamp
+          : originalTimestamp // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$HealthSourceDetailsImpl implements _HealthSourceDetails {
+  const _$HealthSourceDetailsImpl(
+      {this.deviceName,
+      this.deviceModel,
+      this.appName,
+      @TimestampConverter() this.originalTimestamp});
+
+  factory _$HealthSourceDetailsImpl.fromJson(Map<String, dynamic> json) =>
+      _$$HealthSourceDetailsImplFromJson(json);
+
+  @override
+  final String? deviceName;
+  @override
+  final String? deviceModel;
+  @override
+  final String? appName;
+  @override
+  @TimestampConverter()
+  final DateTime? originalTimestamp;
+
+  @override
+  String toString() {
+    return 'HealthSourceDetails(deviceName: $deviceName, deviceModel: $deviceModel, appName: $appName, originalTimestamp: $originalTimestamp)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$HealthSourceDetailsImpl &&
+            (identical(other.deviceName, deviceName) ||
+                other.deviceName == deviceName) &&
+            (identical(other.deviceModel, deviceModel) ||
+                other.deviceModel == deviceModel) &&
+            (identical(other.appName, appName) || other.appName == appName) &&
+            (identical(other.originalTimestamp, originalTimestamp) ||
+                other.originalTimestamp == originalTimestamp));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType, deviceName, deviceModel, appName, originalTimestamp);
+
+  /// Create a copy of HealthSourceDetails
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$HealthSourceDetailsImplCopyWith<_$HealthSourceDetailsImpl> get copyWith =>
+      __$$HealthSourceDetailsImplCopyWithImpl<_$HealthSourceDetailsImpl>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$HealthSourceDetailsImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _HealthSourceDetails implements HealthSourceDetails {
+  const factory _HealthSourceDetails(
+          {final String? deviceName,
+          final String? deviceModel,
+          final String? appName,
+          @TimestampConverter() final DateTime? originalTimestamp}) =
+      _$HealthSourceDetailsImpl;
+
+  factory _HealthSourceDetails.fromJson(Map<String, dynamic> json) =
+      _$HealthSourceDetailsImpl.fromJson;
+
+  @override
+  String? get deviceName;
+  @override
+  String? get deviceModel;
+  @override
+  String? get appName;
+  @override
+  @TimestampConverter()
+  DateTime? get originalTimestamp;
+
+  /// Create a copy of HealthSourceDetails
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$HealthSourceDetailsImplCopyWith<_$HealthSourceDetailsImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
 HealthData _$HealthDataFromJson(Map<String, dynamic> json) {
   return _HealthData.fromJson(json);
 }
@@ -30,6 +252,8 @@ mixin _$HealthData {
   double? get averageHeartRate => throw _privateConstructorUsedError;
   double get sleepHours => throw _privateConstructorUsedError;
   double? get weight => throw _privateConstructorUsedError;
+  HealthDataSource get source => throw _privateConstructorUsedError;
+  HealthSourceDetails? get sourceDetails => throw _privateConstructorUsedError;
   @TimestampConverter()
   DateTime get syncedAt => throw _privateConstructorUsedError;
   @TimestampConverter()
@@ -63,9 +287,13 @@ abstract class $HealthDataCopyWith<$Res> {
       double? averageHeartRate,
       double sleepHours,
       double? weight,
+      HealthDataSource source,
+      HealthSourceDetails? sourceDetails,
       @TimestampConverter() DateTime syncedAt,
       @TimestampConverter() DateTime? createdAt,
       @TimestampConverter() DateTime? updatedAt});
+
+  $HealthSourceDetailsCopyWith<$Res>? get sourceDetails;
 }
 
 /// @nodoc
@@ -92,6 +320,8 @@ class _$HealthDataCopyWithImpl<$Res, $Val extends HealthData>
     Object? averageHeartRate = freezed,
     Object? sleepHours = null,
     Object? weight = freezed,
+    Object? source = null,
+    Object? sourceDetails = freezed,
     Object? syncedAt = null,
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
@@ -133,6 +363,14 @@ class _$HealthDataCopyWithImpl<$Res, $Val extends HealthData>
           ? _value.weight
           : weight // ignore: cast_nullable_to_non_nullable
               as double?,
+      source: null == source
+          ? _value.source
+          : source // ignore: cast_nullable_to_non_nullable
+              as HealthDataSource,
+      sourceDetails: freezed == sourceDetails
+          ? _value.sourceDetails
+          : sourceDetails // ignore: cast_nullable_to_non_nullable
+              as HealthSourceDetails?,
       syncedAt: null == syncedAt
           ? _value.syncedAt
           : syncedAt // ignore: cast_nullable_to_non_nullable
@@ -146,6 +384,20 @@ class _$HealthDataCopyWithImpl<$Res, $Val extends HealthData>
           : updatedAt // ignore: cast_nullable_to_non_nullable
               as DateTime?,
     ) as $Val);
+  }
+
+  /// Create a copy of HealthData
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $HealthSourceDetailsCopyWith<$Res>? get sourceDetails {
+    if (_value.sourceDetails == null) {
+      return null;
+    }
+
+    return $HealthSourceDetailsCopyWith<$Res>(_value.sourceDetails!, (value) {
+      return _then(_value.copyWith(sourceDetails: value) as $Val);
+    });
   }
 }
 
@@ -167,9 +419,14 @@ abstract class _$$HealthDataImplCopyWith<$Res>
       double? averageHeartRate,
       double sleepHours,
       double? weight,
+      HealthDataSource source,
+      HealthSourceDetails? sourceDetails,
       @TimestampConverter() DateTime syncedAt,
       @TimestampConverter() DateTime? createdAt,
       @TimestampConverter() DateTime? updatedAt});
+
+  @override
+  $HealthSourceDetailsCopyWith<$Res>? get sourceDetails;
 }
 
 /// @nodoc
@@ -194,6 +451,8 @@ class __$$HealthDataImplCopyWithImpl<$Res>
     Object? averageHeartRate = freezed,
     Object? sleepHours = null,
     Object? weight = freezed,
+    Object? source = null,
+    Object? sourceDetails = freezed,
     Object? syncedAt = null,
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
@@ -235,6 +494,14 @@ class __$$HealthDataImplCopyWithImpl<$Res>
           ? _value.weight
           : weight // ignore: cast_nullable_to_non_nullable
               as double?,
+      source: null == source
+          ? _value.source
+          : source // ignore: cast_nullable_to_non_nullable
+              as HealthDataSource,
+      sourceDetails: freezed == sourceDetails
+          ? _value.sourceDetails
+          : sourceDetails // ignore: cast_nullable_to_non_nullable
+              as HealthSourceDetails?,
       syncedAt: null == syncedAt
           ? _value.syncedAt
           : syncedAt // ignore: cast_nullable_to_non_nullable
@@ -264,6 +531,8 @@ class _$HealthDataImpl extends _HealthData {
       this.averageHeartRate,
       required this.sleepHours,
       this.weight,
+      this.source = HealthDataSource.unknown,
+      this.sourceDetails,
       @TimestampConverter() required this.syncedAt,
       @TimestampConverter() this.createdAt,
       @TimestampConverter() this.updatedAt})
@@ -292,6 +561,11 @@ class _$HealthDataImpl extends _HealthData {
   @override
   final double? weight;
   @override
+  @JsonKey()
+  final HealthDataSource source;
+  @override
+  final HealthSourceDetails? sourceDetails;
+  @override
   @TimestampConverter()
   final DateTime syncedAt;
   @override
@@ -303,7 +577,7 @@ class _$HealthDataImpl extends _HealthData {
 
   @override
   String toString() {
-    return 'HealthData(id: $id, userId: $userId, date: $date, steps: $steps, distanceMeters: $distanceMeters, caloriesBurned: $caloriesBurned, averageHeartRate: $averageHeartRate, sleepHours: $sleepHours, weight: $weight, syncedAt: $syncedAt, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'HealthData(id: $id, userId: $userId, date: $date, steps: $steps, distanceMeters: $distanceMeters, caloriesBurned: $caloriesBurned, averageHeartRate: $averageHeartRate, sleepHours: $sleepHours, weight: $weight, source: $source, sourceDetails: $sourceDetails, syncedAt: $syncedAt, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -324,6 +598,9 @@ class _$HealthDataImpl extends _HealthData {
             (identical(other.sleepHours, sleepHours) ||
                 other.sleepHours == sleepHours) &&
             (identical(other.weight, weight) || other.weight == weight) &&
+            (identical(other.source, source) || other.source == source) &&
+            (identical(other.sourceDetails, sourceDetails) ||
+                other.sourceDetails == sourceDetails) &&
             (identical(other.syncedAt, syncedAt) ||
                 other.syncedAt == syncedAt) &&
             (identical(other.createdAt, createdAt) ||
@@ -345,6 +622,8 @@ class _$HealthDataImpl extends _HealthData {
       averageHeartRate,
       sleepHours,
       weight,
+      source,
+      sourceDetails,
       syncedAt,
       createdAt,
       updatedAt);
@@ -376,6 +655,8 @@ abstract class _HealthData extends HealthData {
       final double? averageHeartRate,
       required final double sleepHours,
       final double? weight,
+      final HealthDataSource source,
+      final HealthSourceDetails? sourceDetails,
       @TimestampConverter() required final DateTime syncedAt,
       @TimestampConverter() final DateTime? createdAt,
       @TimestampConverter() final DateTime? updatedAt}) = _$HealthDataImpl;
@@ -403,6 +684,10 @@ abstract class _HealthData extends HealthData {
   double get sleepHours;
   @override
   double? get weight;
+  @override
+  HealthDataSource get source;
+  @override
+  HealthSourceDetails? get sourceDetails;
   @override
   @TimestampConverter()
   DateTime get syncedAt;

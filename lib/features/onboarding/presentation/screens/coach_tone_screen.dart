@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/route_constants.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../home/presentation/providers/dashboard_provider.dart';
 import '../../domain/onboarding_data.dart';
 import '../providers/onboarding_provider.dart';
 import '../widgets/onboarding_shell.dart';
@@ -16,12 +18,13 @@ class CoachToneScreen extends ConsumerWidget {
 
     ref.listen<OnboardingState>(onboardingProvider, (previous, next) {
       if (next.status == OnboardingStatus.completed) {
+        ref.invalidate(currentUserProvider);
         context.go(RouteConstants.home);
       } else if (next.status == OnboardingStatus.error) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(next.errorMessage ?? 'An error occurred'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -108,7 +111,7 @@ class CoachToneScreen extends ConsumerWidget {
                 color: colorScheme.surface,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.06),
+                    color: AppColors.black.withValues(alpha: 0.06),
                     blurRadius: 12,
                     offset: const Offset(0, -6),
                   ),
@@ -131,7 +134,7 @@ class CoachToneScreen extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(14),
                     ),
                     backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppColors.white,
                     disabledBackgroundColor:
                         colorScheme.surfaceContainerHighest,
                   ),
@@ -142,7 +145,7 @@ class CoachToneScreen extends ConsumerWidget {
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
+                                AlwaysStoppedAnimation<Color>(AppColors.white),
                           ),
                         )
                       : const Text(
@@ -260,7 +263,7 @@ class _CoachToneCard extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: AppColors.black.withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),

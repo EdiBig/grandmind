@@ -3,9 +3,11 @@ import 'package:uuid/uuid.dart';
 import 'package:kinesa/features/ai/data/models/ai_conversation_model.dart';
 import 'package:kinesa/features/ai/data/models/user_context.dart';
 import 'package:kinesa/features/ai/data/services/claude_api_service.dart';
+import 'package:kinesa/features/ai/data/repositories/ai_conversation_repository.dart';
 import 'package:kinesa/features/ai/domain/usecases/send_coach_message_usecase.dart';
 import 'package:kinesa/features/ai/domain/usecases/get_workout_recommendation_usecase.dart';
 import 'package:kinesa/features/ai/domain/usecases/get_form_check_usecase.dart';
+import 'package:kinesa/shared/services/analytics_service.dart';
 import 'package:logger/logger.dart';
 
 /// State for the AI Coach
@@ -51,15 +53,21 @@ class AICoachNotifier extends StateNotifier<AICoachState> {
   final SendCoachMessageUseCase _sendMessageUseCase;
   final GetWorkoutRecommendationUseCase _workoutRecommendationUseCase;
   final GetFormCheckUseCase _formCheckUseCase;
+  final AIConversationRepository _conversationRepository;
+  final AnalyticsService _analytics;
   final Logger _logger = Logger();
 
   AICoachNotifier({
     required SendCoachMessageUseCase sendMessageUseCase,
     required GetWorkoutRecommendationUseCase workoutRecommendationUseCase,
     required GetFormCheckUseCase formCheckUseCase,
+    required AIConversationRepository conversationRepository,
+    AnalyticsService? analytics,
   })  : _sendMessageUseCase = sendMessageUseCase,
         _workoutRecommendationUseCase = workoutRecommendationUseCase,
         _formCheckUseCase = formCheckUseCase,
+        _conversationRepository = conversationRepository,
+        _analytics = analytics ?? AnalyticsService(),
         super(const AICoachState());
 
   /// Start a new conversation
@@ -79,6 +87,60 @@ class AICoachNotifier extends StateNotifier<AICoachState> {
       currentConversation: conversation,
       error: null,
     );
+  }
+
+  /// Load the most recent conversation for a user
+  Future<void> loadLatestConversation(String userId) async {
+    try {
+      _logger.i('Loading latest conversation for user: $userId');
+
+      final conversation = await _conversationRepository.getLatestConversation(
+        userId: userId,
+        conversationType: 'fitness_coach',
+      );
+
+      if (conversation != null) {
+        _logger.i('Loaded conversation with ${conversation.messages.length} messages');
+        state = state.copyWith(
+          currentConversation: conversation,
+          error: null,
+        );
+      } else {
+        _logger.i('No previous conversation found');
+      }
+    } catch (e, stackTrace) {
+      _logger.e('Error loading conversation', error: e, stackTrace: stackTrace);
+    }
+  }
+
+  /// Load a specific conversation by ID
+  Future<void> loadConversation(String conversationId) async {
+    try {
+      _logger.i('Loading conversation: $conversationId');
+
+      final conversation = await _conversationRepository.getConversation(conversationId);
+
+      if (conversation != null) {
+        state = state.copyWith(
+          currentConversation: conversation,
+          error: null,
+        );
+      }
+    } catch (e, stackTrace) {
+      _logger.e('Error loading conversation', error: e, stackTrace: stackTrace);
+    }
+  }
+
+  /// Save the current conversation to Firestore
+  Future<void> _saveConversation() async {
+    if (state.currentConversation == null) return;
+
+    try {
+      await _conversationRepository.saveConversation(state.currentConversation!);
+      _logger.d('Conversation saved: ${state.currentConversation!.id}');
+    } catch (e, stackTrace) {
+      _logger.e('Error saving conversation', error: e, stackTrace: stackTrace);
+    }
   }
 
   /// Send a message to the AI coach
@@ -108,6 +170,10 @@ class AICoachNotifier extends StateNotifier<AICoachState> {
       state = state.copyWith(isLoading: true, error: null);
 
       _logger.i('Sending message to AI coach');
+
+      // Track message sent
+      await _analytics.logAICoachMessageSent(messageLength: message.length);
+      final stopwatch = Stopwatch()..start();
 
       // Convert conversation messages to ClaudeMessage format
       final conversationHistory = state.messages
@@ -139,6 +205,17 @@ class AICoachNotifier extends StateNotifier<AICoachState> {
       _addMessage(assistantMessage);
 
       state = state.copyWith(isLoading: false);
+
+      // Save conversation to Firestore
+      await _saveConversation();
+
+      // Track response received
+      stopwatch.stop();
+      await _analytics.logAICoachResponseReceived(
+        responseTimeMs: stopwatch.elapsedMilliseconds,
+        tokensUsed: result.inputTokens + result.outputTokens,
+        fromCache: result.fromCache,
+      );
 
       _logger.i('Message exchange complete');
       _logger.d('From cache: ${result.fromCache}');
@@ -210,6 +287,9 @@ class AICoachNotifier extends StateNotifier<AICoachState> {
 
       state = state.copyWith(isLoading: false);
 
+      // Save conversation to Firestore
+      await _saveConversation();
+
       _logger.i('Workout recommendation complete');
     } catch (e, stackTrace) {
       _logger.e('Error getting workout recommendation', error: e, stackTrace: stackTrace);
@@ -272,6 +352,9 @@ class AICoachNotifier extends StateNotifier<AICoachState> {
       _addMessage(assistantMessage);
 
       state = state.copyWith(isLoading: false);
+
+      // Save conversation to Firestore
+      await _saveConversation();
 
       _logger.i('Form check complete');
     } catch (e, stackTrace) {

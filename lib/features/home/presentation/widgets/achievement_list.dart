@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../profile/data/services/user_stats_service.dart';
 import '../../../progress/domain/models/progress_goal.dart';
 
@@ -108,7 +109,9 @@ class AchievementsList extends StatelessWidget {
         decoration: BoxDecoration(
           color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
         ),
         child: Text(
           'No achievements yet',
@@ -143,10 +146,14 @@ class _AchievementItem extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: unlocked ? color.withValues(alpha: 0.1) : Colors.grey[100],
+        color: unlocked
+            ? color.withValues(alpha: 0.1)
+            : Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: unlocked ? color.withValues(alpha: 0.3) : Colors.grey.withValues(alpha: 0.2),
+          color: unlocked
+              ? color.withValues(alpha: 0.3)
+              : Theme.of(context).colorScheme.outlineVariant,
         ),
       ),
       child: Row(
@@ -154,10 +161,12 @@ class _AchievementItem extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: unlocked ? color : Colors.grey,
+              color: unlocked
+                  ? color
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(achievement.icon, color: Colors.white, size: 28),
+            child: Icon(achievement.icon, color: AppColors.white, size: 28),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -168,14 +177,16 @@ class _AchievementItem extends StatelessWidget {
                   achievement.title,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: unlocked ? null : Colors.grey,
+                        color: unlocked
+                            ? null
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   achievement.description,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                 ),
                 const SizedBox(height: 8),
@@ -186,7 +197,8 @@ class _AchievementItem extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                         child: LinearProgressIndicator(
                           value: achievement.progress,
-                          backgroundColor: Colors.grey[200],
+                          backgroundColor:
+                              Theme.of(context).colorScheme.surfaceContainerHighest,
                           valueColor: AlwaysStoppedAnimation<Color>(color),
                           minHeight: 6,
                         ),
@@ -196,7 +208,9 @@ class _AchievementItem extends StatelessWidget {
                     Text(
                       achievement.progressLabel,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: unlocked ? color : Colors.grey,
+                            color: unlocked
+                                ? color
+                                : Theme.of(context).colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w600,
                           ),
                     ),
@@ -206,9 +220,13 @@ class _AchievementItem extends StatelessWidget {
             ),
           ),
           if (unlocked)
-            const Icon(Icons.check_circle, color: Colors.green, size: 28)
+            Icon(Icons.check_circle, color: AppColors.success, size: 28)
           else
-            Icon(Icons.lock_outline, color: Colors.grey[400], size: 28),
+            Icon(
+              Icons.lock_outline,
+              color: Theme.of(context).colorScheme.outlineVariant,
+              size: 28,
+            ),
         ],
       ),
     );

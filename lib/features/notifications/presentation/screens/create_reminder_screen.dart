@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../domain/models/notification_preference.dart';
 import '../providers/notification_providers.dart';
 
@@ -76,7 +77,7 @@ class _CreateReminderScreenState extends ConsumerState<CreateReminderScreen> {
               decoration: InputDecoration(
                 labelText: 'Reminder Title',
                 hintText: 'e.g., Morning Workout',
-                prefixIcon: const Icon(Icons.title),
+                prefixIcon: Icon(Icons.title),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -130,24 +131,24 @@ class _CreateReminderScreenState extends ConsumerState<CreateReminderScreen> {
                 onPressed: _isLoading ? null : _saveReminder,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primary,
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppColors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
                 child: _isLoading
-                    ? const SizedBox(
+                    ? SizedBox(
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                           valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
+                              AlwaysStoppedAnimation<Color>(AppColors.white),
                         ),
                       )
                     : Text(
                         isEditing ? 'Update Reminder' : 'Create Reminder',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -183,7 +184,7 @@ class _CreateReminderScreenState extends ConsumerState<CreateReminderScreen> {
               avatar: Icon(
                 _getTypeIcon(type),
                 size: 18,
-                color: isSelected ? Colors.white : primary,
+                color: isSelected ? AppColors.white : primary,
               ),
               selected: isSelected,
               onSelected: (selected) {
@@ -194,7 +195,7 @@ class _CreateReminderScreenState extends ConsumerState<CreateReminderScreen> {
               },
               selectedColor: primary,
               labelStyle: TextStyle(
-                color: isSelected ? Colors.white : onSurface,
+                color: isSelected ? AppColors.white : onSurface,
               ),
             );
           }).toList(),
@@ -216,7 +217,7 @@ class _CreateReminderScreenState extends ConsumerState<CreateReminderScreen> {
         ),
         title: const Text('Time'),
         subtitle: Text(_selectedTime.format(context)),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+        trailing: Icon(Icons.arrow_forward_ios, size: 16),
         onTap: () async {
           final time = await showTimePicker(
             context: context,
@@ -273,7 +274,7 @@ class _CreateReminderScreenState extends ConsumerState<CreateReminderScreen> {
                 decoration: BoxDecoration(
                   color: isSelected
                       ? Theme.of(context).colorScheme.primary
-                      : Colors.grey.shade200,
+                      : Theme.of(context).colorScheme.surfaceContainerHigh,
                   shape: BoxShape.circle,
                 ),
                 child: Center(
@@ -281,7 +282,7 @@ class _CreateReminderScreenState extends ConsumerState<CreateReminderScreen> {
                     day.$2,
                     style: TextStyle(
                       color: isSelected
-                          ? Colors.white
+                          ? AppColors.white
                           : Theme.of(context).colorScheme.onSurface,
                       fontWeight: FontWeight.w600,
                       fontSize: 12,
@@ -298,7 +299,7 @@ class _CreateReminderScreenState extends ConsumerState<CreateReminderScreen> {
             child: Text(
               'Please select at least one day',
               style: TextStyle(
-                color: Colors.red.shade700,
+                color: AppColors.error,
                 fontSize: 12,
               ),
             ),
@@ -367,6 +368,13 @@ class _CreateReminderScreenState extends ConsumerState<CreateReminderScreen> {
         _messageController.text =
             'Take a few minutes to center yourself and breathe.';
         _selectedTime = const TimeOfDay(hour: 7, minute: 0);
+        _selectedDays = {1, 2, 3, 4, 5, 6, 7}; // Every day
+        break;
+      case ReminderType.moodEnergy:
+        _titleController.text = '😊 How Are You Feeling?';
+        _messageController.text =
+            'Take a moment to log your mood and energy levels.';
+        _selectedTime = const TimeOfDay(hour: 20, minute: 0);
         _selectedDays = {1, 2, 3, 4, 5, 6, 7}; // Every day
         break;
       case ReminderType.custom:
@@ -458,6 +466,8 @@ class _CreateReminderScreenState extends ConsumerState<CreateReminderScreen> {
         return 'Sleep';
       case ReminderType.meditation:
         return 'Meditation';
+      case ReminderType.moodEnergy:
+        return 'Mood & Energy';
       case ReminderType.custom:
         return 'Custom';
     }
@@ -477,6 +487,8 @@ class _CreateReminderScreenState extends ConsumerState<CreateReminderScreen> {
         return Icons.bedtime;
       case ReminderType.meditation:
         return Icons.self_improvement;
+      case ReminderType.moodEnergy:
+        return Icons.mood;
       case ReminderType.custom:
         return Icons.notifications;
     }

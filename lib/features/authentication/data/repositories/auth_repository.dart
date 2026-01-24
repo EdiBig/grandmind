@@ -6,6 +6,7 @@ import 'dart:math';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import '../../../../core/errors/exceptions.dart';
+import '../../../../shared/services/analytics_service.dart';
 import '../../../user/data/models/user_model.dart';
 import '../../../user/data/services/firestore_service.dart';
 
@@ -13,14 +14,17 @@ class AuthRepository {
   final FirebaseAuth _firebaseAuth;
   final GoogleSignIn _googleSignIn;
   final FirestoreService _firestoreService;
+  final AnalyticsService _analytics;
 
   AuthRepository({
     FirebaseAuth? firebaseAuth,
     GoogleSignIn? googleSignIn,
     FirestoreService? firestoreService,
+    AnalyticsService? analytics,
   })  : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
         _googleSignIn = googleSignIn ?? GoogleSignIn(),
-        _firestoreService = firestoreService ?? FirestoreService();
+        _firestoreService = firestoreService ?? FirestoreService(),
+        _analytics = analytics ?? AnalyticsService();
 
   Stream<User?> get authStateChanges => _firebaseAuth.authStateChanges();
 
@@ -38,6 +42,8 @@ class AuthRepository {
       final user = userCredential.user;
       if (user != null) {
         await ensureUserProfile(user);
+        await _analytics.setUserId(user.uid);
+        await _analytics.logLogin(method: 'email');
       }
       return userCredential;
     } on FirebaseAuthException catch (e) {
@@ -77,6 +83,10 @@ class AuthRepository {
         if (displayName != null) {
           await userCredential.user!.updateDisplayName(displayName);
         }
+
+        // Track sign up
+        await _analytics.setUserId(userCredential.user!.uid);
+        await _analytics.logSignUp(method: 'email');
       }
 
       return userCredential;
@@ -112,6 +122,8 @@ class AuthRepository {
 
         if (userCredential.user != null) {
           await ensureUserProfile(userCredential.user!);
+          await _analytics.setUserId(userCredential.user!.uid);
+          await _analytics.logLogin(method: 'google');
         }
       }
     } catch (e) {
@@ -165,6 +177,8 @@ class AuthRepository {
           userCredential.user!,
           overrideDisplayName: displayName,
         );
+        await _analytics.setUserId(userCredential.user!.uid);
+        await _analytics.logLogin(method: 'apple');
       }
 
       return userCredential;
@@ -188,6 +202,7 @@ class AuthRepository {
   }
 
   Future<void> signOut() async {
+    await _analytics.logLogout();
     await Future.wait([
       _firebaseAuth.signOut(),
       _googleSignIn.signOut(),
@@ -197,6 +212,7 @@ class AuthRepository {
   Future<void> sendPasswordResetEmail(String email) async {
     try {
       await _firebaseAuth.sendPasswordResetEmail(email: email);
+      await _analytics.logPasswordResetRequested();
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
     }

@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../data/services/progress_correlation_service.dart';
 
 class CorrelationBarChart extends StatelessWidget {
@@ -18,14 +19,14 @@ class CorrelationBarChart extends StatelessWidget {
         height: 150,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.grey.shade100,
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Center(
           child: Text(
             'No correlation data available',
             style: TextStyle(
-              color: Colors.grey[600],
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontSize: 14,
             ),
           ),
@@ -53,8 +54,8 @@ class CorrelationBarChart extends StatelessWidget {
                 final correlation = displayCorrelations[group.x.toInt()];
                 return BarTooltipItem(
                   '${correlation.habit.name}\n',
-                  const TextStyle(
-                    color: Colors.white,
+                  TextStyle(
+                    color: AppColors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                   ),
@@ -130,7 +131,7 @@ class CorrelationBarChart extends StatelessWidget {
             verticalInterval: 0.5,
             getDrawingHorizontalLine: (value) {
               return FlLine(
-                color: Colors.grey.withValues(alpha: 0.2),
+                color: AppColors.grey.withValues(alpha: 0.2),
                 strokeWidth: 1,
               );
             },
@@ -138,12 +139,12 @@ class CorrelationBarChart extends StatelessWidget {
               // Highlight the zero line
               if (value == 0) {
                 return FlLine(
-                  color: Colors.grey.withValues(alpha: 0.5),
+                  color: AppColors.grey.withValues(alpha: 0.5),
                   strokeWidth: 2,
                 );
               }
               return FlLine(
-                color: Colors.grey.withValues(alpha: 0.2),
+                color: AppColors.grey.withValues(alpha: 0.2),
                 strokeWidth: 1,
               );
             },
@@ -151,7 +152,7 @@ class CorrelationBarChart extends StatelessWidget {
           borderData: FlBorderData(
             show: true,
             border: Border.all(
-              color: Colors.grey.withValues(alpha: 0.2),
+              color: AppColors.grey.withValues(alpha: 0.2),
             ),
           ),
           barGroups: displayCorrelations.asMap().entries.map((entry) {
@@ -178,13 +179,13 @@ class CorrelationBarChart extends StatelessWidget {
 
   Color _getCorrelationColor(double strength) {
     if (strength > 0.3) {
-      return Colors.green;
+      return AppColors.success;
     } else if (strength > 0) {
-      return Colors.lightGreen;
+      return AppColors.success.withValues(alpha: 0.7);
     } else if (strength > -0.2) {
-      return Colors.grey;
+      return AppColors.grey;
     } else {
-      return Colors.orange;
+      return AppColors.warning;
     }
   }
 }

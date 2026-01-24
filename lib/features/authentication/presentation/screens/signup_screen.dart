@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../../../../core/constants/route_constants.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/providers/auth_config_provider.dart';
 import '../../../user/data/services/firestore_service.dart';
 import '../providers/auth_provider.dart';
@@ -38,9 +39,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     if (_formKey.currentState!.validate()) {
       if (!_agreedToTerms) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Please agree to the Terms of Service'),
-            backgroundColor: Colors.orange,
+            backgroundColor: AppColors.warning,
           ),
         );
         return;
@@ -64,13 +65,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
     final appleEnabledAsync = ref.watch(appleSignInEnabledProvider);
+    final colorScheme = Theme.of(context).colorScheme;
 
     ref.listen<AuthState>(authControllerProvider, (previous, next) {
       if (next.status == AuthStatus.error) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(next.errorMessage ?? 'An error occurred'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -119,7 +121,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
       ),
@@ -142,7 +144,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 Text(
                   'Sign up to start your fitness journey',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Colors.grey,
+                        color: colorScheme.onSurfaceVariant,
                       ),
                   textAlign: TextAlign.center,
                 ),
@@ -153,7 +155,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   decoration: InputDecoration(
                     labelText: 'Email',
                     hintText: 'Enter your email',
-                    prefixIcon: const Icon(Icons.email_outlined),
+                    prefixIcon: Icon(Icons.email_outlined),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -290,16 +292,16 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppColors.white,
                   ),
                   child: authState.status == AuthStatus.loading
-                      ? const SizedBox(
+                      ? SizedBox(
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
+                                AlwaysStoppedAnimation<Color>(AppColors.white),
                           ),
                         )
                       : const Text(
@@ -313,15 +315,15 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 const SizedBox(height: 24),
                 Row(
                   children: [
-                    Expanded(child: Divider(color: Colors.grey[300])),
+                    Expanded(child: Divider(color: colorScheme.outlineVariant)),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
                         'OR',
-                        style: TextStyle(color: Colors.grey[600]),
+                        style: TextStyle(color: colorScheme.onSurfaceVariant),
                       ),
                     ),
-                    Expanded(child: Divider(color: Colors.grey[300])),
+                    Expanded(child: Divider(color: colorScheme.outlineVariant)),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -351,7 +353,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    side: BorderSide(color: Colors.grey[300]!),
+                    side: BorderSide(color: colorScheme.outlineVariant),
                   ),
                 ),
                 if (isAppleSignInSupported && isAppleSignInEnabled) ...[

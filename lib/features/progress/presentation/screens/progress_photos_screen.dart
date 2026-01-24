@@ -1,12 +1,15 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../../../core/constants/route_constants.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/services/image_cropper_service.dart';
 import '../../domain/models/progress_photo.dart';
 import '../providers/progress_providers.dart';
 import 'photo_detail_screen.dart';
@@ -21,6 +24,8 @@ class ProgressPhotosScreen extends ConsumerStatefulWidget {
 
 class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
   PhotoAngle? _selectedAngle; // null = All
+  double _uploadProgress = 0.0;
+  String _uploadStatus = '';
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +35,11 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
       appBar: AppBar(
         title: const Text('Progress Photos'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.compare_arrows),
+            tooltip: 'Compare Photos',
+            onPressed: () => context.push(RouteConstants.photoComparison),
+          ),
           IconButton(
             icon: const Icon(Icons.info_outline),
             onPressed: () => _showInfoDialog(context),
@@ -68,8 +78,8 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.error_outline,
-                          size: 48, color: Colors.red),
+                      Icon(Icons.error_outline,
+                          size: 48, color: AppColors.error),
                       const SizedBox(height: 16),
                       const Text('Error loading photos'),
                       const SizedBox(height: 8),
@@ -197,42 +207,10 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: kIsWeb
-                ? Image.network(
-                    photo.thumbnailUrl,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Container(
-                        color: Colors.grey[200],
-                        child: const Center(
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) => Image.network(
-                      photo.imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: Colors.grey[300],
-                        child: const Icon(Icons.error, color: Colors.red),
-                      ),
-                    ),
-                  )
-                : CachedNetworkImage(
-                    imageUrl: photo.thumbnailUrl,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(
-                      color: Colors.grey[200],
-                      child: const Center(
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    ),
-                    errorWidget: (context, url, error) => Container(
-                      color: Colors.grey[300],
-                      child: const Icon(Icons.error, color: Colors.red),
-                    ),
-                  ),
+            child: _PhotoWithFallback(
+              thumbnailUrl: photo.thumbnailUrl,
+              fullImageUrl: photo.imageUrl,
+            ),
           ),
           // Angle badge
           Positioned(
@@ -241,13 +219,13 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.6),
+                color: Theme.of(context).colorScheme.scrim.withValues(alpha: 0.6),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
                 _getAngleLabel(photo.angle),
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onInverseSurface,
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
                 ),
@@ -280,7 +258,7 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
           Icon(
             Icons.photo_camera_outlined,
             size: 80,
-            color: Colors.grey[400],
+            color: Theme.of(context).colorScheme.outlineVariant,
           ),
           const SizedBox(height: 24),
           Text(
@@ -289,20 +267,20 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
                 : 'No ${_getAngleLabel(_selectedAngle!)} Photos',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.grey[600],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           ),
           const SizedBox(height: 8),
           Text(
             'Track your transformation with photos',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Colors.grey[500],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: () => _showPhotoSourcePicker(context),
-            icon: const Icon(Icons.add_a_photo),
+            icon: Icon(Icons.add_a_photo),
             label: const Text('Add First Photo'),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
@@ -371,13 +349,25 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
       }
 
       final imageFile = File(pickedFile.path);
-      _showPhotoMetadataDialog(imageFile);
+
+      // Show crop option dialog
+      if (!mounted) return;
+      final cropperService = ImageCropperService();
+      final croppedFile = await cropperService.showCropOptionDialog(
+        imageFile: imageFile,
+        context: context,
+        config: CropConfig.progressPhoto,
+      );
+
+      if (croppedFile == null || !mounted) return;
+
+      _showPhotoMetadataDialog(croppedFile);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error picking image: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -403,7 +393,7 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
               const SizedBox(height: 8),
               DropdownButtonFormField<PhotoAngle>(
                 initialValue: selectedAngle,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   border: OutlineInputBorder(),
                   contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
@@ -426,9 +416,9 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
                 contentPadding: EdgeInsets.zero,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
-                  side: BorderSide(color: Colors.grey[400]!),
+                    side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                 ),
-                leading: const Icon(Icons.calendar_today),
+                leading: Icon(Icons.calendar_today),
                 title: Text(DateFormat('MMM d, yyyy').format(selectedDate)),
                 trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                 onTap: () async {
@@ -450,7 +440,7 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
               const SizedBox(height: 8),
               TextField(
                 controller: notesController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   border: OutlineInputBorder(),
                   hintText: 'Add notes about this photo...',
                 ),
@@ -525,7 +515,7 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
                 contentPadding: EdgeInsets.zero,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
-                  side: BorderSide(color: Colors.grey[400]!),
+                    side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                 ),
                 leading: const Icon(Icons.calendar_today),
                 title: Text(DateFormat('MMM d, yyyy').format(selectedDate)),
@@ -597,24 +587,54 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
       return;
     }
 
-    // Show loading dialog
+    // Reset progress
+    setState(() {
+      _uploadProgress = 0.0;
+      _uploadStatus = 'Preparing...';
+    });
+
+    // Show progress dialog
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(
-        child: Card(
-          child: Padding(
-            padding: EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text('Uploading photo...'),
-              ],
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return PopScope(
+            canPop: false,
+            child: Center(
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 200,
+                        child: Column(
+                          children: [
+                            LinearProgressIndicator(
+                              value: _uploadProgress,
+                              backgroundColor: Theme.of(context).colorScheme.outlineVariant,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '${(_uploadProgress * 100).toInt()}%',
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(_uploadStatus),
+                    ],
+                  ),
+                ),
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
 
@@ -625,10 +645,18 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
       angle: angle,
       date: date,
       notes: notes,
+      onProgress: (progress, status) {
+        if (mounted) {
+          setState(() {
+            _uploadProgress = progress;
+            _uploadStatus = status;
+          });
+        }
+      },
     );
 
     if (mounted) {
-      Navigator.pop(context); // Close loading dialog
+      Navigator.pop(context); // Close progress dialog
 
       if (photoId != null) {
         setState(() {
@@ -636,16 +664,16 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
         });
         ref.invalidate(progressPhotosProvider);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Photo uploaded successfully!'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: const Text('Photo uploaded successfully!'),
+            backgroundColor: AppColors.success,
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to upload photo. Please try again.'),
-            backgroundColor: Colors.red,
+          SnackBar(
+            content: const Text('Failed to upload photo. Please try again.'),
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -668,23 +696,54 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
       return;
     }
 
+    // Reset progress
+    setState(() {
+      _uploadProgress = 0.0;
+      _uploadStatus = 'Preparing...';
+    });
+
+    // Show progress dialog
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(
-        child: Card(
-          child: Padding(
-            padding: EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text('Uploading photo...'),
-              ],
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return PopScope(
+            canPop: false,
+            child: Center(
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 200,
+                        child: Column(
+                          children: [
+                            LinearProgressIndicator(
+                              value: _uploadProgress,
+                              backgroundColor: Theme.of(context).colorScheme.outlineVariant,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '${(_uploadProgress * 100).toInt()}%',
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(_uploadStatus),
+                    ],
+                  ),
+                ),
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
 
@@ -695,6 +754,14 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
       angle: angle,
       date: date,
       notes: notes,
+      onProgress: (progress, status) {
+        if (mounted) {
+          setState(() {
+            _uploadProgress = progress;
+            _uploadStatus = status;
+          });
+        }
+      },
     );
 
     if (mounted) {
@@ -705,16 +772,16 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
         });
         ref.invalidate(progressPhotosProvider);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Photo uploaded successfully!'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: const Text('Photo uploaded successfully!'),
+            backgroundColor: AppColors.success,
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to upload photo. Please try again.'),
-            backgroundColor: Colors.red,
+          SnackBar(
+            content: const Text('Failed to upload photo. Please try again.'),
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -755,6 +822,108 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Widget that tries to load thumbnail first, falls back to full image if thumbnail fails
+class _PhotoWithFallback extends StatefulWidget {
+  final String thumbnailUrl;
+  final String fullImageUrl;
+
+  const _PhotoWithFallback({
+    required this.thumbnailUrl,
+    required this.fullImageUrl,
+  });
+
+  @override
+  State<_PhotoWithFallback> createState() => _PhotoWithFallbackState();
+}
+
+class _PhotoWithFallbackState extends State<_PhotoWithFallback> {
+  bool _thumbnailFailed = false;
+  bool _fullImageFailed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    // If both failed, show error state
+    if (_thumbnailFailed && _fullImageFailed) {
+      return Container(
+        color: Theme.of(context).colorScheme.outlineVariant,
+        child: Center(
+          child: Icon(Icons.broken_image, color: AppColors.grey),
+        ),
+      );
+    }
+
+    final urlToUse = _thumbnailFailed ? widget.fullImageUrl : widget.thumbnailUrl;
+
+    if (kIsWeb) {
+      return Image.network(
+        urlToUse,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            color: Theme.of(context).colorScheme.outlineVariant,
+            child: const Center(
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) {
+          // Try fallback URL
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                if (!_thumbnailFailed) {
+                  _thumbnailFailed = true;
+                } else {
+                  _fullImageFailed = true;
+                }
+              });
+            }
+          });
+          return Container(
+            color: Theme.of(context).colorScheme.outlineVariant,
+            child: const Center(
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          );
+        },
+      );
+    }
+
+    // Mobile - use CachedNetworkImage
+    return CachedNetworkImage(
+      imageUrl: urlToUse,
+      fit: BoxFit.cover,
+      placeholder: (context, url) => Container(
+        color: Theme.of(context).colorScheme.outlineVariant,
+        child: const Center(
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ),
+      errorWidget: (context, url, error) {
+        // Try fallback URL on next frame
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {
+              if (!_thumbnailFailed) {
+                _thumbnailFailed = true;
+              } else {
+                _fullImageFailed = true;
+              }
+            });
+          }
+        });
+        return Container(
+          color: Theme.of(context).colorScheme.outlineVariant,
+          child: const Center(
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        );
+      },
     );
   }
 }

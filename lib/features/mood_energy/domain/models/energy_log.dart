@@ -1,71 +1,87 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
+import '../../../../core/utils/timestamp_converter.dart';
 
-class EnergyLog {
-  final String id;
-  final String userId;
-  final DateTime loggedAt;
-  final int? energyBefore;
-  final int? energyAfter;
-  final List<String> tags;
-  final String? notes;
-  final String? source;
+part 'energy_log.freezed.dart';
+part 'energy_log.g.dart';
 
-  EnergyLog({
-    required this.id,
-    required this.userId,
-    required this.loggedAt,
-    this.energyBefore,
-    this.energyAfter,
-    this.tags = const [],
-    this.notes,
-    this.source,
-  });
+@freezed
+class EnergyLog with _$EnergyLog {
+  const EnergyLog._();
 
+  const factory EnergyLog({
+    required String id,
+    required String userId,
+    @TimestampConverter() required DateTime loggedAt,
+    int? energyLevel, // 1-5 scale
+    int? moodRating, // 1-5 scale (1=bad, 5=great)
+    @Default([]) List<String> contextTags,
+    String? notes,
+    String? source, // 'manual', 'workout', 'habit', etc.
+  }) = _EnergyLog;
+
+  factory EnergyLog.fromJson(Map<String, dynamic> json) =>
+      _$EnergyLogFromJson(json);
+
+  // Computed property for average energy (if we track before/after in future)
   double? get averageEnergy {
-    final values = <int>[
-      if (energyBefore != null) energyBefore!,
-      if (energyAfter != null) energyAfter!,
-    ];
-    if (values.isEmpty) return null;
-    final total = values.fold<int>(0, (sum, value) => sum + value);
-    return total / values.length;
-  }
-
-  factory EnergyLog.fromJson(Map<String, dynamic> json) {
-    final loggedAt = _parseTimestamp(json['loggedAt']) ?? DateTime.now();
-    return EnergyLog(
-      id: json['id'] as String? ?? '',
-      userId: json['userId'] as String? ?? '',
-      loggedAt: loggedAt,
-      energyBefore: (json['energyBefore'] as num?)?.toInt(),
-      energyAfter: (json['energyAfter'] as num?)?.toInt(),
-      tags: (json['tags'] as List<dynamic>? ?? [])
-          .map((tag) => tag.toString())
-          .toList(),
-      notes: json['notes'] as String?,
-      source: json['source'] as String?,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'userId': userId,
-      'loggedAt': Timestamp.fromDate(loggedAt),
-      if (energyBefore != null) 'energyBefore': energyBefore,
-      if (energyAfter != null) 'energyAfter': energyAfter,
-      if (tags.isNotEmpty) 'tags': tags,
-      if (notes != null && notes!.isNotEmpty) 'notes': notes,
-      if (source != null) 'source': source,
-    };
-  }
-
-  static DateTime? _parseTimestamp(dynamic value) {
-    if (value is Timestamp) {
-      return value.toDate();
-    }
-    if (value is DateTime) {
-      return value;
-    }
+    if (energyLevel != null) return energyLevel!.toDouble();
     return null;
+  }
+
+  // Helper to get mood emoji
+  String get moodEmoji {
+    if (moodRating == null) return '😐';
+    switch (moodRating!) {
+      case 1:
+        return '😢'; // Very sad
+      case 2:
+        return '😕'; // Sad
+      case 3:
+        return '😐'; // Neutral
+      case 4:
+        return '🙂'; // Happy
+      case 5:
+        return '😄'; // Very happy
+      default:
+        return '😐';
+    }
+  }
+
+  // Helper to get energy level description
+  String get energyDescription {
+    if (energyLevel == null) return 'Not logged';
+    switch (energyLevel!) {
+      case 1:
+        return 'Exhausted';
+      case 2:
+        return 'Low';
+      case 3:
+        return 'Moderate';
+      case 4:
+        return 'High';
+      case 5:
+        return 'Energized';
+      default:
+        return 'Unknown';
+    }
+  }
+
+  // Helper to get mood description
+  String get moodDescription {
+    if (moodRating == null) return 'Not logged';
+    switch (moodRating!) {
+      case 1:
+        return 'Terrible';
+      case 2:
+        return 'Bad';
+      case 3:
+        return 'Okay';
+      case 4:
+        return 'Good';
+      case 5:
+        return 'Excellent';
+      default:
+        return 'Unknown';
+    }
   }
 }

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/pagination/pagination.dart';
 import '../models/challenge_model.dart';
 import '../models/challenge_participant_model.dart';
 
@@ -7,7 +8,7 @@ final challengeRepositoryProvider = Provider<ChallengeRepository>((ref) {
   return ChallengeRepository();
 });
 
-class ChallengeRepository {
+class ChallengeRepository with PaginatedRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   static const String _challengesCollection = 'challenges';
@@ -161,5 +162,104 @@ class ChallengeRepository {
         'participantCount': FieldValue.increment(-1),
       });
     });
+  }
+
+  // ========== PAGINATED METHODS ==========
+
+  /// Get paginated challenge participants (for rankings)
+  Future<PaginatedResult<ChallengeParticipantModel>> getParticipantsPaginated({
+    required String challengeId,
+    int pageSize = 50,
+    DocumentSnapshot? startAfterDocument,
+    int page = 0,
+    bool sortByProgress = true,
+  }) async {
+    Query baseQuery = _firestore
+        .collection(_participantsCollection)
+        .where('challengeId', isEqualTo: challengeId)
+        .where('leftAt', isNull: true); // Only active participants
+
+    if (sortByProgress) {
+      baseQuery = baseQuery.orderBy('currentProgress', descending: true);
+    } else {
+      baseQuery = baseQuery.orderBy('joinedAt', descending: true);
+    }
+
+    return executePaginatedQuery(
+      baseQuery: baseQuery,
+      fromJson: (json) => ChallengeParticipantModel.fromFirestore(json, json['id'] as String),
+      pageSize: pageSize,
+      startAfterDocument: startAfterDocument,
+      page: page,
+    );
+  }
+
+  /// Stream first page of participants (real-time rankings)
+  Stream<PaginatedResult<ChallengeParticipantModel>> streamParticipantsFirstPage({
+    required String challengeId,
+    int pageSize = 50,
+    bool sortByProgress = true,
+  }) {
+    Query baseQuery = _firestore
+        .collection(_participantsCollection)
+        .where('challengeId', isEqualTo: challengeId)
+        .where('leftAt', isNull: true);
+
+    if (sortByProgress) {
+      baseQuery = baseQuery.orderBy('currentProgress', descending: true);
+    } else {
+      baseQuery = baseQuery.orderBy('joinedAt', descending: true);
+    }
+
+    return streamFirstPage(
+      baseQuery: baseQuery,
+      fromJson: (json) => ChallengeParticipantModel.fromFirestore(json, json['id'] as String),
+      pageSize: pageSize,
+    );
+  }
+
+  /// Get paginated challenges
+  Future<PaginatedResult<ChallengeModel>> getChallengesPaginated({
+    bool activeOnly = true,
+    int pageSize = 20,
+    DocumentSnapshot? startAfterDocument,
+    int page = 0,
+  }) async {
+    Query baseQuery = _firestore.collection(_challengesCollection);
+
+    if (activeOnly) {
+      baseQuery = baseQuery.where('isActive', isEqualTo: true);
+    }
+
+    baseQuery = baseQuery.orderBy('startDate', descending: true);
+
+    return executePaginatedQuery(
+      baseQuery: baseQuery,
+      fromJson: (json) => ChallengeModel.fromFirestore(json, json['id'] as String),
+      pageSize: pageSize,
+      startAfterDocument: startAfterDocument,
+      page: page,
+    );
+  }
+
+  /// Get paginated user challenges
+  Future<PaginatedResult<ChallengeParticipantModel>> getUserChallengesPaginated({
+    required String userId,
+    int pageSize = 20,
+    DocumentSnapshot? startAfterDocument,
+    int page = 0,
+  }) async {
+    final baseQuery = _firestore
+        .collection(_participantsCollection)
+        .where('userId', isEqualTo: userId)
+        .orderBy('joinedAt', descending: true);
+
+    return executePaginatedQuery(
+      baseQuery: baseQuery,
+      fromJson: (json) => ChallengeParticipantModel.fromFirestore(json, json['id'] as String),
+      pageSize: pageSize,
+      startAfterDocument: startAfterDocument,
+      page: page,
+    );
   }
 }

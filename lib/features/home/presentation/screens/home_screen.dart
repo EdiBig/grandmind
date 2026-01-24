@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/home_nav_provider.dart';
 import '../widgets/bottom_nav_bar.dart';
 import 'dashboard_tab.dart';
 import 'workouts_tab.dart';
-import '../../../challenges/presentation/screens/together_hub_screen.dart';
+import '../../../challenges/presentation/screens/unity_hub_screen.dart';
 import 'habits_tab.dart';
 import 'progress_tab.dart';
 import '../../../nutrition/presentation/screens/nutrition_tab.dart';
-
-final selectedIndexProvider = StateProvider<int>((ref) => 0);
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -20,7 +19,7 @@ class HomeScreen extends ConsumerWidget {
     final List<Widget> tabs = [
       const DashboardTab(),
       const WorkoutsTab(),
-      const TogetherHubScreen(),
+      const UnityHubScreen(),
       const HabitsTab(),
       const ProgressTab(),
       const NutritionTab(),

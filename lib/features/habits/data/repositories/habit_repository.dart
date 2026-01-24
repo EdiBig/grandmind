@@ -1,15 +1,23 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/pagination/pagination.dart';
+import '../../../../core/providers/analytics_provider.dart';
+import '../../../../shared/services/analytics_service.dart';
 import '../../domain/models/habit.dart';
 import '../../domain/models/habit_log.dart';
 
 /// Provider for HabitRepository
 final habitRepositoryProvider = Provider<HabitRepository>((ref) {
-  return HabitRepository();
+  final analytics = ref.watch(analyticsProvider);
+  return HabitRepository(analytics: analytics);
 });
 
-class HabitRepository {
+class HabitRepository with PaginatedRepository {
+  HabitRepository({AnalyticsService? analytics})
+      : _analytics = analytics ?? AnalyticsService();
+
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final AnalyticsService _analytics;
 
   static const String _habitsCollection = 'habits';
   static const String _habitLogsCollection = 'habit_logs';
@@ -91,6 +99,14 @@ class HabitRepository {
     habitData['createdAt'] = FieldValue.serverTimestamp();
 
     final docRef = await _firestore.collection(_habitsCollection).add(habitData);
+
+    // Track analytics
+    await _analytics.logHabitCreated(
+      habitId: docRef.id,
+      habitName: habit.name,
+      category: habit.icon.name,
+    );
+
     return docRef.id;
   }
 
@@ -100,11 +116,12 @@ class HabitRepository {
   }
 
   /// Delete a habit
-  Future<void> deleteHabit(String habitId) async {
+  Future<void> deleteHabit(String habitId, String userId) async {
     // Also delete all associated logs
     final logs = await _firestore
         .collection(_habitLogsCollection)
         .where('habitId', isEqualTo: habitId)
+        .where('userId', isEqualTo: userId)
         .get();
 
     final batch = _firestore.batch();
@@ -116,6 +133,9 @@ class HabitRepository {
     batch.delete(_firestore.collection(_habitsCollection).doc(habitId));
 
     await batch.commit();
+
+    // Track analytics
+    await _analytics.logHabitDeleted(habitId: habitId);
   }
 
   /// Archive/activate a habit
@@ -128,7 +148,7 @@ class HabitRepository {
   // ========== Habit Logs ==========
 
   /// Log a habit completion
-  Future<String> logHabit(HabitLog log) async {
+  Future<String> logHabit(HabitLog log, {String? habitName}) async {
     final logData = log.toJson();
     logData['completedAt'] = FieldValue.serverTimestamp();
 
@@ -137,18 +157,32 @@ class HabitRepository {
     // Update habit's last completed date and streak
     await _updateHabitStreak(log.habitId, log.userId, log.date);
 
+    // Track analytics
+    final name = habitName ?? await _getHabitName(log.habitId);
+    await _analytics.logHabitCompleted(
+      habitId: log.habitId,
+      habitName: name ?? 'Unknown',
+    );
+
     return docRef.id;
+  }
+
+  Future<String?> _getHabitName(String habitId) async {
+    final habit = await getHabit(habitId);
+    return habit?.name;
   }
 
   /// Get habit logs for a specific habit
   Future<List<HabitLog>> getHabitLogs(
-    String habitId, {
+    String habitId,
+    String userId, {
     DateTime? startDate,
     DateTime? endDate,
   }) async {
     Query query = _firestore
         .collection(_habitLogsCollection)
         .where('habitId', isEqualTo: habitId)
+        .where('userId', isEqualTo: userId)
         .orderBy('date', descending: true);
 
     if (startDate != null) {
@@ -164,13 +198,10 @@ class HabitRepository {
     final snapshot = await query.get();
 
     return snapshot.docs
-        .map((doc) {
-          final data = doc.data() as Map<String, dynamic>?;
-          return HabitLog.fromJson({
-            ...?data,
-            'id': doc.id,
-          });
-        })
+        .map((doc) => HabitLog.fromJson({
+              ...doc.data() as Map<String, dynamic>,
+              'id': doc.id,
+            }))
         .toList();
   }
 
@@ -223,13 +254,18 @@ class HabitRepository {
   }
 
   /// Check if a habit was completed on a specific date
-  Future<HabitLog?> getHabitLogForDate(String habitId, DateTime date) async {
+  Future<HabitLog?> getHabitLogForDate(
+    String habitId,
+    String userId,
+    DateTime date,
+  ) async {
     final startOfDay = DateTime(date.year, date.month, date.day);
     final endOfDay = startOfDay.add(const Duration(days: 1));
 
     final snapshot = await _firestore
         .collection(_habitLogsCollection)
         .where('habitId', isEqualTo: habitId)
+        .where('userId', isEqualTo: userId)
         .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
         .where('date', isLessThan: Timestamp.fromDate(endOfDay))
         .limit(1)
@@ -268,7 +304,7 @@ class HabitRepository {
     if (habit == null) return;
 
     // Get all logs for this habit to calculate streak
-    final logs = await getHabitLogs(habitId);
+    final logs = await getHabitLogs(habitId, userId);
 
     // Sort logs by date (most recent first)
     logs.sort((a, b) => b.date.compareTo(a.date));
@@ -313,7 +349,7 @@ class HabitRepository {
     final habit = await getHabit(habitId);
     if (habit == null) return;
 
-    final logs = await getHabitLogs(habitId);
+    final logs = await getHabitLogs(habitId, userId);
 
     if (logs.isEmpty) {
       await updateHabit(habitId, {
@@ -370,6 +406,97 @@ class HabitRepository {
               'id': doc.id,
             }))
         .toList());
+  }
+
+  // ========== Paginated Methods ==========
+
+  /// Get paginated habit logs for a user
+  Future<PaginatedResult<HabitLog>> getHabitLogsPaginated({
+    required String userId,
+    String? habitId,
+    int pageSize = 20,
+    DocumentSnapshot? startAfterDocument,
+    DateTime? startDate,
+    DateTime? endDate,
+    int page = 0,
+  }) async {
+    Query baseQuery = _firestore
+        .collection(_habitLogsCollection)
+        .where('userId', isEqualTo: userId);
+
+    if (habitId != null) {
+      baseQuery = baseQuery.where('habitId', isEqualTo: habitId);
+    }
+
+    if (startDate != null) {
+      baseQuery = baseQuery.where('date',
+          isGreaterThanOrEqualTo: Timestamp.fromDate(startDate));
+    }
+
+    if (endDate != null) {
+      baseQuery = baseQuery.where('date',
+          isLessThanOrEqualTo: Timestamp.fromDate(endDate));
+    }
+
+    baseQuery = baseQuery.orderBy('date', descending: true);
+
+    return executePaginatedQuery(
+      baseQuery: baseQuery,
+      fromJson: (json) => HabitLog.fromJson(json),
+      pageSize: pageSize,
+      startAfterDocument: startAfterDocument,
+      page: page,
+    );
+  }
+
+  /// Stream the first page of habit logs (real-time updates)
+  Stream<PaginatedResult<HabitLog>> streamHabitLogsFirstPage({
+    required String userId,
+    String? habitId,
+    int pageSize = 20,
+  }) {
+    Query baseQuery = _firestore
+        .collection(_habitLogsCollection)
+        .where('userId', isEqualTo: userId);
+
+    if (habitId != null) {
+      baseQuery = baseQuery.where('habitId', isEqualTo: habitId);
+    }
+
+    baseQuery = baseQuery.orderBy('date', descending: true);
+
+    return streamFirstPage(
+      baseQuery: baseQuery,
+      fromJson: (json) => HabitLog.fromJson(json),
+      pageSize: pageSize,
+    );
+  }
+
+  /// Get paginated habits for a user
+  Future<PaginatedResult<Habit>> getHabitsPaginated({
+    required String userId,
+    bool? isActive,
+    int pageSize = 20,
+    DocumentSnapshot? startAfterDocument,
+    int page = 0,
+  }) async {
+    Query baseQuery = _firestore
+        .collection(_habitsCollection)
+        .where('userId', isEqualTo: userId);
+
+    if (isActive != null) {
+      baseQuery = baseQuery.where('isActive', isEqualTo: isActive);
+    }
+
+    baseQuery = baseQuery.orderBy('createdAt', descending: false);
+
+    return executePaginatedQuery(
+      baseQuery: baseQuery,
+      fromJson: (json) => Habit.fromJson(json),
+      pageSize: pageSize,
+      startAfterDocument: startAfterDocument,
+      page: page,
+    );
   }
 
   // ========== Statistics ==========

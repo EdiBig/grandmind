@@ -63,6 +63,9 @@ class DataExportService {
       // Export measurements to CSV
       await _exportMeasurementsToCsv(userId, folderPath);
 
+      // Export health data to CSV
+      await _exportHealthDataToCsv(userId, folderPath);
+
       return folderPath;
     } catch (e) {
       throw Exception('Failed to export to CSV: $e');
@@ -325,6 +328,63 @@ class DataExportService {
 
     final csv = const ListToCsvConverter().convert(rows);
     final file = File('$folderPath/measurements.csv');
+    await file.writeAsString(csv);
+  }
+
+  /// Export health data to CSV
+  Future<void> _exportHealthDataToCsv(String userId, String folderPath) async {
+    final snapshot = await _firestore
+        .collection('health_data')
+        .where('userId', isEqualTo: userId)
+        .orderBy('date', descending: true)
+        .get();
+
+    if (snapshot.docs.isEmpty) return;
+
+    final rows = <List<dynamic>>[
+      [
+        'Date',
+        'Steps',
+        'Distance (km)',
+        'Calories Burned',
+        'Heart Rate (avg)',
+        'Sleep (hours)',
+        'Weight (kg)',
+        'Source',
+        'Device',
+        'Synced At',
+      ],
+    ];
+
+    for (final doc in snapshot.docs) {
+      final data = doc.data();
+      final date = _formatDate(data['date']);
+      final syncedAt = _formatDate(data['syncedAt']);
+
+      // Extract source details
+      String source = data['source'] ?? 'unknown';
+      String device = '';
+      if (data['sourceDetails'] is Map) {
+        final sourceDetails = data['sourceDetails'] as Map<String, dynamic>;
+        device = sourceDetails['deviceName'] ?? sourceDetails['deviceModel'] ?? '';
+      }
+
+      rows.add([
+        date,
+        data['steps'] ?? 0,
+        ((data['distanceMeters'] ?? 0) / 1000.0).toStringAsFixed(2),
+        (data['caloriesBurned'] ?? 0).toStringAsFixed(1),
+        data['averageHeartRate']?.toStringAsFixed(0) ?? '',
+        (data['sleepHours'] ?? 0).toStringAsFixed(1),
+        data['weight']?.toStringAsFixed(1) ?? '',
+        source,
+        device,
+        syncedAt,
+      ]);
+    }
+
+    final csv = const ListToCsvConverter().convert(rows);
+    final file = File('$folderPath/health_data.csv');
     await file.writeAsString(csv);
   }
 

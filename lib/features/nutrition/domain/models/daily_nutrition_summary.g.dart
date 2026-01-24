@@ -39,7 +39,7 @@ Map<String, dynamic> _$$DailyNutritionSummaryImplToJson(
       'mealsLogged': instance.mealsLogged,
       'caloriesByMeal': instance.caloriesByMeal
           ?.map((k, e) => MapEntry(_$MealTypeEnumMap[k]!, e)),
-      'goal': instance.goal,
+      'goal': instance.goal?.toJson(),
     };
 
 const _$MealTypeEnumMap = {

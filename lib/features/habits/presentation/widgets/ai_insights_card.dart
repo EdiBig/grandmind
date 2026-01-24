@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../data/services/habit_insights_service.dart';
 import '../providers/habit_providers.dart';
 
@@ -70,11 +71,11 @@ class AIInsightsCard extends ConsumerWidget {
             child: CircularProgressIndicator(),
           ),
           const SizedBox(height: 8),
-          const Center(
+          Center(
             child: Text(
               'Analyzing your habits...',
               style: TextStyle(
-                color: Colors.grey,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 14,
               ),
             ),
@@ -89,25 +90,25 @@ class AIInsightsCard extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.red.withValues(alpha: 0.1),
+        color: AppColors.error.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.red.withValues(alpha: 0.3),
+          color: AppColors.error.withValues(alpha: 0.3),
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.error_outline, color: Colors.red),
+              Icon(Icons.error_outline, color: AppColors.error),
               SizedBox(width: 12),
               Text(
                 'Unable to generate insights',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.red,
+                  color: AppColors.error,
                 ),
               ),
             ],
@@ -115,7 +116,7 @@ class AIInsightsCard extends ConsumerWidget {
           const SizedBox(height: 12),
           TextButton.icon(
             onPressed: () => ref.invalidate(habitInsightsProvider),
-            icon: const Icon(Icons.refresh),
+            icon: Icon(Icons.refresh),
             label: const Text('Retry'),
           ),
         ],
@@ -177,7 +178,7 @@ class AIInsightsCard extends ConsumerWidget {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.refresh, size: 20),
+                  icon: Icon(Icons.refresh, size: 20),
                   onPressed: () => ref.invalidate(habitInsightsProvider),
                   color: primary,
                   tooltip: 'Refresh insights',
@@ -194,7 +195,7 @@ class AIInsightsCard extends ConsumerWidget {
                 insights.summary,
                 style: TextStyle(
                   fontSize: 15,
-                  color: Colors.grey[800],
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontWeight: FontWeight.w500,
                   height: 1.4,
                 ),
@@ -224,7 +225,7 @@ class AIInsightsCard extends ConsumerWidget {
                         insight,
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.grey[700],
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           height: 1.4,
                         ),
                       ),
@@ -244,7 +245,7 @@ class AIInsightsCard extends ConsumerWidget {
                 onPressed: () {
                   context.push('/habits/insights', extra: insights);
                 },
-                icon: const Icon(Icons.arrow_forward, size: 18),
+                icon: Icon(Icons.arrow_forward, size: 18),
                 label: const Text('View Full Analysis'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Theme.of(context).colorScheme.primary,

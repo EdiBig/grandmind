@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/firebase_constants.dart';
+import '../../../../core/pagination/pagination.dart';
 import '../../domain/models/weight_entry.dart';
 import '../../domain/models/measurement_entry.dart';
 import '../../domain/models/progress_photo.dart';
@@ -11,7 +12,7 @@ final progressRepositoryProvider = Provider<ProgressRepository>((ref) {
   return ProgressRepository();
 });
 
-class ProgressRepository {
+class ProgressRepository with PaginatedRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // ========== WEIGHT ENTRIES ==========
@@ -168,13 +169,10 @@ class ProgressRepository {
     final snapshot = await query.get();
 
     return snapshot.docs
-        .map((doc) {
-          final data = doc.data() as Map<String, dynamic>?;
-          return MeasurementEntry.fromJson({
-            ...?data,
-            'id': doc.id,
-          });
-        })
+        .map((doc) => MeasurementEntry.fromJson({
+              ...doc.data() as Map<String, dynamic>,
+              'id': doc.id,
+            }))
         .toList();
   }
 
@@ -451,5 +449,139 @@ class ProgressRepository {
         .collection(FirebaseConstants.progressGoalsCollection)
         .doc(goalId)
         .delete();
+  }
+
+  // ========== PAGINATED METHODS ==========
+
+  /// Get paginated weight entries
+  Future<PaginatedResult<WeightEntry>> getWeightEntriesPaginated({
+    required String userId,
+    int pageSize = 20,
+    DocumentSnapshot? startAfterDocument,
+    DateTime? startDate,
+    DateTime? endDate,
+    int page = 0,
+  }) async {
+    Query baseQuery = _firestore
+        .collection(FirebaseConstants.progressWeightCollection)
+        .where('userId', isEqualTo: userId);
+
+    if (startDate != null) {
+      baseQuery = baseQuery.where('date',
+          isGreaterThanOrEqualTo: Timestamp.fromDate(startDate));
+    }
+
+    if (endDate != null) {
+      baseQuery = baseQuery.where('date',
+          isLessThan: Timestamp.fromDate(endDate.add(const Duration(days: 1))));
+    }
+
+    baseQuery = baseQuery.orderBy('date', descending: true);
+
+    return executePaginatedQuery(
+      baseQuery: baseQuery,
+      fromJson: (json) => WeightEntry.fromJson(json),
+      pageSize: pageSize,
+      startAfterDocument: startAfterDocument,
+      page: page,
+    );
+  }
+
+  /// Get paginated measurement entries
+  Future<PaginatedResult<MeasurementEntry>> getMeasurementEntriesPaginated({
+    required String userId,
+    int pageSize = 20,
+    DocumentSnapshot? startAfterDocument,
+    int page = 0,
+  }) async {
+    final baseQuery = _firestore
+        .collection(FirebaseConstants.progressMeasurementsCollection)
+        .where('userId', isEqualTo: userId)
+        .orderBy('date', descending: true);
+
+    return executePaginatedQuery(
+      baseQuery: baseQuery,
+      fromJson: (json) => MeasurementEntry.fromJson(json),
+      pageSize: pageSize,
+      startAfterDocument: startAfterDocument,
+      page: page,
+    );
+  }
+
+  /// Get paginated progress photos
+  Future<PaginatedResult<ProgressPhoto>> getProgressPhotosPaginated({
+    required String userId,
+    PhotoAngle? angle,
+    int pageSize = 20,
+    DocumentSnapshot? startAfterDocument,
+    int page = 0,
+  }) async {
+    Query baseQuery = _firestore
+        .collection(FirebaseConstants.progressPhotosCollection)
+        .where('userId', isEqualTo: userId);
+
+    if (angle != null) {
+      baseQuery = baseQuery.where('angle', isEqualTo: angle.name);
+    }
+
+    baseQuery = baseQuery.orderBy('date', descending: true);
+
+    return executePaginatedQuery(
+      baseQuery: baseQuery,
+      fromJson: (json) => ProgressPhoto.fromJson(json),
+      pageSize: pageSize,
+      startAfterDocument: startAfterDocument,
+      page: page,
+    );
+  }
+
+  /// Stream first page of progress photos (real-time)
+  Stream<PaginatedResult<ProgressPhoto>> streamProgressPhotosFirstPage({
+    required String userId,
+    PhotoAngle? angle,
+    int pageSize = 20,
+  }) {
+    Query baseQuery = _firestore
+        .collection(FirebaseConstants.progressPhotosCollection)
+        .where('userId', isEqualTo: userId);
+
+    if (angle != null) {
+      baseQuery = baseQuery.where('angle', isEqualTo: angle.name);
+    }
+
+    baseQuery = baseQuery.orderBy('date', descending: true);
+
+    return streamFirstPage(
+      baseQuery: baseQuery,
+      fromJson: (json) => ProgressPhoto.fromJson(json),
+      pageSize: pageSize,
+    );
+  }
+
+  /// Get paginated goals
+  Future<PaginatedResult<ProgressGoal>> getGoalsPaginated({
+    required String userId,
+    GoalStatus? status,
+    int pageSize = 20,
+    DocumentSnapshot? startAfterDocument,
+    int page = 0,
+  }) async {
+    Query baseQuery = _firestore
+        .collection(FirebaseConstants.progressGoalsCollection)
+        .where('userId', isEqualTo: userId);
+
+    if (status != null) {
+      baseQuery = baseQuery.where('status', isEqualTo: status.name);
+    }
+
+    baseQuery = baseQuery.orderBy('startDate', descending: true);
+
+    return executePaginatedQuery(
+      baseQuery: baseQuery,
+      fromJson: (json) => ProgressGoal.fromJson(json),
+      pageSize: pageSize,
+      startAfterDocument: startAfterDocument,
+      page: page,
+    );
   }
 }

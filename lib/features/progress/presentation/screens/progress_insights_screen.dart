@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_colors.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_gradients.dart';
 import '../../data/services/progress_correlation_service.dart';
+import '../providers/progress_providers.dart';
 import '../providers/progress_insights_provider.dart';
 import '../widgets/helpful_habit_card.dart';
 import '../widgets/habit_to_review_card.dart';
@@ -20,7 +22,7 @@ class ProgressInsightsScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Progress Insights'),
         leading: IconButton(
-          icon: const Icon(Icons.close),
+          icon: Icon(Icons.close),
           onPressed: () => context.pop(),
         ),
         actions: [
@@ -53,7 +55,7 @@ class ProgressInsightsScreen extends ConsumerWidget {
           Text(
             'Analyzing your progress...',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Colors.grey[600],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           ),
         ],
@@ -71,7 +73,7 @@ class ProgressInsightsScreen extends ConsumerWidget {
             Icon(
               Icons.insights,
               size: 80,
-              color: Colors.grey[400],
+              color: Theme.of(context).colorScheme.outlineVariant,
             ),
             const SizedBox(height: 24),
             Text(
@@ -85,7 +87,7 @@ class ProgressInsightsScreen extends ConsumerWidget {
               'Log at least 2 weight entries and track some habits to see correlations between your habits and progress.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[600],
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
             ),
             const SizedBox(height: 32),
@@ -94,11 +96,11 @@ class ProgressInsightsScreen extends ConsumerWidget {
                 context.pop();
                 // Navigate to weight tracking or habits
               },
-              icon: const Icon(Icons.add),
+              icon: Icon(Icons.add),
               label: const Text('Start Tracking'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.white,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
                   vertical: 12,
@@ -126,7 +128,7 @@ class ProgressInsightsScreen extends ConsumerWidget {
             Icon(
               Icons.error_outline,
               size: 80,
-              color: Colors.red[300],
+              color: AppColors.error.withValues(alpha: 0.6),
             ),
             const SizedBox(height: 24),
             Text(
@@ -140,7 +142,7 @@ class ProgressInsightsScreen extends ConsumerWidget {
               'There was an error analyzing your data. Please try again.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[600],
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
             ),
             const SizedBox(height: 32),
@@ -148,11 +150,11 @@ class ProgressInsightsScreen extends ConsumerWidget {
               onPressed: () {
                 ref.invalidate(progressInsightsProvider(dateRange));
               },
-              icon: const Icon(Icons.refresh),
+              icon: Icon(Icons.refresh),
               label: const Text('Retry'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.white,
               ),
             ),
           ],
@@ -178,10 +180,10 @@ class ProgressInsightsScreen extends ConsumerWidget {
               gradient: Theme.of(context).extension<AppGradients>()!.primary,
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.analytics,
               size: 48,
-              color: Colors.white,
+              color: AppColors.white,
             ),
           ),
         ),
@@ -202,7 +204,7 @@ class ProgressInsightsScreen extends ConsumerWidget {
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 14,
-            color: Colors.grey[600],
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 32),
@@ -217,7 +219,7 @@ class ProgressInsightsScreen extends ConsumerWidget {
             context,
             icon: Icons.emoji_events,
             title: 'Habits That Help',
-            iconColor: Colors.green,
+            iconColor: AppColors.success,
             children: insights.topHelpfulHabits
                 .map((correlation) => Padding(
                       padding: const EdgeInsets.only(bottom: 12),
@@ -231,13 +233,13 @@ class ProgressInsightsScreen extends ConsumerWidget {
             context,
             icon: Icons.emoji_events,
             title: 'Habits That Help',
-            iconColor: Colors.green,
+            iconColor: AppColors.success,
             children: [
               Text(
                 'Keep tracking to discover helpful patterns!',
                 style: TextStyle(
                   fontSize: 15,
-                  color: Colors.grey[600],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontStyle: FontStyle.italic,
                 ),
               ),
@@ -252,7 +254,7 @@ class ProgressInsightsScreen extends ConsumerWidget {
             context,
             icon: Icons.lightbulb,
             title: 'Habits to Adjust',
-            iconColor: Colors.orange,
+            iconColor: AppColors.warning,
             children: insights.habitsToReview
                 .map((correlation) => Padding(
                       padding: const EdgeInsets.only(bottom: 12),
@@ -266,13 +268,13 @@ class ProgressInsightsScreen extends ConsumerWidget {
             context,
             icon: Icons.lightbulb,
             title: 'Habits to Adjust',
-            iconColor: Colors.orange,
+            iconColor: AppColors.warning,
             children: [
               Text(
                 'All habits look good! 🎉',
                 style: TextStyle(
                   fontSize: 15,
-                  color: Colors.grey[600],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontStyle: FontStyle.italic,
                 ),
               ),
@@ -299,19 +301,23 @@ class ProgressInsightsScreen extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.grey[100],
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
             children: [
-              Icon(Icons.info_outline, color: Colors.grey[600], size: 20),
+              Icon(
+                Icons.info_outline,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                size: 20,
+              ),
               const SizedBox(height: 8),
               Text(
                 'These correlations are statistical patterns based on your tracking data, not medical advice. Consult a healthcare professional for health-related concerns.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey[600],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   height: 1.4,
                 ),
               ),
@@ -326,7 +332,7 @@ class ProgressInsightsScreen extends ConsumerWidget {
   Widget _buildOverviewCard(BuildContext context, HabitProgressInsights insights) {
     final weightChange = insights.overallWeightChange;
     final isLoss = weightChange < 0;
-    final changeColor = isLoss ? Colors.green : Colors.red;
+    final changeColor = isLoss ? AppColors.success : AppColors.error;
     final changeIcon = isLoss ? Icons.arrow_downward : Icons.arrow_upward;
 
     return Container(
@@ -376,7 +382,7 @@ class ProgressInsightsScreen extends ConsumerWidget {
                     'Weight Change',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey[600],
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -403,7 +409,7 @@ class ProgressInsightsScreen extends ConsumerWidget {
                     'Habits Tracked',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey[600],
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -513,7 +519,7 @@ class ProgressInsightsScreen extends ConsumerWidget {
     DateRange range,
   ) {
     final currentRange = ref.read(insightsDateRangeProvider);
-    final isSelected = currentRange == range;
+    final isSelected = currentRange.label == range.label;
 
     return ListTile(
       title: Text(label),
