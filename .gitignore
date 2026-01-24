@@ -91,3 +91,4 @@ GET_*.md
 PROJECT_BACKLOG.md
 WEB_*.md
 WEEK_*.md
+.vscode/launch.json

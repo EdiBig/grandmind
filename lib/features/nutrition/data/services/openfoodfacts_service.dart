@@ -130,7 +130,7 @@ class OpenFoodFactsService {
         brand: brand,
         barcode: barcode.isNotEmpty ? barcode : null,
         isCustom: false,
-        isVerified: true, // Products from OpenFoodFacts are verified
+        isVerified: false, // Community-sourced data (USDA = verified)
         category: _guessCategory(name, brand),
         createdAt: DateTime.now(),
       );

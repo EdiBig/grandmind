@@ -149,8 +149,12 @@ final usdaFoodSearchProvider =
   if (query.isEmpty) return [];
 
   final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
-  final service = ref.watch(usdaServiceProvider);
-  return service.searchFoods(query, userId);
+  final service = ref.read(usdaServiceProvider);
+  try {
+    return await service.searchFoods(query, userId);
+  } catch (e) {
+    return [];
+  }
 });
 
 /// OpenFoodFacts search provider
@@ -160,8 +164,12 @@ final openFoodFactsSearchProvider =
   if (query.isEmpty) return [];
 
   final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
-  final service = ref.watch(openFoodFactsServiceProvider);
-  return service.searchProducts(query, userId);
+  final service = ref.read(openFoodFactsServiceProvider);
+  try {
+    return await service.searchProducts(query, userId);
+  } catch (e) {
+    return [];
+  }
 });
 
 /// Unified food search provider
@@ -174,10 +182,21 @@ final unifiedFoodSearchProvider =
   final userId = FirebaseAuth.instance.currentUser?.uid;
   if (userId == null) return [];
 
-  // Search all sources in parallel
-  final usdaResults = await ref.watch(usdaFoodSearchProvider(query).future);
-  final offResults = await ref.watch(openFoodFactsSearchProvider(query).future);
-  final customResults = await ref.watch(foodSearchProvider(query).future);
+  // Get services
+  final usdaService = ref.read(usdaServiceProvider);
+  final offService = ref.read(openFoodFactsServiceProvider);
+  final repository = ref.read(nutritionRepositoryProvider);
+
+  // Search all sources in parallel, handling failures gracefully
+  final results = await Future.wait([
+    usdaService.searchFoods(query, userId).catchError((_) => <FoodItem>[]),
+    offService.searchProducts(query, userId).catchError((_) => <FoodItem>[]),
+    repository.searchFoodItems(query).catchError((_) => <FoodItem>[]),
+  ]);
+
+  final usdaResults = results[0];
+  final offResults = results[1];
+  final customResults = results[2];
 
   // Combine results: custom foods first, then USDA, then OpenFoodFacts
   final allResults = <FoodItem>[];
@@ -226,15 +245,65 @@ final foodSearchBySourceProvider = FutureProvider.family<List<FoodItem>,
     FoodSearchBySourceParams>((ref, params) async {
   if (params.query.isEmpty) return [];
 
-  switch (params.source) {
-    case FoodSearchSource.usda:
-      return ref.watch(usdaFoodSearchProvider(params.query).future);
-    case FoodSearchSource.openFoodFacts:
-      return ref.watch(openFoodFactsSearchProvider(params.query).future);
-    case FoodSearchSource.custom:
-      return ref.watch(foodSearchProvider(params.query).future);
-    case FoodSearchSource.all:
-      return ref.watch(unifiedFoodSearchProvider(params.query).future);
+  final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+
+  try {
+    switch (params.source) {
+      case FoodSearchSource.usda:
+        final service = ref.read(usdaServiceProvider);
+        return await service.searchFoods(params.query, userId);
+      case FoodSearchSource.openFoodFacts:
+        final service = ref.read(openFoodFactsServiceProvider);
+        return await service.searchProducts(params.query, userId);
+      case FoodSearchSource.custom:
+        final repository = ref.read(nutritionRepositoryProvider);
+        return await repository.searchFoodItems(params.query);
+      case FoodSearchSource.all:
+        // Use the unified provider which handles errors gracefully
+        final usdaService = ref.read(usdaServiceProvider);
+        final offService = ref.read(openFoodFactsServiceProvider);
+        final repository = ref.read(nutritionRepositoryProvider);
+
+        final results = await Future.wait([
+          usdaService.searchFoods(params.query, userId).catchError((_) => <FoodItem>[]),
+          offService.searchProducts(params.query, userId).catchError((_) => <FoodItem>[]),
+          repository.searchFoodItems(params.query).catchError((_) => <FoodItem>[]),
+        ]);
+
+        final allResults = <FoodItem>[];
+        final seenNames = <String>{};
+
+        // Custom foods first
+        for (final food in results[2]) {
+          final normalizedName = food.name.toLowerCase().trim();
+          if (!seenNames.contains(normalizedName)) {
+            allResults.add(food);
+            seenNames.add(normalizedName);
+          }
+        }
+
+        // USDA results
+        for (final food in results[0]) {
+          final normalizedName = food.name.toLowerCase().trim();
+          if (!seenNames.contains(normalizedName)) {
+            allResults.add(food);
+            seenNames.add(normalizedName);
+          }
+        }
+
+        // OpenFoodFacts results
+        for (final food in results[1]) {
+          final normalizedName = food.name.toLowerCase().trim();
+          if (!seenNames.contains(normalizedName)) {
+            allResults.add(food);
+            seenNames.add(normalizedName);
+          }
+        }
+
+        return allResults;
+    }
+  } catch (e) {
+    return [];
   }
 });
 

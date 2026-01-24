@@ -5,8 +5,8 @@ class USDAConfig {
   /// Get your own key at: https://fdc.nal.usda.gov/api-key-signup.html
   static String get apiKey {
     const envKey = String.fromEnvironment('USDA_API_KEY', defaultValue: '');
-    // Use demo key if no environment key is set (limited to 30 requests/hour)
-    return envKey.isNotEmpty ? envKey : 'DEMO_KEY';
+    // Use registered key if no environment key is set (1000 requests/hour)
+    return envKey.isNotEmpty ? envKey : 'd8IzzfORhQhsZrhb70XQXl0SnL2ETgr16qwhxRCO';
   }
 
   /// Base URL for USDA FoodData Central API
