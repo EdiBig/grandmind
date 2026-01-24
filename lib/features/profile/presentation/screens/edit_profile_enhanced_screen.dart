@@ -7,7 +7,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_gradients.dart';
-import '../../../../shared/services/image_cropper_service.dart';
 import '../../../home/presentation/providers/dashboard_provider.dart';
 import '../../../user/data/services/firestore_service.dart';
 import '../../data/services/profile_photo_service.dart';
@@ -463,35 +462,19 @@ class _EditProfileEnhancedScreenState
           return;
         }
 
-        // Directly open cropper for profile photos (square crop)
-        if (!mounted) return;
-        final cropperService = ImageCropperService();
-        final croppedFile = await cropperService.cropImage(
-          imageFile: file,
-          context: context,
-          config: CropConfig.profilePhoto,
-        );
-
-        if (croppedFile != null) {
-          if (mounted) {
-            setState(() {
-              _selectedImage = croppedFile;
-            });
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Photo cropped! Tap "Save Changes" to update your profile.'),
-                backgroundColor: AppColors.success,
-                duration: Duration(seconds: 3),
-              ),
-            );
-          }
-        } else {
-          // User cancelled cropping, use original image
-          if (mounted) {
-            setState(() {
-              _selectedImage = file;
-            });
-          }
+        // Use the selected image directly - ProfilePhotoService will
+        // automatically crop to square and compress when uploading
+        if (mounted) {
+          setState(() {
+            _selectedImage = file;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Photo selected! Tap "Save Changes" to update your profile.'),
+              backgroundColor: AppColors.success,
+              duration: Duration(seconds: 3),
+            ),
+          );
         }
       }
     } catch (e) {
