@@ -93,7 +93,7 @@ class ImageCropperService {
           toolbarWidgetColor: Colors.white,
           activeControlsWidgetColor: colorScheme.primary,
           backgroundColor: Colors.black,
-          statusBarColor: colorScheme.primary,
+          dimmedLayerColor: Colors.black54,
           cropFrameColor: colorScheme.primary,
           cropGridColor: Colors.white70,
           initAspectRatio: config.initialAspectRatio ?? CropAspectRatioPreset.original,
