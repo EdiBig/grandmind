@@ -56,11 +56,6 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
-        <!-- Image Cropper Activity -->
-        <activity
-            android:name="com.yalantis.ucrop.UCropActivity"
-            android:screenOrientation="portrait"
-            android:theme="@style/UCropTheme"/>
 
         <!-- Health Connect Activity -->
         <activity-alias
