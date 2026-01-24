@@ -110,6 +110,34 @@ class AppSemanticColors {
       default: return AppColors.mood3;
     }
   }
+
+  // Metric colors (for dashboard widgets)
+  Color get metricSleep => AppColors.metricSleep;
+  Color get metricEnergy => AppColors.metricEnergy;
+  Color get metricSteps => AppColors.metricSteps;
+  Color get metricHeart => AppColors.metricHeart;
+  Color get metricHabits => AppColors.metricHabits;
+  Color get metricWorkouts => AppColors.metricWorkouts;
+  Color get metricNutrition => AppColors.metricNutrition;
+  Color get metricMood => AppColors.metricMood;
+
+  // Readiness score color based on value
+  Color readinessColor(int score) {
+    if (score <= 30) return AppColors.readinessLow;
+    if (score <= 50) return AppColors.readinessModerate;
+    if (score <= 70) return AppColors.readinessFair;
+    if (score <= 85) return AppColors.readinessGood;
+    return AppColors.readinessPeak;
+  }
+
+  // Rank colors (for leaderboards)
+  Color get rankGold => AppColors.rankGold;
+  Color get rankSilver => AppColors.rankSilver;
+  Color get rankBronze => AppColors.rankBronze;
+
+  // Secondary text colors for on-dark backgrounds
+  Color get textSecondaryOnDark => AppColors.textSecondaryOnDark;
+  Color get textMutedOnDark => AppColors.textMutedOnDark;
 }
 
 /// Extension for getting on-colors (text/icon colors to use on a background)

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/theme/app_colors.dart';
 import '../../data/models/challenge_model.dart';
 import '../../data/models/challenge_progress_model.dart';
 import '../providers/challenge_providers.dart';
@@ -246,13 +247,13 @@ class _LeaderboardEntryTile extends StatelessWidget {
   Color _getRankColor(int rank) {
     switch (rank) {
       case 1:
-        return const Color(0xFFFFD700); // Gold
+        return AppColors.rankGold;
       case 2:
-        return const Color(0xFFC0C0C0); // Silver
+        return AppColors.rankSilver;
       case 3:
-        return const Color(0xFFCD7F32); // Bronze
+        return AppColors.rankBronze;
       default:
-        return Colors.grey;
+        return AppColors.grey;
     }
   }
 }
@@ -320,13 +321,13 @@ class _RankBadge extends StatelessWidget {
   List<Color> _getGradientColors(int rank) {
     switch (rank) {
       case 1:
-        return [const Color(0xFFFFD700), const Color(0xFFFFA500)]; // Gold
+        return [AppColors.rankGold, const Color(0xFFFFA500)]; // Gold
       case 2:
-        return [const Color(0xFFE0E0E0), const Color(0xFFA0A0A0)]; // Silver
+        return [AppColors.rankSilver, const Color(0xFFA0A0A0)]; // Silver
       case 3:
-        return [const Color(0xFFCD7F32), const Color(0xFF8B4513)]; // Bronze
+        return [AppColors.rankBronze, const Color(0xFF8B4513)]; // Bronze
       default:
-        return [Colors.grey, Colors.grey.shade700];
+        return [AppColors.grey, AppColors.greyDark];
     }
   }
 }

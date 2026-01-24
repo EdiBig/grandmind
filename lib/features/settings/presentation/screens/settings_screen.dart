@@ -1274,40 +1274,65 @@ class _ThemePresetTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final outline = Theme.of(context).colorScheme.outlineVariant;
-    final borderColor =
-        isSelected ? preset.seedColor : outline;
+    final borderColor = isSelected ? preset.seedColor : outline;
 
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
       child: Ink(
-        width: 140,
-        padding: const EdgeInsets.all(12),
+        width: 100,
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: borderColor, width: 2),
+          border: Border.all(color: borderColor, width: isSelected ? 2 : 1),
           color: Theme.of(context).colorScheme.surface,
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              children: [
-                _ColorDot(color: preset.seedColor),
-                const SizedBox(width: 6),
-                _ColorDot(color: preset.accentColor),
-                const Spacer(),
-                if (isSelected)
-                  Icon(Icons.check_circle, color: preset.seedColor, size: 18),
-              ],
+            // Icon with gradient background
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [preset.seedColor, preset.accentColor],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                preset.icon,
+                color: Colors.white,
+                size: 22,
+              ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Text(
               preset.name,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                   ),
+              textAlign: TextAlign.center,
             ),
+            if (preset.description.isNotEmpty) ...[
+              const SizedBox(height: 2),
+              Text(
+                preset.description,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: AppColors.grey,
+                      fontSize: 10,
+                    ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+            if (isSelected) ...[
+              const SizedBox(height: 4),
+              Icon(Icons.check_circle, color: preset.seedColor, size: 16),
+            ],
           ],
         ),
       ),
@@ -1315,23 +1340,6 @@ class _ThemePresetTile extends StatelessWidget {
   }
 }
 
-class _ColorDot extends StatelessWidget {
-  const _ColorDot({required this.color});
-
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 14,
-      height: 14,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-      ),
-    );
-  }
-}
 
 class _NotificationToggleConfig {
   final String title;

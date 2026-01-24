@@ -116,6 +116,8 @@ class _KinesaAppState extends ConsumerState<KinesaApp>
         brightness: Brightness.dark,
       ),
       themeMode: settings.themeMode,
+      themeAnimationDuration: const Duration(milliseconds: 400),
+      themeAnimationCurve: Curves.easeInOut,
       routerConfig: router,
     );
   }

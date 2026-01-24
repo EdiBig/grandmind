@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/responsive/responsive.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/theme_extensions.dart';
 
 /// Collapsible Today's Plan section
 class TodaysPlanSection extends StatefulWidget {
@@ -86,7 +88,7 @@ class _TodaysPlanSectionState extends State<TodaysPlanSection>
                   style: TextStyle(
                     fontSize: textStyles.titleMedium,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: context.colors.textPrimary,
                   ),
                 ),
                 SizedBox(width: spacing.sm),
@@ -117,7 +119,7 @@ class _TodaysPlanSectionState extends State<TodaysPlanSection>
                   duration: const Duration(milliseconds: 200),
                   child: Icon(
                     Icons.keyboard_arrow_down,
-                    color: const Color(0xFF6B7280),
+                    color: context.colors.textSecondary,
                     size: sizes.iconLarge,
                   ),
                 ),
@@ -198,13 +200,13 @@ class _TaskRow extends StatelessWidget {
                   height: sizes.iconLarge,
                   decoration: BoxDecoration(
                     color: task.isCompleted
-                        ? const Color(0xFF22C55E)
+                        ? AppColors.success
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(
                       color: task.isCompleted
-                          ? const Color(0xFF22C55E)
-                          : const Color(0xFF6B7280),
+                          ? AppColors.success
+                          : context.colors.textSecondary,
                       width: 2,
                     ),
                   ),
@@ -212,7 +214,7 @@ class _TaskRow extends StatelessWidget {
                       ? Icon(
                           Icons.check,
                           size: sizes.iconSmall,
-                          color: Colors.white,
+                          color: AppColors.white,
                         )
                       : null,
                 ),
@@ -226,8 +228,8 @@ class _TaskRow extends StatelessWidget {
                   style: TextStyle(
                     fontSize: textStyles.bodyMedium,
                     color: task.isCompleted
-                        ? const Color(0xFF6B7280)
-                        : Colors.white,
+                        ? context.colors.textSecondary
+                        : context.colors.textPrimary,
                     decoration: task.isCompleted
                         ? TextDecoration.lineThrough
                         : null,
@@ -243,14 +245,14 @@ class _TaskRow extends StatelessWidget {
                     vertical: spacing.xs,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF22C55E).withValues(alpha: 0.2),
+                    color: AppColors.success.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     'Done',
                     style: TextStyle(
                       fontSize: textStyles.labelSmall,
-                      color: const Color(0xFF22C55E),
+                      color: AppColors.success,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -264,7 +266,7 @@ class _TaskRow extends StatelessWidget {
                     vertical: spacing.xs + 2,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF14B8A6),
+                    color: Theme.of(context).colorScheme.primary,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(
@@ -274,7 +276,7 @@ class _TaskRow extends StatelessWidget {
                         'Start',
                         style: TextStyle(
                           fontSize: textStyles.labelSmall,
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.onPrimary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -282,7 +284,7 @@ class _TaskRow extends StatelessWidget {
                       Icon(
                         Icons.arrow_forward,
                         size: sizes.iconSmall * 0.75,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onPrimary,
                       ),
                     ],
                   ),
@@ -299,6 +301,7 @@ class _TaskRow extends StatelessWidget {
     final current = progress['current'] as int? ?? 0;
     final target = progress['target'] as int? ?? 1;
     final progressValue = (current / target).clamp(0.0, 1.0);
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -306,7 +309,7 @@ class _TaskRow extends StatelessWidget {
         Text(
           '$current/$target',
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: const Color(0xFF6B7280),
+                color: context.colors.textSecondary,
               ),
         ),
         const SizedBox(width: 8),
@@ -316,9 +319,9 @@ class _TaskRow extends StatelessWidget {
             borderRadius: BorderRadius.circular(2),
             child: LinearProgressIndicator(
               value: progressValue,
-              backgroundColor: const Color(0xFF374151),
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                Color(0xFF14B8A6),
+              backgroundColor: colorScheme.surfaceContainerHighest,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                colorScheme.primary,
               ),
               minHeight: 4,
             ),

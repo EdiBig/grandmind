@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/responsive/responsive.dart';
+import '../../../../core/theme/theme_extensions.dart';
 
 /// Horizontal scrollable quick actions row
 class QuickActionsRow extends StatelessWidget {
@@ -30,7 +31,7 @@ class QuickActionsRow extends StatelessWidget {
             style: TextStyle(
               fontSize: textStyles.titleMedium,
               fontWeight: FontWeight.w600,
-              color: Colors.white,
+              color: context.colors.textPrimary,
             ),
           ),
         ),

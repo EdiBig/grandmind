@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/responsive/responsive.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/theme_extensions.dart';
 
 /// Minimal recent activity section
 class RecentActivitySection extends StatelessWidget {
@@ -33,7 +35,7 @@ class RecentActivitySection extends StatelessWidget {
                 style: TextStyle(
                   fontSize: textStyles.titleMedium,
                   fontWeight: FontWeight.w600,
-                  color: Colors.white,
+                  color: context.colors.textPrimary,
                 ),
               ),
               if (activities.length > 3)
@@ -45,7 +47,7 @@ class RecentActivitySection extends StatelessWidget {
                         'View All',
                         style: TextStyle(
                           fontSize: textStyles.labelMedium,
-                          color: const Color(0xFF14B8A6),
+                          color: Theme.of(context).colorScheme.primary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -53,7 +55,7 @@ class RecentActivitySection extends StatelessWidget {
                       Icon(
                         Icons.arrow_forward,
                         size: sizes.iconSmall * 0.9,
-                        color: const Color(0xFF14B8A6),
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ],
                   ),
@@ -78,7 +80,7 @@ class RecentActivitySection extends StatelessWidget {
                   'No recent activities',
                   style: TextStyle(
                     fontSize: textStyles.bodyMedium,
-                    color: const Color(0xFF6B7280),
+                    color: context.colors.textSecondary,
                   ),
                 ),
               ),
@@ -151,7 +153,7 @@ class _ActivityRow extends StatelessWidget {
                 activity.title,
                 style: TextStyle(
                   fontSize: textStyles.bodyMedium,
-                  color: Colors.white,
+                  color: context.colors.textPrimary,
                 ),
               ),
             ),
@@ -161,7 +163,7 @@ class _ActivityRow extends StatelessWidget {
               activity.timeAgo,
               style: TextStyle(
                 fontSize: textStyles.labelSmall,
-                color: const Color(0xFF6B7280),
+                color: context.colors.textSecondary,
               ),
             ),
           ],
@@ -211,7 +213,7 @@ class RecentActivity {
         id: id,
         title: title,
         emoji: '💪',
-        color: const Color(0xFFFB923C),
+        color: AppColors.metricWorkouts,
         timestamp: timestamp,
       );
 
@@ -224,7 +226,7 @@ class RecentActivity {
         id: id,
         title: title,
         emoji: '🧘',
-        color: const Color(0xFFA78BFA),
+        color: AppColors.metricSleep,
         timestamp: timestamp,
       );
 
@@ -237,7 +239,7 @@ class RecentActivity {
         id: id,
         title: title,
         emoji: '✓',
-        color: const Color(0xFF4ADE80),
+        color: AppColors.metricHabits,
         timestamp: timestamp,
       );
 
@@ -250,7 +252,7 @@ class RecentActivity {
         id: id,
         title: title,
         emoji: '😴',
-        color: const Color(0xFFA78BFA),
+        color: AppColors.metricSleep,
         timestamp: timestamp,
       );
 
@@ -263,7 +265,7 @@ class RecentActivity {
         id: id,
         title: title,
         emoji: '🚶',
-        color: const Color(0xFF60A5FA),
+        color: AppColors.metricSteps,
         timestamp: timestamp,
       );
 }

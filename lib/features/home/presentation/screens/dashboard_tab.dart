@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/route_constants.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/theme_extensions.dart';
 import '../../../../core/responsive/responsive.dart';
 import '../../../settings/presentation/providers/app_settings_provider.dart';
 import '../../domain/models/dashboard_stats.dart';
@@ -77,7 +78,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab>
     final textStyles = context.textStyles;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A), // Dark background
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -95,7 +96,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab>
               'Kinesa',
               style: TextStyle(
                 fontSize: textStyles.titleLarge,
-                color: Colors.white,
+                color: context.colors.textPrimary,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -106,7 +107,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab>
           IconButton(
             icon: Icon(
               Icons.settings_outlined,
-              color: Colors.white,
+              color: context.colors.textPrimary,
               size: sizes.iconMedium,
             ),
             onPressed: () => context.push(RouteConstants.settings),
@@ -398,7 +399,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab>
     return Container(
       height: height,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(sizes.cardBorderRadius),
       ),
     );
@@ -540,21 +541,21 @@ class _DashboardTabState extends ConsumerState<DashboardTab>
   Color _getActivityColor(ActivityType type) {
     switch (type) {
       case ActivityType.workout:
-        return const Color(0xFFFB923C);
+        return AppColors.metricWorkouts;
       case ActivityType.sleep:
-        return const Color(0xFFA78BFA);
+        return AppColors.metricSleep;
       case ActivityType.steps:
-        return const Color(0xFF60A5FA);
+        return AppColors.metricSteps;
       case ActivityType.habit:
-        return const Color(0xFF4ADE80);
+        return AppColors.metricHabits;
       case ActivityType.weight:
-        return const Color(0xFFFBBF24);
+        return AppColors.metricEnergy;
       case ActivityType.mood:
-        return const Color(0xFF14B8A6);
+        return AppColors.metricMood;
       case ActivityType.nutrition:
-        return const Color(0xFFF87171);
+        return AppColors.metricNutrition;
       default:
-        return const Color(0xFF6B7280);
+        return AppColors.textMutedOnDark;
     }
   }
 
@@ -570,6 +571,8 @@ class _DashboardTabState extends ConsumerState<DashboardTab>
     AsyncValue<dynamic> userAsync,
     bool offlineMode,
   ) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return userAsync.when(
       data: (user) {
         final authUser = FirebaseAuth.instance.currentUser;
@@ -594,10 +597,10 @@ class _DashboardTabState extends ConsumerState<DashboardTab>
             child: Ink(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
+                color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(999),
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.2),
+                  color: colorScheme.outline.withValues(alpha: 0.2),
                 ),
               ),
               child: Row(
@@ -607,7 +610,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab>
                     children: [
                       CircleAvatar(
                         radius: 14,
-                        backgroundColor: const Color(0xFF14B8A6),
+                        backgroundColor: colorScheme.primary,
                         child: ClipOval(
                           child: photoUrl != null
                               ? Image.network(
@@ -623,8 +626,8 @@ class _DashboardTabState extends ConsumerState<DashboardTab>
                                     displayName.isNotEmpty
                                         ? displayName[0].toUpperCase()
                                         : '?',
-                                    style: const TextStyle(
-                                      color: Colors.white,
+                                    style: TextStyle(
+                                      color: colorScheme.onPrimary,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 12,
                                     ),
@@ -634,8 +637,8 @@ class _DashboardTabState extends ConsumerState<DashboardTab>
                                   displayName.isNotEmpty
                                       ? displayName[0].toUpperCase()
                                       : '?',
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: colorScheme.onPrimary,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 12,
                                   ),
@@ -652,7 +655,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab>
                             color: statusColor,
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: const Color(0xFF0F172A),
+                              color: Theme.of(context).scaffoldBackgroundColor,
                               width: 1.5,
                             ),
                           ),

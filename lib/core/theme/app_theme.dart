@@ -29,11 +29,21 @@ class AppTheme {
     required Brightness brightness,
   }) {
     final isDark = brightness == Brightness.dark;
+    final isAmoled = preset.isAmoled && isDark;
     final baseScheme =
         ColorScheme.fromSeed(seedColor: preset.seedColor, brightness: brightness);
+
+    // Determine surface and background colors based on AMOLED mode
+    final surfaceColor = isAmoled
+        ? AppColors.midnightSurface
+        : (isDark ? AppColors.surfaceDark : AppColors.surfaceLight);
+    final backgroundColor = isAmoled
+        ? AppColors.midnightBackground
+        : (isDark ? AppColors.backgroundDark : AppColors.backgroundLight);
+
     final colorScheme = baseScheme.copyWith(
       secondary: preset.accentColor,
-      surface: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+      surface: surfaceColor,
       onSurface: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
       error: AppColors.error,
       onError: AppColors.white,
@@ -46,10 +56,11 @@ class AppTheme {
       extensions: [
         AppGradients.fromScheme(colorScheme),
       ],
-      scaffoldBackgroundColor:
-          isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      scaffoldBackgroundColor: backgroundColor,
       appBarTheme: AppBarTheme(
-        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.white,
+        backgroundColor: isAmoled
+            ? AppColors.midnightBackground
+            : (isDark ? AppColors.surfaceDark : AppColors.white),
         foregroundColor:
             isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
         elevation: 0,
@@ -58,7 +69,9 @@ class AppTheme {
             isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       ),
       cardTheme: CardThemeData(
-        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        color: isAmoled
+            ? AppColors.midnightCard
+            : (isDark ? AppColors.surfaceDark : AppColors.surfaceLight),
         elevation: 2,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),

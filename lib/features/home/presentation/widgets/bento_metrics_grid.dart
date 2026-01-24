@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/responsive/responsive.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/theme_extensions.dart';
 
 /// Bento-style metrics grid with large and small cards
 class BentoMetricsGrid extends StatelessWidget {
@@ -59,7 +61,7 @@ class BentoMetricsGrid extends StatelessWidget {
                 value: '${sleepHours.toStringAsFixed(1)}h',
                 progress: sleepHours / 8,
                 delta: sleepDelta,
-                color: const Color(0xFFA78BFA),
+                color: AppColors.metricSleep,
                 onTap: onSleepTap,
                 minHeight: sizes.bentoCardMinHeight,
               ),
@@ -72,7 +74,7 @@ class BentoMetricsGrid extends StatelessWidget {
                 value: '$energyLevel/5',
                 progress: energyLevel / 5,
                 subtitle: _getEnergyLabel(energyLevel),
-                color: const Color(0xFFFBBF24),
+                color: AppColors.metricEnergy,
                 onTap: onEnergyTap,
                 minHeight: sizes.bentoCardMinHeight,
               ),
@@ -96,7 +98,7 @@ class BentoMetricsGrid extends StatelessWidget {
             icon: '🚶',
             label: 'Steps',
             value: _formatNumber(steps),
-            color: const Color(0xFF60A5FA),
+            color: AppColors.metricSteps,
             onTap: onStepsTap,
           ),
         ),
@@ -106,7 +108,7 @@ class BentoMetricsGrid extends StatelessWidget {
             icon: '❤️',
             label: 'Heart',
             value: heartRate != null ? '${heartRate}bpm' : '--',
-            color: const Color(0xFFF87171),
+            color: AppColors.metricHeart,
             onTap: onHeartTap,
           ),
         ),
@@ -116,7 +118,7 @@ class BentoMetricsGrid extends StatelessWidget {
             icon: '✓',
             label: 'Habits',
             value: '$habitsCompleted/$totalHabits',
-            color: const Color(0xFF4ADE80),
+            color: AppColors.metricHabits,
             onTap: onHabitsTap,
           ),
         ),
@@ -126,7 +128,7 @@ class BentoMetricsGrid extends StatelessWidget {
             icon: '💪',
             label: 'Workout',
             value: '$workoutsThisWeek',
-            color: const Color(0xFFFB923C),
+            color: AppColors.metricWorkouts,
             onTap: onWorkoutsTap,
           ),
         ),
@@ -145,7 +147,7 @@ class BentoMetricsGrid extends StatelessWidget {
                 icon: '🚶',
                 label: 'Steps',
                 value: _formatNumber(steps),
-                color: const Color(0xFF60A5FA),
+                color: AppColors.metricSteps,
                 onTap: onStepsTap,
               ),
             ),
@@ -155,7 +157,7 @@ class BentoMetricsGrid extends StatelessWidget {
                 icon: '❤️',
                 label: 'Heart',
                 value: heartRate != null ? '${heartRate}bpm' : '--',
-                color: const Color(0xFFF87171),
+                color: AppColors.metricHeart,
                 onTap: onHeartTap,
               ),
             ),
@@ -169,7 +171,7 @@ class BentoMetricsGrid extends StatelessWidget {
                 icon: '✓',
                 label: 'Habits',
                 value: '$habitsCompleted/$totalHabits',
-                color: const Color(0xFF4ADE80),
+                color: AppColors.metricHabits,
                 onTap: onHabitsTap,
               ),
             ),
@@ -179,7 +181,7 @@ class BentoMetricsGrid extends StatelessWidget {
                 icon: '💪',
                 label: 'Workout',
                 value: '$workoutsThisWeek',
-                color: const Color(0xFFFB923C),
+                color: AppColors.metricWorkouts,
                 onTap: onWorkoutsTap,
               ),
             ),
@@ -270,7 +272,7 @@ class _LargeMetricCard extends StatelessWidget {
                   label,
                   style: TextStyle(
                     fontSize: textStyles.bodySmall,
-                    color: const Color(0xFF6B7280),
+                    color: context.colors.textSecondary,
                   ),
                 ),
               ],
@@ -281,7 +283,7 @@ class _LargeMetricCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: textStyles.headlineMedium,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: context.colors.textPrimary,
               ),
             ),
             SizedBox(height: spacing.sm),
@@ -303,8 +305,8 @@ class _LargeMetricCard extends StatelessWidget {
                     delta! >= 0 ? Icons.arrow_upward : Icons.arrow_downward,
                     size: sizes.iconSmall,
                     color: delta! >= 0
-                        ? const Color(0xFF22C55E)
-                        : const Color(0xFFEF4444),
+                        ? AppColors.readinessPeak
+                        : AppColors.readinessLow,
                   ),
                   SizedBox(width: spacing.xs),
                   Text(
@@ -312,8 +314,8 @@ class _LargeMetricCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: textStyles.labelSmall,
                       color: delta! >= 0
-                          ? const Color(0xFF22C55E)
-                          : const Color(0xFFEF4444),
+                          ? AppColors.readinessPeak
+                          : AppColors.readinessLow,
                     ),
                   ),
                 ],
@@ -383,7 +385,7 @@ class _SmallMetricCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: textStyles.titleMedium,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: context.colors.textPrimary,
               ),
             ),
             SizedBox(height: spacing.xs / 2),
@@ -391,7 +393,7 @@ class _SmallMetricCard extends StatelessWidget {
               label,
               style: TextStyle(
                 fontSize: textStyles.labelSmall,
-                color: const Color(0xFF6B7280),
+                color: context.colors.textSecondary,
               ),
             ),
           ],

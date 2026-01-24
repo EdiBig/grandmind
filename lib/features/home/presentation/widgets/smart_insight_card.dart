@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/responsive/responsive.dart';
+import '../../../../core/theme/theme_extensions.dart';
 
 /// Smart insight card that provides AI-powered actionable suggestions
 class SmartInsightCard extends StatefulWidget {
@@ -110,7 +111,7 @@ class _SmartInsightCardState extends State<SmartInsightCard>
                           style: TextStyle(
                             fontSize: textStyles.titleSmall,
                             fontWeight: FontWeight.w600,
-                            color: Colors.white,
+                            color: context.colors.textPrimary,
                           ),
                         ),
                         SizedBox(height: spacing.xs),
@@ -118,7 +119,7 @@ class _SmartInsightCardState extends State<SmartInsightCard>
                           widget.insight.message,
                           style: TextStyle(
                             fontSize: textStyles.bodySmall,
-                            color: const Color(0xFF94A3B8),
+                            color: context.colors.textSecondary,
                           ),
                         ),
                       ],
@@ -152,7 +153,7 @@ class _SmartInsightCardState extends State<SmartInsightCard>
                           vertical: spacing.sm,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF14B8A6),
+                          color: Theme.of(context).colorScheme.primary,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
@@ -163,14 +164,14 @@ class _SmartInsightCardState extends State<SmartInsightCard>
                               style: TextStyle(
                                 fontSize: textStyles.labelMedium,
                                 fontWeight: FontWeight.w600,
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.onPrimary,
                               ),
                             ),
                             SizedBox(width: spacing.xs),
                             Icon(
                               Icons.arrow_forward,
                               size: sizes.iconSmall * 0.9,
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.onPrimary,
                             ),
                           ],
                         ),
@@ -183,7 +184,7 @@ class _SmartInsightCardState extends State<SmartInsightCard>
                         'Dismiss',
                         style: TextStyle(
                           fontSize: textStyles.labelMedium,
-                          color: const Color(0xFF6B7280),
+                          color: context.colors.textSecondary,
                         ),
                       ),
                     ),

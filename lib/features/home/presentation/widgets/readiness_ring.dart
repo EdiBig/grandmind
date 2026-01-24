@@ -2,6 +2,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/responsive/responsive.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/theme_extensions.dart';
 
 /// Animated readiness ring - the hero element of the home screen
 class ReadinessRing extends StatefulWidget {
@@ -81,11 +83,11 @@ class _ReadinessRingState extends State<ReadinessRing>
   }
 
   Color _getScoreColor(int score) {
-    if (score <= 30) return const Color(0xFFEF4444); // Red
-    if (score <= 50) return const Color(0xFFF59E0B); // Orange
-    if (score <= 70) return const Color(0xFFEAB308); // Yellow
-    if (score <= 85) return const Color(0xFF14B8A6); // Teal
-    return const Color(0xFF22C55E); // Green
+    if (score <= 30) return AppColors.readinessLow;
+    if (score <= 50) return AppColors.readinessModerate;
+    if (score <= 70) return AppColors.readinessFair;
+    if (score <= 85) return AppColors.readinessGood;
+    return AppColors.readinessPeak;
   }
 
   String _getReadinessLabel(int score) {
@@ -202,7 +204,7 @@ class _ReadinessRingState extends State<ReadinessRing>
                             style: TextStyle(
                               fontSize: textStyles.displaySmall,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: context.colors.textPrimary,
                             ),
                           ),
                           Text(
@@ -227,7 +229,7 @@ class _ReadinessRingState extends State<ReadinessRing>
                     style: TextStyle(
                       fontSize: textStyles.titleLarge,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      color: context.colors.textPrimary,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -239,7 +241,7 @@ class _ReadinessRingState extends State<ReadinessRing>
                     _getSubGreeting(_countAnimation.value),
                     style: TextStyle(
                       fontSize: textStyles.bodyMedium,
-                      color: const Color(0xFF94A3B8),
+                      color: context.colors.textSecondary,
                     ),
                     textAlign: TextAlign.center,
                   ),
