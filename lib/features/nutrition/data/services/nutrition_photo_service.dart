@@ -2,7 +2,13 @@ import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image/image.dart' as img;
+import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
+import '../../../../core/errors/exceptions.dart';
+
+/// Callback for upload progress updates
+typedef MealPhotoProgressCallback = void Function(double progress, String status);
 
 /// Service for handling meal photos
 /// Uploads photos to Firebase Storage and manages photo URLs
@@ -23,7 +29,9 @@ class NutritionPhotoService {
       if (photo == null) return null;
       return File(photo.path);
     } catch (e) {
-      debugPrint('Error taking photo: $e');
+      if (kDebugMode) {
+        debugPrint('Error taking photo: $e');
+      }
       return null;
     }
   }
@@ -41,7 +49,9 @@ class NutritionPhotoService {
       if (photo == null) return null;
       return File(photo.path);
     } catch (e) {
-      debugPrint('Error picking photo: $e');
+      if (kDebugMode) {
+        debugPrint('Error picking photo: $e');
+      }
       return null;
     }
   }
@@ -55,17 +65,30 @@ class NutritionPhotoService {
     return null;
   }
 
-  /// Upload photo to Firebase Storage
-  /// Returns the download URL or null if failed
-  Future<String?> uploadMealPhoto(File photoFile, String userId) async {
+  /// Upload photo to Firebase Storage with compression
+  /// Returns the download URL
+  /// Throws [ImageException] if upload fails
+  Future<String> uploadMealPhoto(
+    File photoFile,
+    String userId, {
+    MealPhotoProgressCallback? onProgress,
+  }) async {
+    File? compressedFile;
     try {
+      onProgress?.call(0.0, 'Compressing image...');
+
+      // Compress the image before upload
+      compressedFile = await _compressImage(photoFile);
+
+      onProgress?.call(0.2, 'Uploading photo...');
+
       final String photoId = const Uuid().v4();
       final String fileName = '${userId}_${photoId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
       final Reference ref = _storage.ref().child('meal_photos/$userId/$fileName');
 
-      // Upload the file
+      // Upload the compressed file with progress tracking
       final UploadTask uploadTask = ref.putFile(
-        photoFile,
+        compressedFile,
         SettableMetadata(
           contentType: 'image/jpeg',
           customMetadata: {
@@ -75,15 +98,83 @@ class NutritionPhotoService {
         ),
       );
 
+      // Listen to progress
+      uploadTask.snapshotEvents.listen((snapshot) {
+        final progress = snapshot.bytesTransferred / snapshot.totalBytes;
+        // Upload is 20% to 95% of total progress
+        onProgress?.call(0.2 + (progress * 0.75), 'Uploading photo...');
+      });
+
       // Wait for upload to complete
       final TaskSnapshot snapshot = await uploadTask;
+
+      onProgress?.call(1.0, 'Complete!');
 
       // Get download URL
       final String downloadUrl = await snapshot.ref.getDownloadURL();
       return downloadUrl;
+    } on FirebaseException catch (e) {
+      if (kDebugMode) {
+        debugPrint('Firebase error uploading photo: $e');
+      }
+      throw ImageException.uploadError('Upload failed: ${e.message}');
     } catch (e) {
-      debugPrint('Error uploading photo: $e');
-      return null;
+      if (kDebugMode) {
+        debugPrint('Error uploading photo: $e');
+      }
+      if (e is ImageException) rethrow;
+      throw ImageException.uploadError('Failed to upload meal photo: $e');
+    } finally {
+      // Clean up temp file
+      if (compressedFile != null && compressedFile.path != photoFile.path) {
+        try {
+          await compressedFile.delete();
+        } catch (_) {}
+      }
+    }
+  }
+
+  /// Compress image to reduce file size and fix EXIF orientation
+  /// Max width: 1920px, Quality: 85%
+  /// Throws [ImageException] if compression fails
+  Future<File> _compressImage(File imageFile, {int quality = 85}) async {
+    try {
+      final imageBytes = await imageFile.readAsBytes();
+      var image = img.decodeImage(imageBytes);
+
+      if (image == null) {
+        throw ImageException.decodeError();
+      }
+
+      // Apply EXIF orientation to fix rotated images (especially from iOS)
+      image = img.bakeOrientation(image);
+
+      // Resize if needed (max 1920px on longest side)
+      if (image.width > 1920 || image.height > 1920) {
+        if (image.width > image.height) {
+          image = img.copyResize(image, width: 1920);
+        } else {
+          image = img.copyResize(image, height: 1920);
+        }
+      }
+
+      // Encode as JPEG
+      final compressedBytes = img.encodeJpg(image, quality: quality);
+
+      // Save to temp file
+      final tempDir = await getTemporaryDirectory();
+      final tempFile = File(
+        '${tempDir.path}/meal_${DateTime.now().millisecondsSinceEpoch}.jpg',
+      );
+      await tempFile.writeAsBytes(compressedBytes);
+
+      return tempFile;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error compressing image: $e');
+      }
+      if (e is ImageException) rethrow;
+      throw ImageException.compressionError('Failed to process image: $e');
     }
   }
 
@@ -96,7 +187,9 @@ class NutritionPhotoService {
       await ref.delete();
       return true;
     } catch (e) {
-      debugPrint('Error deleting photo: $e');
+      if (kDebugMode) {
+        debugPrint('Error deleting photo: $e');
+      }
       return false;
     }
   }
@@ -104,17 +197,27 @@ class NutritionPhotoService {
   /// Upload multiple photos (for future use)
   Future<List<String>> uploadMultiplePhotos(
     List<File> photoFiles,
-    String userId,
-  ) async {
+    String userId, {
+    MealPhotoProgressCallback? onProgress,
+  }) async {
     final List<String> urls = [];
+    final total = photoFiles.length;
 
-    for (final file in photoFiles) {
-      final url = await uploadMealPhoto(file, userId);
-      if (url != null) {
+    for (int i = 0; i < photoFiles.length; i++) {
+      final file = photoFiles[i];
+      onProgress?.call(i / total, 'Uploading photo ${i + 1} of $total...');
+      try {
+        final url = await uploadMealPhoto(file, userId);
         urls.add(url);
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('Error uploading photo ${i + 1}: $e');
+        }
+        // Continue with remaining photos
       }
     }
 
+    onProgress?.call(1.0, 'Complete!');
     return urls;
   }
 
@@ -131,7 +234,9 @@ class NutritionPhotoService {
       if (image == null) return null;
       return File(image.path);
     } catch (e) {
-      debugPrint('Error getting image: $e');
+      if (kDebugMode) {
+        debugPrint('Error getting image: $e');
+      }
       return null;
     }
   }

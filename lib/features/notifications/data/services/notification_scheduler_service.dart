@@ -1,10 +1,12 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/models/notification_schedule.dart';
 import '../../domain/models/notification_type.dart';
+import '../../../../core/constants/route_constants.dart';
+import 'notification_navigation.dart';
+import 'notification_payload.dart';
 
 /// Service for scheduling and managing local notifications
 class NotificationSchedulerService {
@@ -54,8 +56,7 @@ class NotificationSchedulerService {
 
   /// Handle notification tap
   void _handleNotificationTap(NotificationResponse response) {
-    // TODO: Navigate to appropriate screen based on payload
-    debugPrint('Notification tapped: ${response.payload}');
+    NotificationNavigation.handlePayload(response.payload);
   }
 
   // ========== WORKOUT REMINDERS ==========
@@ -136,7 +137,7 @@ class NotificationSchedulerService {
         title: title,
         body: body,
         scheduledTime: nextOccurrence,
-        payload: 'workout_reminder',
+        payload: payloadForRoute(RouteConstants.workouts),
       );
 
       // Save to Firestore
@@ -176,7 +177,7 @@ class NotificationSchedulerService {
       title: title,
       body: body,
       scheduledTime: scheduledTime,
-      payload: 'habit_checkin_$id',
+      payload: payloadForRoute(RouteConstants.habits),
     );
 
     // Save to Firestore
@@ -244,7 +245,7 @@ class NotificationSchedulerService {
       title: 'You\'ve got this!',
       body: message,
       scheduledTime: scheduledTime,
-      payload: 'motivational',
+      payload: payloadForRoute(RouteConstants.home),
     );
 
     // Save to Firestore
@@ -328,7 +329,7 @@ class NotificationSchedulerService {
           presentSound: true,
         ),
       ),
-      payload: 'achievement',
+      payload: payloadForRoute(RouteConstants.achievements),
     );
 
     // Log to Firestore

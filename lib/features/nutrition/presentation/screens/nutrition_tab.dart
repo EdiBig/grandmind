@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/route_constants.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../settings/presentation/providers/app_settings_provider.dart';
 import '../providers/nutrition_providers.dart';
 import '../../domain/models/meal.dart';
 import 'log_meal_screen.dart';
@@ -14,12 +16,27 @@ class NutritionTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(appSettingsProvider);
+
+    if (!settings.nutritionEnabled) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Nutrition'),
+        ),
+        body: _buildModuleDisabled(
+          context,
+          title: 'Nutrition is turned off',
+          subtitle: 'Enable nutrition in Settings to use this tab.',
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Nutrition'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.history),
+            icon: Icon(Icons.history),
             onPressed: () {
               context.push(RouteConstants.nutritionHistory);
             },
@@ -75,6 +92,49 @@ class NutritionTab extends ConsumerWidget {
     );
   }
 
+  Widget _buildModuleDisabled(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+  }) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.lock_outline,
+              size: 64,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => context.push(RouteConstants.settings),
+              child: const Text('Open Settings'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ========== WATER INTAKE SECTION ==========
 
   Widget _buildWaterIntakeSection(BuildContext context, WidgetRef ref) {
@@ -92,8 +152,8 @@ class NutritionTab extends ConsumerWidget {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                Colors.blue.shade400,
-                Colors.blue.shade600,
+                AppColors.info,
+                AppColors.info,
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -101,7 +161,7 @@ class NutritionTab extends ConsumerWidget {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.blue.withValues(alpha: 0.3),
+                color: AppColors.info.withValues(alpha: 0.3),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),
@@ -114,14 +174,14 @@ class NutritionTab extends ConsumerWidget {
                 children: [
                   const Icon(
                     Icons.local_drink,
-                    color: Colors.white,
+                    color: AppColors.white,
                     size: 28,
                   ),
                   const SizedBox(width: 12),
                   const Text(
                     'Water Intake',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.white,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
@@ -130,7 +190,7 @@ class NutritionTab extends ConsumerWidget {
                   if (goalAchieved)
                     const Icon(
                       Icons.check_circle,
-                      color: Colors.white,
+                      color: AppColors.white,
                       size: 28,
                     ),
                 ],
@@ -153,8 +213,8 @@ class NutritionTab extends ConsumerWidget {
                 child: LinearProgressIndicator(
                   value: progress / 100,
                   minHeight: 8,
-                  backgroundColor: Colors.white.withValues(alpha: 0.3),
-                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                  backgroundColor: AppColors.white.withValues(alpha: 0.3),
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.white),
                 ),
               ),
 
@@ -166,8 +226,8 @@ class NutritionTab extends ConsumerWidget {
                 children: [
                   Text(
                     '$glassesConsumed / $targetGlasses glasses',
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: AppColors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
@@ -175,7 +235,7 @@ class NutritionTab extends ConsumerWidget {
                   Text(
                     '${progress.toStringAsFixed(0)}%',
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: AppColors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
@@ -194,8 +254,8 @@ class NutritionTab extends ConsumerWidget {
                       icon: const Icon(Icons.add),
                       label: const Text('Add Glass (250ml)'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.blue.shade600,
+                        backgroundColor: AppColors.white,
+                        foregroundColor: AppColors.info,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
@@ -204,8 +264,8 @@ class NutritionTab extends ConsumerWidget {
                   OutlinedButton(
                     onPressed: () => _resetWater(context, ref),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: const BorderSide(color: Colors.white),
+                      foregroundColor: AppColors.white,
+                      side: BorderSide(color: AppColors.white),
                       padding: const EdgeInsets.symmetric(
                         vertical: 12,
                         horizontal: 16,
@@ -245,7 +305,7 @@ class NutritionTab extends ConsumerWidget {
           borderRadius: BorderRadius.circular(20),
           child: Icon(
             isFilled ? Icons.local_drink : Icons.local_drink_outlined,
-            color: Colors.white.withValues(alpha: isFilled ? 1.0 : 0.3),
+            color: AppColors.white.withValues(alpha: isFilled ? 1.0 : 0.3),
             size: 32,
           ),
         );
@@ -345,13 +405,13 @@ class NutritionTab extends ConsumerWidget {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                Colors.orange.shade50,
-                Colors.orange.shade100,
+                AppColors.warning.withValues(alpha: 0.1),
+                AppColors.warning.withValues(alpha: 0.2),
               ],
             ),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: Colors.orange.shade200,
+              color: AppColors.warning.withValues(alpha: 0.3),
               width: 1.5,
             ),
           ),
@@ -363,7 +423,7 @@ class NutritionTab extends ConsumerWidget {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: AppColors.black,
                 ),
               ),
               const SizedBox(height: 4),
@@ -371,7 +431,7 @@ class NutritionTab extends ConsumerWidget {
                 summary.progressSummary,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey.shade700,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 16),
@@ -381,21 +441,23 @@ class NutritionTab extends ConsumerWidget {
                 children: [
                   Expanded(
                     child: _buildMacroCard(
+                      context,
                       'Calories',
                       summary.totalCalories.toStringAsFixed(0),
                       summary.goal?.dailyCalories.toStringAsFixed(0) ?? '0',
                       summary.caloriesProgress,
-                      Colors.orange,
+                      AppColors.warning,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: _buildMacroCard(
+                      context,
                       'Protein',
                       '${summary.totalProtein.toStringAsFixed(0)}g',
                       '${summary.goal?.dailyProteinGrams.toStringAsFixed(0) ?? '0'}g',
                       summary.proteinProgress,
-                      Colors.blue,
+                      AppColors.info,
                     ),
                   ),
                 ],
@@ -405,21 +467,23 @@ class NutritionTab extends ConsumerWidget {
                 children: [
                   Expanded(
                     child: _buildMacroCard(
+                      context,
                       'Carbs',
                       '${summary.totalCarbs.toStringAsFixed(0)}g',
                       '${summary.goal?.dailyCarbsGrams.toStringAsFixed(0) ?? '0'}g',
                       summary.carbsProgress,
-                      Colors.green,
+                      AppColors.success,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: _buildMacroCard(
+                      context,
                       'Fat',
                       '${summary.totalFat.toStringAsFixed(0)}g',
                       '${summary.goal?.dailyFatGrams.toStringAsFixed(0) ?? '0'}g',
                       summary.fatProgress,
-                      Colors.purple,
+                      AppColors.workoutFlexibility,
                     ),
                   ),
                 ],
@@ -439,6 +503,7 @@ class NutritionTab extends ConsumerWidget {
   }
 
   Widget _buildMacroCard(
+    BuildContext context,
     String label,
     String current,
     String target,
@@ -463,7 +528,7 @@ class NutritionTab extends ConsumerWidget {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: Colors.grey.shade700,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 4),
@@ -480,7 +545,7 @@ class NutritionTab extends ConsumerWidget {
             'of $target',
             style: TextStyle(
               fontSize: 11,
-              color: Colors.grey.shade600,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 8),
@@ -561,9 +626,9 @@ class NutritionTab extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: Theme.of(context).colorScheme.surfaceContainerHigh),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -572,7 +637,7 @@ class NutritionTab extends ConsumerWidget {
             children: [
               Text(
                 type.emoji,
-                style: const TextStyle(fontSize: 24),
+                style: TextStyle(fontSize: 24),
               ),
               const SizedBox(width: 8),
               Text(
@@ -588,7 +653,7 @@ class NutritionTab extends ConsumerWidget {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: Colors.grey.shade700,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -613,9 +678,9 @@ class NutritionTab extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.white,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.grey.shade300),
+          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
         ),
         child: Row(
           children: [
@@ -628,7 +693,7 @@ class NutritionTab extends ConsumerWidget {
                   height: 50,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) =>
-                      const Icon(Icons.restaurant, size: 50),
+                      Icon(Icons.restaurant, size: 50),
                 ),
               )
             else
@@ -636,10 +701,10 @@ class NutritionTab extends ConsumerWidget {
                 width: 50,
                 height: 50,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
+                  color: Theme.of(context).colorScheme.surfaceContainerHigh,
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: const Icon(Icons.restaurant, color: Colors.grey),
+                child: Icon(Icons.restaurant, color: AppColors.grey),
               ),
             const SizedBox(width: 12),
             Expanded(
@@ -648,7 +713,7 @@ class NutritionTab extends ConsumerWidget {
                 children: [
                   Text(
                     '${meal.entries.length} items',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
@@ -658,7 +723,7 @@ class NutritionTab extends ConsumerWidget {
                       meal.notes!,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade600,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -671,7 +736,7 @@ class NutritionTab extends ConsumerWidget {
               children: [
                 Text(
                   '${meal.totalCalories.toStringAsFixed(0)} cal',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
@@ -680,7 +745,7 @@ class NutritionTab extends ConsumerWidget {
                   'P: ${meal.totalProtein.toStringAsFixed(0)}g',
                   style: TextStyle(
                     fontSize: 11,
-                    color: Colors.grey.shade600,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -695,16 +760,16 @@ class NutritionTab extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: Theme.of(context).colorScheme.surfaceContainerHigh),
       ),
       child: Column(
         children: [
           Icon(
             Icons.restaurant_menu,
             size: 64,
-            color: Colors.grey.shade400,
+            color: Theme.of(context).colorScheme.outline,
           ),
           const SizedBox(height: 16),
           Text(
@@ -712,7 +777,7 @@ class NutritionTab extends ConsumerWidget {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
-              color: Colors.grey.shade700,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 8),
@@ -720,7 +785,7 @@ class NutritionTab extends ConsumerWidget {
             'Tap the button below to log your first meal',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey.shade600,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             textAlign: TextAlign.center,
           ),
@@ -751,7 +816,7 @@ class NutritionTab extends ConsumerWidget {
               context,
               icon: Icons.restaurant,
               label: 'Log Meal',
-              color: Colors.orange,
+              color: AppColors.warning,
               onTap: () {
                 context.push(RouteConstants.logMeal);
               },
@@ -760,7 +825,7 @@ class NutritionTab extends ConsumerWidget {
               context,
               icon: Icons.fastfood,
               label: 'Quick Snack',
-              color: Colors.purple,
+              color: AppColors.workoutFlexibility,
               onTap: () {
                 context.push(
                   RouteConstants.logMeal,
@@ -772,7 +837,7 @@ class NutritionTab extends ConsumerWidget {
               context,
               icon: Icons.search,
               label: 'Search Foods',
-              color: Colors.green,
+              color: AppColors.success,
               onTap: () {
                 context.push(RouteConstants.foodSearch);
               },
@@ -781,7 +846,7 @@ class NutritionTab extends ConsumerWidget {
               context,
               icon: Icons.analytics,
               label: 'View Insights',
-              color: Colors.blue,
+              color: AppColors.info,
               onTap: () {
                 context.push(RouteConstants.aiInsights);
               },
@@ -842,17 +907,17 @@ class NutritionTab extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.red.shade50,
+        color: AppColors.error.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.red.shade200),
+        border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
-          Icon(Icons.error_outline, color: Colors.red.shade400, size: 48),
+          Icon(Icons.error_outline, color: AppColors.error, size: 48),
           const SizedBox(height: 12),
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
@@ -860,7 +925,7 @@ class NutritionTab extends ConsumerWidget {
           const SizedBox(height: 8),
           Text(
             error,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+            style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
@@ -869,8 +934,8 @@ class NutritionTab extends ConsumerWidget {
             icon: const Icon(Icons.refresh),
             label: const Text('Retry'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red.shade400,
-              foregroundColor: Colors.white,
+              backgroundColor: AppColors.error,
+              foregroundColor: AppColors.white,
             ),
           ),
         ],

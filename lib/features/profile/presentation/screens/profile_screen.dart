@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/app_colors.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
@@ -20,7 +21,7 @@ class ProfileScreen extends ConsumerWidget {
         title: const Text('Profile'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit),
+            icon: Icon(Icons.edit),
             onPressed: () => context.push(RouteConstants.editProfile),
           ),
         ],
@@ -90,7 +91,7 @@ class ProfileScreen extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppColors.white,
                 ),
               ),
             ],
@@ -104,6 +105,7 @@ class ProfileScreen extends ConsumerWidget {
 
   Widget _buildProfileHeader(BuildContext context, String name, String? email, String? photoUrl) {
     final gradients = Theme.of(context).extension<AppGradients>()!;
+    final colorScheme = Theme.of(context).colorScheme;
     return Column(
       children: [
         Stack(
@@ -113,7 +115,7 @@ class ProfileScreen extends ConsumerWidget {
               height: 120,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 4),
+                border: Border.all(color: AppColors.white, width: 4),
                 boxShadow: [
                   BoxShadow(
                     color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
@@ -137,10 +139,10 @@ class ProfileScreen extends ConsumerWidget {
                             decoration: BoxDecoration(
                               gradient: gradients.primary,
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.person,
                               size: 60,
-                              color: Colors.white,
+                              color: AppColors.white,
                             ),
                           ),
                         )
@@ -151,7 +153,7 @@ class ProfileScreen extends ConsumerWidget {
                         child: const Icon(
                           Icons.person,
                           size: 60,
-                          color: Colors.white,
+                          color: AppColors.white,
                         ),
                       ),
               ),
@@ -165,10 +167,10 @@ class ProfileScreen extends ConsumerWidget {
                   color: Theme.of(context).colorScheme.primary,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.camera_alt,
                   size: 20,
-                  color: Colors.white,
+                  color: AppColors.white,
                 ),
               ),
             ),
@@ -185,7 +187,7 @@ class ProfileScreen extends ConsumerWidget {
         Text(
           email ?? '',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey,
+                color: colorScheme.onSurfaceVariant,
               ),
         ),
       ],
@@ -245,6 +247,7 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   Widget _buildStatCard(BuildContext context, String value, String label, Color color) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -265,7 +268,7 @@ class ProfileScreen extends ConsumerWidget {
           Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[700],
+                  color: colorScheme.onSurfaceVariant,
                 ),
             textAlign: TextAlign.center,
           ),
@@ -275,6 +278,7 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   Widget _buildSection(BuildContext context, String title, List<Widget> children) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -291,7 +295,7 @@ class ProfileScreen extends ConsumerWidget {
           decoration: BoxDecoration(
             color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+              border: Border.all(color: colorScheme.outlineVariant),
           ),
           child: Column(
             children: children,

@@ -65,7 +65,6 @@ class SyncService {
   Timer? _retryTimer;
 
   static const int _maxRetries = 3;
-  static const Duration _retryDelay = Duration(seconds: 30);
   static const Duration _syncDebounce = Duration(seconds: 2);
 
   ConflictResolutionStrategy defaultStrategy = ConflictResolutionStrategy.preferNewest;
