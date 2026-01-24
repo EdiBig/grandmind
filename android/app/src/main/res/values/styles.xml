@@ -17,10 +17,11 @@
     </style>
 
     <!-- UCrop Activity Theme with toolbar for save button -->
-    <style name="UCropTheme" parent="Theme.AppCompat.Light">
+    <style name="UCropTheme" parent="Theme.AppCompat.Light.DarkActionBar">
         <item name="colorPrimary">#FF9800</item>
         <item name="colorPrimaryDark">#F57C00</item>
         <item name="colorAccent">#FF9800</item>
-        <item name="android:statusBarColor">#F57C00</item>
+        <item name="windowActionBar">true</item>
+        <item name="windowNoTitle">false</item>
     </style>
 </resources>
