@@ -34,6 +34,7 @@ import '../features/settings/presentation/screens/terms_screen.dart';
 import '../features/settings/presentation/screens/privacy_policy_screen.dart';
 import '../features/settings/presentation/screens/community_guidelines_screen.dart';
 import '../features/ai/presentation/screens/ai_coach_screen.dart';
+import '../features/ai/presentation/screens/ai_conversation_history_screen.dart';
 import '../features/habits/presentation/screens/create_habit_screen.dart';
 import '../features/habits/presentation/screens/habit_insights_screen.dart';
 import '../features/habits/presentation/screens/habit_calendar_screen.dart';
@@ -41,6 +42,7 @@ import '../features/habits/presentation/screens/habit_history_screen.dart';
 import '../features/habits/data/services/habit_insights_service.dart';
 import '../features/health/presentation/screens/health_details_screen.dart';
 import '../features/health/presentation/screens/health_sync_screen.dart';
+import '../features/health/presentation/screens/health_insights_screen.dart';
 import '../features/workouts/presentation/screens/fitness_profile_screen.dart';
 import '../features/workouts/presentation/screens/my_routines_screen.dart';
 import '../features/workouts/presentation/screens/workout_admin_screen.dart';
@@ -49,9 +51,20 @@ import '../features/challenges/presentation/screens/create_challenge_screen.dart
 import '../features/challenges/presentation/screens/challenge_detail_screen.dart';
 import '../features/challenges/presentation/screens/challenge_rankings_screen.dart';
 import '../features/challenges/presentation/screens/challenge_activity_feed_screen.dart';
+import '../features/challenges/presentation/screens/challenge_privacy_settings_screen.dart';
+import '../features/challenges/presentation/screens/challenge_moderation_screen.dart';
+import '../features/challenges/presentation/screens/blocked_users_screen.dart';
 import '../features/progress/presentation/screens/progress_insights_screen.dart';
 import '../features/progress/presentation/screens/progress_dashboard_screen.dart';
 import '../features/progress/presentation/screens/weekly_summary_screen.dart';
+import '../features/progress/presentation/screens/weight_tracking_screen.dart';
+import '../features/progress/presentation/screens/measurements_screen.dart';
+import '../features/progress/presentation/screens/goals_screen.dart';
+import '../features/progress/presentation/screens/create_goal_screen.dart';
+import '../features/progress/presentation/screens/progress_photos_screen.dart';
+import '../features/progress/presentation/screens/progress_comparison_screen.dart';
+import '../features/progress/presentation/screens/activity_calendar_screen.dart';
+import '../features/progress/presentation/screens/personal_bests_screen.dart';
 import '../features/notifications/presentation/screens/notification_settings_screen.dart';
 import '../features/nutrition/presentation/screens/log_meal_screen.dart';
 import '../features/nutrition/presentation/screens/food_search_screen.dart';
@@ -118,6 +131,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       if (userAsync.isLoading) {
         return null;
+      }
+
+      // Also wait if we have a Firebase user but no Firestore doc yet
+      if (userAsync.asData?.value == null && !userAsync.hasError) {
+        return null; // Still loading user document
       }
 
       final hasCompletedOnboarding =
@@ -220,8 +238,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
-        path: RouteConstants.together,
-        name: 'together',
+        path: RouteConstants.unity,
+        name: 'unity',
         builder: (context, state) {
           scheduleHomeTab(2);
           return const HomeScreen();
@@ -255,6 +273,28 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final challengeId = state.pathParameters['id'] ?? '';
           return ChallengeActivityFeedScreen(challengeId: challengeId);
         },
+      ),
+      GoRoute(
+        path: RouteConstants.challengePrivacy,
+        name: 'challengePrivacy',
+        builder: (context, state) => const ChallengePrivacySettingsScreen(),
+      ),
+      GoRoute(
+        path: RouteConstants.challengeModeration,
+        name: 'challengeModeration',
+        builder: (context, state) {
+          final challengeId = state.pathParameters['id'] ?? '';
+          final challengeName = state.extra as String? ?? 'Challenge';
+          return ChallengeModerationScreen(
+            challengeId: challengeId,
+            challengeName: challengeName,
+          );
+        },
+      ),
+      GoRoute(
+        path: RouteConstants.blockedUsers,
+        name: 'blockedUsers',
+        builder: (context, state) => const BlockedUsersScreen(),
       ),
       GoRoute(
         path: RouteConstants.habits,
@@ -372,6 +412,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'aiCoach',
         builder: (context, state) => const AICoachScreen(),
       ),
+      GoRoute(
+        path: RouteConstants.aiCoachHistory,
+        name: 'aiCoachHistory',
+        builder: (context, state) => const AIConversationHistoryScreen(),
+      ),
 
       // Habits Routes
       GoRoute(
@@ -449,6 +494,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'healthDetails',
         builder: (context, state) => const HealthDetailsScreen(),
       ),
+      GoRoute(
+        path: RouteConstants.healthInsights,
+        name: 'healthInsights',
+        builder: (context, state) => const HealthInsightsScreen(),
+      ),
       // Progress Routes
       GoRoute(
         path: RouteConstants.progressInsights,
@@ -469,6 +519,46 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: RouteConstants.weeklySummary,
         name: 'weeklySummary',
         builder: (context, state) => const WeeklySummaryScreen(),
+      ),
+      GoRoute(
+        path: RouteConstants.weightTracking,
+        name: 'weightTracking',
+        builder: (context, state) => const WeightTrackingScreen(),
+      ),
+      GoRoute(
+        path: RouteConstants.measurements,
+        name: 'measurements',
+        builder: (context, state) => const MeasurementsScreen(),
+      ),
+      GoRoute(
+        path: RouteConstants.goals,
+        name: 'goals',
+        builder: (context, state) => const GoalsScreen(),
+      ),
+      GoRoute(
+        path: RouteConstants.createGoal,
+        name: 'createGoal',
+        builder: (context, state) => const CreateGoalScreen(),
+      ),
+      GoRoute(
+        path: RouteConstants.progressPhotos,
+        name: 'progressPhotos',
+        builder: (context, state) => const ProgressPhotosScreen(),
+      ),
+      GoRoute(
+        path: RouteConstants.photoComparison,
+        name: 'photoComparison',
+        builder: (context, state) => const ProgressComparisonScreen(),
+      ),
+      GoRoute(
+        path: RouteConstants.activityCalendar,
+        name: 'activityCalendar',
+        builder: (context, state) => const ActivityCalendarScreen(),
+      ),
+      GoRoute(
+        path: RouteConstants.personalBests,
+        name: 'personalBests',
+        builder: (context, state) => const PersonalBestsScreen(),
       ),
 
       // Nutrition Routes

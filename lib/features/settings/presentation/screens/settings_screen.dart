@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/theme/theme_presets.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/route_constants.dart';
+import '../../../../core/config/admin_config.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../../home/presentation/providers/dashboard_provider.dart';
 import '../../../health/presentation/providers/health_providers.dart';
@@ -17,11 +19,17 @@ import '../providers/app_settings_provider.dart';
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
+  static const String _privacyPolicyUrl =
+      'https://grandmind-kinesa.web.app/privacy.html';
+  static const String _deleteAccountUrl =
+      'https://grandmind-kinesa.web.app/delete-account.html';
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(appSettingsProvider);
     final userAsync = ref.watch(currentUserProvider);
     final healthPermissionsAsync = ref.watch(healthPermissionsProvider);
+    final isAdmin = ref.watch(isAdminProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
@@ -35,6 +43,14 @@ class SettingsScreen extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: _buildProfileCard(context, userAsync),
+              ),
+              const SizedBox(height: 8),
+              _buildSettingsTile(
+                context,
+                'Fitness Profile',
+                'Goal, level, workout preferences',
+                Icons.fitness_center,
+                () => context.push(RouteConstants.fitnessProfile),
               ),
             ],
           ),
@@ -210,10 +226,24 @@ class SettingsScreen extends ConsumerWidget {
               ),
               _buildSettingsTile(
                 context,
+                'Delete Account',
+                'Request account and data deletion',
+                Icons.delete_outline,
+                () => _launchDeleteAccount(context),
+              ),
+              _buildSettingsTile(
+                context,
                 'Data Management',
                 'Export or delete your data',
                 Icons.storage_outlined,
                 () => context.push(RouteConstants.dataManagement),
+              ),
+              _buildSettingsTile(
+                context,
+                'Restart Setup Wizard',
+                'Go through initial setup again',
+                Icons.restart_alt,
+                () => _showRestartOnboardingDialog(context, ref),
               ),
             ],
           ),
@@ -231,7 +261,7 @@ class SettingsScreen extends ConsumerWidget {
               _buildSettingsTile(
                 context,
                 'Contact Support',
-                'support@kinesa.app',
+                'support@grandpoint.uk',
                 Icons.mail_outline,
                 () => _launchSupportEmail(context),
               ),
@@ -259,9 +289,9 @@ class SettingsScreen extends ConsumerWidget {
               _buildSettingsTile(
                 context,
                 'Privacy Policy',
-                'Read our privacy policy',
+                'Read our privacy policy (web)',
                 Icons.policy_outlined,
-                () => context.push(RouteConstants.privacyPolicy),
+                () => _launchPrivacyPolicy(context),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -269,22 +299,37 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ],
           ),
+          // Admin Tools - only visible to admin users
+          if (isAdmin)
+            _buildSection(
+              context,
+              'Admin Tools',
+              [
+                _buildSettingsTile(
+                  context,
+                  'Exercise Library Sync',
+                  'Manage wger sync and Algolia search',
+                  Icons.admin_panel_settings,
+                  () => context.push(RouteConstants.workoutAdmin),
+                ),
+              ],
+            ),
           const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: OutlinedButton.icon(
               onPressed: () => _showLogoutDialog(context, ref),
-              icon: const Icon(Icons.logout, color: Colors.red),
+              icon: Icon(Icons.logout, color: AppColors.error),
               label: const Text(
                 'Sign Out',
-                style: TextStyle(color: Colors.red),
+                style: TextStyle(color: AppColors.error),
               ),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                side: const BorderSide(color: Colors.red),
+                side: BorderSide(color: AppColors.error),
               ),
             ),
           ),
@@ -362,7 +407,7 @@ class SettingsScreen extends ConsumerWidget {
                   child: (photoUrl == null || photoUrl.isEmpty)
                       ? Text(
                           initials,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         )
                       : null,
                 ),
@@ -381,7 +426,7 @@ class SettingsScreen extends ConsumerWidget {
                       Text(
                         email,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey,
+                              color: AppColors.grey,
                             ),
                       ),
                     ],
@@ -391,7 +436,7 @@ class SettingsScreen extends ConsumerWidget {
                   onPressed: user == null
                       ? null
                       : () => context.push(RouteConstants.editProfile),
-                  icon: const Icon(Icons.edit_outlined),
+                  icon: Icon(Icons.edit_outlined),
                   label: const Text('Edit'),
                 ),
               ],
@@ -503,7 +548,7 @@ class SettingsScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              value: language,
+              initialValue: language,
               items: const [
                 DropdownMenuItem(
                   value: 'English (UK)',
@@ -514,7 +559,7 @@ class SettingsScreen extends ConsumerWidget {
                 if (value == null) return;
                 ref.read(appSettingsProvider.notifier).setLanguage(value);
               },
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 border: OutlineInputBorder(),
                 isDense: true,
               ),
@@ -575,7 +620,7 @@ class SettingsScreen extends ConsumerWidget {
       error: (error, stackTrace) => Text(
         'Unable to load notification preferences.',
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Colors.grey,
+              color: AppColors.grey,
             ),
       ),
       data: (preferences) {
@@ -598,7 +643,7 @@ class SettingsScreen extends ConsumerWidget {
                     _findNotificationPreference(preferences, configs[index]),
                   ),
                   if (index != configs.length - 1)
-                    const Divider(height: 24),
+                    Divider(height: 24),
                 ],
               ],
             ),
@@ -684,7 +729,7 @@ class SettingsScreen extends ConsumerWidget {
                   Text(
                     config.subtitle,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey,
+                          color: AppColors.grey,
                         ),
                   ),
                 ],
@@ -708,7 +753,7 @@ class SettingsScreen extends ConsumerWidget {
             Text(
               daysLabel,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey,
+                    color: AppColors.grey,
                   ),
             ),
             const Spacer(),
@@ -725,7 +770,7 @@ class SettingsScreen extends ConsumerWidget {
                   if (selectedTime == null) return;
                   await updateTime(selectedTime);
                 },
-                icon: const Icon(Icons.schedule, size: 18),
+                icon: Icon(Icons.schedule, size: 18),
                 label: Text(timeLabel),
               ),
           ],
@@ -786,7 +831,7 @@ class SettingsScreen extends ConsumerWidget {
             Text(
               planSubtitle,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey,
+                    color: AppColors.grey,
                   ),
             ),
             const SizedBox(height: 12),
@@ -809,7 +854,7 @@ class SettingsScreen extends ConsumerWidget {
   ) {
     final isConnected = permissionsAsync.asData?.value ?? false;
     final label = isConnected ? 'Connected' : 'Not Connected';
-    final color = isConnected ? Colors.green : Colors.grey;
+    final color = isConnected ? AppColors.success : AppColors.grey;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
@@ -842,7 +887,7 @@ class SettingsScreen extends ConsumerWidget {
         return Card(
           elevation: 0,
           child: ListTile(
-            leading: const Icon(Icons.info_outline),
+            leading: Icon(Icons.info_outline),
             title: const Text('App Version'),
             subtitle: Text(versionLabel),
           ),
@@ -879,7 +924,7 @@ class SettingsScreen extends ConsumerWidget {
   Future<void> _launchSupportEmail(BuildContext context) async {
     final uri = Uri(
       scheme: 'mailto',
-      path: 'support@kinesa.app',
+      path: 'support@grandpoint.uk',
       queryParameters: {'subject': 'Kinesa Support'},
     );
     if (await canLaunchUrl(uri)) {
@@ -887,6 +932,46 @@ class SettingsScreen extends ConsumerWidget {
     } else if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Unable to open email client.')),
+      );
+    }
+  }
+
+  Future<void> _launchPrivacyPolicy(BuildContext context) async {
+    await _openExternalUrl(
+      context,
+      Uri.parse(_privacyPolicyUrl),
+      fallback: () => context.push(RouteConstants.privacyPolicy),
+    );
+  }
+
+  Future<void> _launchDeleteAccount(BuildContext context) async {
+    await _openExternalUrl(
+      context,
+      Uri.parse(_deleteAccountUrl),
+      fallbackMessage: 'Unable to open delete account page.',
+    );
+  }
+
+  Future<void> _openExternalUrl(
+    BuildContext context,
+    Uri uri, {
+    VoidCallback? fallback,
+    String fallbackMessage = 'Unable to open link.',
+  }) async {
+    try {
+      final launched =
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (launched) return;
+      final inAppLaunched =
+          await launchUrl(uri, mode: LaunchMode.inAppWebView);
+      if (inAppLaunched) return;
+      fallback?.call();
+    } catch (_) {
+      fallback?.call();
+    }
+    if (context.mounted && fallback == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(fallbackMessage)),
       );
     }
   }
@@ -957,7 +1042,7 @@ class SettingsScreen extends ConsumerWidget {
             Text(
               'Choose how Kinesa adapts to light and dark environments.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey,
+                    color: AppColors.grey,
                   ),
             ),
             const SizedBox(height: 16),
@@ -1019,7 +1104,7 @@ class SettingsScreen extends ConsumerWidget {
             Text(
               'Pick a color story that fits your mood.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey,
+                    color: AppColors.grey,
                   ),
             ),
             const SizedBox(height: 16),
@@ -1062,7 +1147,7 @@ class SettingsScreen extends ConsumerWidget {
       ),
       title: Text(title),
       subtitle: Text(subtitle),
-      trailing: trailing ?? const Icon(Icons.chevron_right),
+      trailing: trailing ?? Icon(Icons.chevron_right),
       onTap: onTap,
     );
   }
@@ -1114,7 +1199,59 @@ class SettingsScreen extends ConsumerWidget {
             },
             child: const Text(
               'Sign Out',
-              style: TextStyle(color: Colors.red),
+              style: TextStyle(color: AppColors.error),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRestartOnboardingDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Restart Setup Wizard'),
+        content: const Text(
+          'This will take you through the initial setup again to update your fitness goals, level, and preferences. Your data will not be deleted.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final userAsync = ref.read(currentUserProvider);
+              final userId = userAsync.asData?.value?.id;
+              if (userId == null) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Unable to restart setup. Please try again.')),
+                  );
+                }
+                return;
+              }
+              try {
+                await ref.read(firestoreServiceProvider).updateUser(userId, {
+                  'hasCompletedOnboarding': false,
+                });
+                ref.invalidate(currentUserProvider);
+                if (context.mounted) {
+                  context.go(RouteConstants.onboarding);
+                }
+              } catch (_) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Unable to restart setup. Please try again.')),
+                  );
+                }
+              }
+            },
+            child: Text(
+              'Restart Setup',
+              style: TextStyle(color: Theme.of(context).colorScheme.primary),
             ),
           ),
         ],

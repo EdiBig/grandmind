@@ -8,10 +8,15 @@ import '../../../workouts/presentation/providers/workout_providers.dart';
 import '../../../profile/presentation/providers/profile_providers.dart';
 import '../../../profile/data/services/user_stats_service.dart';
 import '../../../progress/presentation/providers/progress_providers.dart';
+import '../../../health/presentation/providers/health_providers.dart';
+import '../../../authentication/presentation/providers/auth_provider.dart';
 
 /// Provider for current user data
 final currentUserProvider = StreamProvider<UserModel?>((ref) {
-  final userId = FirebaseAuth.instance.currentUser?.uid;
+  // Watch auth state to react to login/logout
+  final authState = ref.watch(authStateProvider);
+  final userId = authState.asData?.value?.uid;
+
   if (userId == null) return Stream.value(null);
 
   return FirebaseFirestore.instance
@@ -36,6 +41,7 @@ final dashboardStatsProvider = Provider<AsyncValue<DashboardStats>>((ref) {
   final userStatsAsync = ref.watch(userStatsProvider);
   final recentWorkoutsAsync = ref.watch(recentWorkoutLogsProvider);
   final recentHabitsAsync = ref.watch(recentHabitLogsProvider);
+  final healthSummaryAsync = ref.watch(healthSummaryProvider);
 
   if (workoutStatsAsync.isLoading ||
       habitStatsAsync.isLoading ||
@@ -81,6 +87,7 @@ final dashboardStatsProvider = Provider<AsyncValue<DashboardStats>>((ref) {
   final userStats = userStatsAsync.asData?.value ?? UserStats.empty();
   final recentWorkouts = recentWorkoutsAsync.asData?.value ?? [];
   final recentHabits = recentHabitsAsync.asData?.value ?? [];
+  final healthSummary = healthSummaryAsync.asData?.value;
 
   final lastWorkoutDate =
       recentWorkouts.isNotEmpty ? recentWorkouts.first.startedAt : null;
@@ -104,8 +111,8 @@ final dashboardStatsProvider = Provider<AsyncValue<DashboardStats>>((ref) {
           (habitStats['completionRate'] as num?)?.toDouble() ?? 0.0,
       currentStreak: userStats.currentStreak,
       longestStreak: userStats.longestStreak,
-      stepsToday: 0,
-      hoursSlept: 0,
+      stepsToday: healthSummary?.steps ?? 0,
+      hoursSlept: healthSummary?.sleepHours ?? 0.0,
       lastWorkoutDate: lastWorkoutDate,
       lastActivityDate: lastActivityDate,
     ),
