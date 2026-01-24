@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/repositories/nutrition_repository.dart';
+import '../../data/services/usda_service.dart';
+import '../../data/services/openfoodfacts_service.dart';
 import '../../domain/models/daily_nutrition_summary.dart';
 import '../../domain/models/food_item.dart';
 import '../../domain/models/meal.dart';
@@ -126,6 +128,114 @@ final foodsByCategoryProvider = FutureProvider.family<List<FoodItem>,
     params.query,
     category: params.category,
   );
+});
+
+// ========== EXTERNAL API PROVIDERS ==========
+
+/// USDA Service provider
+final usdaServiceProvider = Provider<USDAService>((ref) {
+  return USDAService();
+});
+
+/// OpenFoodFacts Service provider
+final openFoodFactsServiceProvider = Provider<OpenFoodFactsService>((ref) {
+  return OpenFoodFactsService();
+});
+
+/// USDA food search provider
+/// Returns foods from USDA FoodData Central database
+final usdaFoodSearchProvider =
+    FutureProvider.family<List<FoodItem>, String>((ref, query) async {
+  if (query.isEmpty) return [];
+
+  final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+  final service = ref.watch(usdaServiceProvider);
+  return service.searchFoods(query, userId);
+});
+
+/// OpenFoodFacts search provider
+/// Returns foods from OpenFoodFacts database (branded products)
+final openFoodFactsSearchProvider =
+    FutureProvider.family<List<FoodItem>, String>((ref, query) async {
+  if (query.isEmpty) return [];
+
+  final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+  final service = ref.watch(openFoodFactsServiceProvider);
+  return service.searchProducts(query, userId);
+});
+
+/// Unified food search provider
+/// Searches USDA (primary) + OpenFoodFacts (secondary) + user custom foods
+/// Returns combined results with duplicates removed
+final unifiedFoodSearchProvider =
+    FutureProvider.family<List<FoodItem>, String>((ref, query) async {
+  if (query.isEmpty) return [];
+
+  final userId = FirebaseAuth.instance.currentUser?.uid;
+  if (userId == null) return [];
+
+  // Search all sources in parallel
+  final usdaResults = await ref.watch(usdaFoodSearchProvider(query).future);
+  final offResults = await ref.watch(openFoodFactsSearchProvider(query).future);
+  final customResults = await ref.watch(foodSearchProvider(query).future);
+
+  // Combine results: custom foods first, then USDA, then OpenFoodFacts
+  final allResults = <FoodItem>[];
+  final seenNames = <String>{};
+
+  // Add custom foods first (highest priority)
+  for (final food in customResults) {
+    final normalizedName = food.name.toLowerCase().trim();
+    if (!seenNames.contains(normalizedName)) {
+      allResults.add(food);
+      seenNames.add(normalizedName);
+    }
+  }
+
+  // Add USDA results (verified government data)
+  for (final food in usdaResults) {
+    final normalizedName = food.name.toLowerCase().trim();
+    if (!seenNames.contains(normalizedName)) {
+      allResults.add(food);
+      seenNames.add(normalizedName);
+    }
+  }
+
+  // Add OpenFoodFacts results (branded products)
+  for (final food in offResults) {
+    final normalizedName = food.name.toLowerCase().trim();
+    if (!seenNames.contains(normalizedName)) {
+      allResults.add(food);
+      seenNames.add(normalizedName);
+    }
+  }
+
+  return allResults;
+});
+
+/// Food search source enum for filtering
+enum FoodSearchSource {
+  all,
+  usda,
+  openFoodFacts,
+  custom,
+}
+
+/// Food search with source filter
+final foodSearchBySourceProvider = FutureProvider.family<List<FoodItem>,
+    FoodSearchBySourceParams>((ref, params) async {
+  if (params.query.isEmpty) return [];
+
+  switch (params.source) {
+    case FoodSearchSource.usda:
+      return ref.watch(usdaFoodSearchProvider(params.query).future);
+    case FoodSearchSource.openFoodFacts:
+      return ref.watch(openFoodFactsSearchProvider(params.query).future);
+    case FoodSearchSource.custom:
+      return ref.watch(foodSearchProvider(params.query).future);
+    case FoodSearchSource.all:
+      return ref.watch(unifiedFoodSearchProvider(params.query).future);
+  }
 });
 
 // ========== DAILY SUMMARY PROVIDERS ==========
@@ -347,4 +457,26 @@ class FoodSearchParams {
 
   @override
   int get hashCode => query.hashCode ^ category.hashCode;
+}
+
+/// Food search by source parameters
+class FoodSearchBySourceParams {
+  final String query;
+  final FoodSearchSource source;
+
+  const FoodSearchBySourceParams({
+    required this.query,
+    this.source = FoodSearchSource.all,
+  });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is FoodSearchBySourceParams &&
+          runtimeType == other.runtimeType &&
+          query == other.query &&
+          source == other.source;
+
+  @override
+  int get hashCode => query.hashCode ^ source.hashCode;
 }
