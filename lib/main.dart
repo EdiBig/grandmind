@@ -1,5 +1,4 @@
 import 'dart:io' show Platform;
-import 'dart:ui' show PlatformDispatcher;
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -75,6 +74,7 @@ void main() async {
   }
 
   if (!kIsWeb) {
+    // ignore: deprecated_member_use - providerAndroid/providerApple params available in newer version
     await FirebaseAppCheck.instance.activate(
       androidProvider:
           kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
