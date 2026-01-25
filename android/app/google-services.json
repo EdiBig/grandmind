@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "891051622598",
+    "project_id": "grandmind-kinesa",
+    "storage_bucket": "grandmind-kinesa.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:891051622598:android:68c9f9d42b3f233c10d7c7",
+        "android_client_info": {
+          "package_name": "com.kinesa.kinesa"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "891051622598-lj48v0g4kdjvjo5te59aegqdkcosju8v.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.kinesa.kinesa",
+            "certificate_hash": "e86082baf30650e4da3c5748b26a76fa6f6ffa4c"
+          }
+        },
+        {
+          "client_id": "891051622598-7hnfocuc6i5kve54v8sv643jg3a1gc9m.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDyXSeTx5mp3pkUHXEHYKSlFU9hrPf4XAo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "891051622598-7hnfocuc6i5kve54v8sv643jg3a1gc9m.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "891051622598-edvjdfn00l1kanf50dusanm3ekp7o43o.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.kinesa.kinesa"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
