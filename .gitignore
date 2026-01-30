@@ -93,3 +93,38 @@ WEB_*.md
 WEEK_*.md
 .vscode/launch.json
 android/fastlane/play-store-credentials.json
+
+# Windows generated files
+windows/flutter/generated_plugin_registrant.cc
+windows/flutter/generated_plugins.cmake
+
+# Development notes and temporary files (root level)
+/*.txt
+/*.md
+!README.md
+!CLAUDE.md
+!CHANGELOG.md
+
+# Sensitive files
+Keys.txt
+Accounts*.txt
+testers*.csv
+testers*.xlsx
+
+# Firebase emulator files
+firebase.emulators.json
+firestore_rules_test.js
+
+# DevTools
+devtools_options.yaml
+
+# Temporary/generated files
+nul
+*.jar
+
+# Theme development files
+kinesa_*.md
+kinesa_*.dart
+
+# Test files (not in test/ structure)
+/test/workout_*.dart

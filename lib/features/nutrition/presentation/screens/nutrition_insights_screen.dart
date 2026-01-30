@@ -2,6 +2,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../core/constants/route_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../providers/nutrition_providers.dart';
 import '../../domain/models/daily_nutrition_summary.dart';
@@ -1183,7 +1185,7 @@ class _NutritionInsightsScreenState
                         const SizedBox(height: 16),
                         ElevatedButton(
                           onPressed: () {
-                            // Navigate to goals screen
+                            context.push(RouteConstants.nutritionGoals);
                           },
                           child: const Text('Set Goals'),
                         ),
