@@ -55,7 +55,7 @@ workflows:
         distribution_type: app_store
         bundle_identifier: com.kinesa.kinesa
       flutter: stable
-      xcode: latest
+      xcode: 15.4
       cocoapods: default
       vars:
         APP_STORE_APP_ID: "6758523369"
@@ -68,20 +68,30 @@ workflows:
         script: |
           cd ios && pod install
 
-      - name: Flutter build IPA
+      - name: Set up code signing
         script: |
-          flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist
+          xcode-project use-profiles
+
+      - name: Build iOS archive
+        script: |
+          flutter build ios --release --no-codesign
+
+      - name: Create IPA
+        script: |
+          xcode-project build-ipa \
+            --workspace ios/Runner.xcworkspace \
+            --scheme Runner \
+            --archive-flags="-destination 'generic/platform=iOS'"
 
     artifacts:
       - build/ios/ipa/*.ipa
+      - "**/*.ipa"
       - /tmp/xcodebuild_logs/*.log
-      - flutter_drive.log
 
     publishing:
       app_store_connect:
         auth: integration
         submit_to_testflight: true
-        expire_build_submitted_for_review: true
 
   ios-adhoc-workflow:
     name: iOS Ad Hoc Build (Testing)
@@ -96,7 +106,7 @@ workflows:
         distribution_type: ad_hoc
         bundle_identifier: com.kinesa.kinesa
       flutter: stable
-      xcode: latest
+      xcode: 15.4
       cocoapods: default
       vars:
         FIREBASE_IOS_APP_ID: "1:891051622598:ios:60a2b9b0d18a7fd310d7c7"
@@ -109,12 +119,23 @@ workflows:
         script: |
           cd ios && pod install
 
-      - name: Flutter build IPA
+      - name: Set up code signing
         script: |
-          flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist
+          xcode-project use-profiles
+
+      - name: Build iOS archive
+        script: |
+          flutter build ios --release --no-codesign
+
+      - name: Create IPA
+        script: |
+          xcode-project build-ipa \
+            --workspace ios/Runner.xcworkspace \
+            --scheme Runner
 
     artifacts:
       - build/ios/ipa/*.ipa
+      - "**/*.ipa"
 
     publishing:
       firebase:
