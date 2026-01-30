@@ -55,33 +55,33 @@ workflows:
         distribution_type: app_store
         bundle_identifier: com.kinesa.kinesa
       flutter: stable
-      xcode: 15.4
+      xcode: latest
       cocoapods: default
       vars:
         APP_STORE_APP_ID: "6758523369"
 
     scripts:
       - name: Get Flutter packages
-        script: flutter pub get
+        script: |
+          flutter pub get
 
       - name: Install CocoaPods
         script: |
-          cd ios && pod install
+          cd ios
+          pod install
 
       - name: Set up code signing
         script: |
           xcode-project use-profiles
 
-      - name: Build iOS archive
-        script: |
-          flutter build ios --release --no-codesign
-
-      - name: Create IPA
+      - name: Build IPA
         script: |
           xcode-project build-ipa \
-            --workspace ios/Runner.xcworkspace \
-            --scheme Runner \
-            --archive-flags="-destination 'generic/platform=iOS'"
+            --workspace "ios/Runner.xcworkspace" \
+            --scheme "Runner" \
+            --config "Release" \
+            --archive-flags="-destination 'generic/platform=iOS' FLUTTER_BUILD_MODE=release" \
+            --export-options-plist /Users/builder/export_options.plist
 
     artifacts:
       - build/ios/ipa/*.ipa
@@ -106,32 +106,31 @@ workflows:
         distribution_type: ad_hoc
         bundle_identifier: com.kinesa.kinesa
       flutter: stable
-      xcode: 15.4
+      xcode: latest
       cocoapods: default
       vars:
         FIREBASE_IOS_APP_ID: "1:891051622598:ios:60a2b9b0d18a7fd310d7c7"
 
     scripts:
       - name: Get Flutter packages
-        script: flutter pub get
+        script: |
+          flutter pub get
 
       - name: Install CocoaPods
         script: |
-          cd ios && pod install
+          cd ios
+          pod install
 
       - name: Set up code signing
         script: |
           xcode-project use-profiles
 
-      - name: Build iOS archive
-        script: |
-          flutter build ios --release --no-codesign
-
-      - name: Create IPA
+      - name: Build IPA
         script: |
           xcode-project build-ipa \
-            --workspace ios/Runner.xcworkspace \
-            --scheme Runner
+            --workspace "ios/Runner.xcworkspace" \
+            --scheme "Runner" \
+            --config "Release"
 
     artifacts:
       - build/ios/ipa/*.ipa
