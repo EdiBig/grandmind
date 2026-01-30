@@ -57,7 +57,7 @@ workflows:
       vars:
         BUNDLE_ID: "com.kinesa.kinesa"
         FIREBASE_IOS_APP_ID: "1:891051622598:ios:60a2b9b0d18a7fd310d7c7"
-        APP_STORE_APP_ID: "YOUR_APP_STORE_APP_ID"  # Get this from App Store Connect after creating the app
+        APP_STORE_APP_ID: "6758523369"
 
     integrations:
       app_store_connect: Codemagic CI  # Name of your API key in Codemagic
