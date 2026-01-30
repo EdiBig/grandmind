@@ -43,8 +43,8 @@ workflows:
           artifact_type: apk
 
   ios-workflow:
-    name: iOS Build & Firebase Distribution
-    max_build_duration: 60
+    name: iOS Build & App Store Distribution
+    max_build_duration: 90
     instance_type: mac_mini_m2
 
     environment:
@@ -52,10 +52,15 @@ workflows:
       xcode: latest
       cocoapods: default
       groups:
-        - firebase_credentials
         - app_store_credentials
+        - firebase_credentials
       vars:
-        FIREBASE_IOS_APP_ID: "1:891051622598:ios:YOUR_IOS_APP_ID"
+        BUNDLE_ID: "com.kinesa.kinesa"
+        FIREBASE_IOS_APP_ID: "1:891051622598:ios:60a2b9b0d18a7fd310d7c7"
+        APP_STORE_APP_ID: "YOUR_APP_STORE_APP_ID"  # Get this from App Store Connect after creating the app
+
+    integrations:
+      app_store_connect: Codemagic CI  # Name of your API key in Codemagic
 
     scripts:
       - name: Get Flutter packages
@@ -66,14 +71,84 @@ workflows:
           cd ios
           pod install
 
-      - name: Set up code signing
+      - name: Set up code signing (automatic)
         script: |
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+          keychain initialize
+          keychain add-certificates
           xcode-project use-profiles
 
-      - name: Build iOS
+      - name: Set build version
+        script: |
+          LATEST_BUILD=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APP_ID" || echo 0)
+          agvtool new-version -all $((LATEST_BUILD + 1))
+
+      - name: Build iOS IPA
         script: |
           flutter build ipa --release \
-            --export-options-plist=/Users/builder/export_options.plist
+            --build-number=$((LATEST_BUILD + 1)) \
+            --export-options-plist=$HOME/export_options.plist
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        beta_groups:
+          - Internal Testers
+      firebase:
+        firebase_token: $FIREBASE_TOKEN
+        ios:
+          app_id: $FIREBASE_IOS_APP_ID
+          groups:
+            - self
+
+  ios-adhoc-workflow:
+    name: iOS Ad Hoc Build (Testing)
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      groups:
+        - app_store_credentials
+        - firebase_credentials
+      vars:
+        BUNDLE_ID: "com.kinesa.kinesa"
+        FIREBASE_IOS_APP_ID: "1:891051622598:ios:60a2b9b0d18a7fd310d7c7"
+
+    integrations:
+      app_store_connect: Codemagic CI
+
+    scripts:
+      - name: Get Flutter packages
+        script: flutter pub get
+
+      - name: Install CocoaPods
+        script: |
+          cd ios
+          pod install
+
+      - name: Set up code signing (Ad Hoc)
+        script: |
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_ADHOC \
+            --create
+          keychain initialize
+          keychain add-certificates
+          xcode-project use-profiles
+
+      - name: Build iOS IPA (Ad Hoc)
+        script: |
+          flutter build ipa --release \
+            --export-options-plist=$HOME/export_options.plist
 
     artifacts:
       - build/ios/ipa/*.ipa
