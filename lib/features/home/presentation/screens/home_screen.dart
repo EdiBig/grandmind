@@ -4,10 +4,9 @@ import '../providers/home_nav_provider.dart';
 import '../widgets/bottom_nav_bar.dart';
 import 'dashboard_tab.dart';
 import 'workouts_tab.dart';
-import '../../../challenges/presentation/screens/unity_hub_screen.dart';
-import 'habits_tab.dart';
+import 'track_tab.dart';
 import 'progress_tab.dart';
-import '../../../nutrition/presentation/screens/nutrition_tab.dart';
+import '../../../challenges/presentation/screens/unity_hub_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -16,13 +15,13 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedIndex = ref.watch(selectedIndexProvider);
 
+    // 5 tabs: Home, Workouts, Track (Habits+Nutrition), Progress, Unity
     final List<Widget> tabs = [
       const DashboardTab(),
       const WorkoutsTab(),
-      const UnityHubScreen(),
-      const HabitsTab(),
+      const TrackTab(),
       const ProgressTab(),
-      const NutritionTab(),
+      const UnityHubScreen(),
     ];
 
     return Scaffold(

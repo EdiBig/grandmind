@@ -899,3 +899,414 @@ class _HabitsTabState extends ConsumerState<HabitsTab> {
     );
   }
 }
+
+/// Content-only version of HabitsTab for embedding in TrackTab.
+/// Does not include Scaffold, AppBar, or FloatingActionButton.
+class HabitsTabContent extends ConsumerStatefulWidget {
+  const HabitsTabContent({super.key});
+
+  @override
+  ConsumerState<HabitsTabContent> createState() => _HabitsTabContentState();
+}
+
+class _HabitsTabContentState extends ConsumerState<HabitsTabContent> {
+  @override
+  Widget build(BuildContext context) {
+    final settings = ref.watch(appSettingsProvider);
+    final habitsAsync = ref.watch(userHabitsProvider);
+    final statsAsync = ref.watch(habitStatsProvider);
+    final todayLogsAsync = ref.watch(todayHabitLogsProvider);
+
+    if (!settings.habitsEnabled) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.lock_outline,
+                size: 64,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Habits are turned off',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Enable habits in Settings to use this tab.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => context.push(RouteConstants.settings),
+                child: const Text('Open Settings'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Stack(
+      children: [
+        habitsAsync.when(
+          data: (habits) {
+            return todayLogsAsync.when(
+              data: (todayLogs) {
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    ref.invalidate(userHabitsProvider);
+                    ref.invalidate(habitStatsProvider);
+                    ref.invalidate(todayHabitLogsProvider);
+                  },
+                  child: habits.isEmpty
+                      ? _buildEmptyState(context)
+                      : _buildHabitsList(context, ref, habits, todayLogs, statsAsync),
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, _) => Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, size: 64, color: AppColors.error),
+                    const SizedBox(height: 16),
+                    Text('Error loading habits', style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: 8),
+                    Text(error.toString(), style: Theme.of(context).textTheme.bodySmall, textAlign: TextAlign.center),
+                  ],
+                ),
+              ),
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, _) => Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 64, color: AppColors.error),
+                const SizedBox(height: 16),
+                Text('Error loading habits', style: Theme.of(context).textTheme.titleLarge),
+              ],
+            ),
+          ),
+        ),
+        // Floating action button positioned at bottom right
+        Positioned(
+          bottom: 16,
+          right: 16,
+          child: FloatingActionButton(
+            heroTag: 'habits_fab',
+            onPressed: () => context.push('/habits/create'),
+            tooltip: 'Create new habit',
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            child: const Icon(Icons.add),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.checklist,
+            size: 80,
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No habits yet',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Build consistency by tracking daily habits',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () => context.push('/habits/create'),
+            icon: const Icon(Icons.add),
+            label: const Text('Add Your First Habit'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHabitsList(
+    BuildContext context,
+    WidgetRef ref,
+    List<Habit> habits,
+    List todayLogs,
+    AsyncValue<Map<String, dynamic>> statsAsync,
+  ) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _buildProgressSummary(context, statsAsync),
+        const SizedBox(height: 24),
+        const AIInsightsCard(),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Today\'s Habits',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            TextButton.icon(
+              onPressed: () => context.push(RouteConstants.habitHistory),
+              icon: const Icon(Icons.history, size: 18),
+              label: const Text('History'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        ...habits.map((habit) {
+          final matchingLogs = todayLogs.where((log) => log.habitId == habit.id);
+          final isCompletedToday = matchingLogs.isNotEmpty;
+          final todayLog = matchingLogs.isNotEmpty ? matchingLogs.first : null;
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _buildHabitItem(context, habit, isCompletedToday, todayLog?.count ?? 0),
+          );
+        }),
+        const SizedBox(height: 80), // Space for FAB
+      ],
+    );
+  }
+
+  Widget _buildProgressSummary(BuildContext context, AsyncValue<Map<String, dynamic>> statsAsync) {
+    return statsAsync.when(
+      data: (stats) {
+        final totalHabits = stats['totalHabits'] ?? 0;
+        final completedToday = stats['completedToday'] ?? 0;
+        final completionRate = stats['completionRate'] ?? 0;
+        final longestStreak = stats['longestStreak'] ?? 0;
+
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Theme.of(context).colorScheme.primary,
+                Theme.of(context).colorScheme.secondary.withValues(alpha: 0.9),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            children: [
+              Text(
+                'Today\'s Progress',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: AppColors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildProgressItem(context, completedToday.toString(), totalHabits.toString(), 'Completed'),
+                  Container(height: 50, width: 1, color: AppColors.white.withValues(alpha: 0.3)),
+                  _buildProgressItem(context, '$completionRate%', '', 'Completion'),
+                  Container(height: 50, width: 1, color: AppColors.white.withValues(alpha: 0.3)),
+                  _buildProgressItem(context, longestStreak.toString(), '', 'Best Streak'),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+      loading: () => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Theme.of(context).colorScheme.primary,
+              Theme.of(context).colorScheme.secondary.withValues(alpha: 0.9),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Center(child: CircularProgressIndicator(color: AppColors.white)),
+      ),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+
+  Widget _buildProgressItem(BuildContext context, String value, String suffix, String label) {
+    return Column(
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              value,
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    color: AppColors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            if (suffix.isNotEmpty)
+              Text(
+                '/$suffix',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: AppColors.white.withValues(alpha: 0.8),
+                    ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppColors.white.withValues(alpha: 0.9),
+              ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHabitItem(BuildContext context, Habit habit, bool isCompletedToday, int count) {
+    final color = HabitIconHelper.getColor(habit.color);
+    final icon = HabitIconHelper.getIconData(habit.icon);
+    final habitOps = ref.read(habitOperationsProvider.notifier);
+
+    double progress = 0.0;
+    String subtitle = '';
+
+    if (habit.targetCount > 0) {
+      progress = count / habit.targetCount;
+      if (progress >= 1.0) {
+        subtitle = 'Completed';
+      } else if (count > 0) {
+        subtitle = '$count/${habit.targetCount} ${habit.unit ?? ''}';
+      } else {
+        subtitle = 'Not started';
+      }
+    } else {
+      if (isCompletedToday) {
+        progress = 1.0;
+        subtitle = 'Completed';
+      } else {
+        subtitle = 'Not started';
+      }
+    }
+
+    return GestureDetector(
+      onTap: () => context.push('/habits/${habit.id}/history'),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isCompletedToday ? color.withValues(alpha: 0.3) : AppColors.grey.withValues(alpha: 0.2),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, color: color, size: 24),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        habit.name,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Text(
+                            subtitle,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.grey),
+                          ),
+                          if (habit.currentStreak > 0) ...[
+                            const SizedBox(width: 8),
+                            Icon(Icons.local_fire_department, size: 14, color: AppColors.warning),
+                            const SizedBox(width: 2),
+                            Text(
+                              '${habit.currentStreak} day${habit.currentStreak > 1 ? 's' : ''}',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: AppColors.warning,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                if (progress >= 1.0)
+                  const Icon(Icons.check_circle, color: AppColors.success, size: 28)
+                else
+                  IconButton(
+                    icon: const Icon(Icons.check_circle_outline),
+                    color: AppColors.grey,
+                    tooltip: 'Mark habit as complete',
+                    onPressed: () async {
+                      if (habit.targetCount > 0) {
+                        await habitOps.logHabitWithCount(habit, habit.targetCount);
+                      } else {
+                        await habitOps.toggleHabitCompletion(habit);
+                      }
+                      ref.invalidate(todayHabitLogsProvider);
+                      ref.invalidate(userHabitsProvider);
+                      ref.invalidate(habitStatsProvider);
+                    },
+                  ),
+              ],
+            ),
+            if (progress > 0 && progress < 1.0) ...[
+              const SizedBox(height: 12),
+              LinearProgressIndicator(
+                value: progress,
+                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                valueColor: AlwaysStoppedAnimation<Color>(color),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}

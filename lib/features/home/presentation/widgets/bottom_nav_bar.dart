@@ -31,14 +31,9 @@ class BottomNavBar extends ConsumerWidget {
             label: 'Workouts',
           ),
           NavigationDestination(
-            icon: Icon(Icons.group_outlined),
-            selectedIcon: Icon(Icons.group),
-            label: 'Unity',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.track_changes_outlined),
-            selectedIcon: Icon(Icons.track_changes),
-            label: 'Habits',
+            icon: Icon(Icons.edit_note_outlined),
+            selectedIcon: Icon(Icons.edit_note),
+            label: 'Track',
           ),
           NavigationDestination(
             icon: Icon(Icons.analytics_outlined),
@@ -46,9 +41,9 @@ class BottomNavBar extends ConsumerWidget {
             label: 'Progress',
           ),
           NavigationDestination(
-            icon: Icon(Icons.restaurant_menu_outlined),
-            selectedIcon: Icon(Icons.restaurant_menu),
-            label: 'Nutrition',
+            icon: Icon(Icons.group_outlined),
+            selectedIcon: Icon(Icons.group),
+            label: 'Unity',
           ),
         ],
       ),
