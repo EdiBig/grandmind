@@ -29,13 +29,18 @@ service firebase.storage {
       allow delete: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Public profile avatars (intentionally public)
+    // Public profile avatars (intentionally public for community features)
+    // SECURITY NOTES:
+    // - Client-side processing (ProfilePhotoService) resizes to 512x512 and strips EXIF
+    // - Re-encoded as JPEG which removes all original metadata
+    // - Max 500KB enforced here as additional server-side check
+    // - Only JPEG allowed (not generic image/*) to ensure proper re-encoding
     match /public_profiles/{userId}/{fileName} {
       allow read: if true;
       allow write: if request.auth != null
                    && request.auth.uid == userId
-                   && request.resource.size < 5 * 1024 * 1024  // 5MB limit
-                   && request.resource.contentType.matches('image/.*');
+                   && request.resource.size < 500 * 1024  // 500KB limit (512x512 JPEG is ~100-300KB)
+                   && request.resource.contentType == 'image/jpeg';
       allow delete: if request.auth != null && request.auth.uid == userId;
     }
 
