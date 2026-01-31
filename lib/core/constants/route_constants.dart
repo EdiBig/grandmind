@@ -98,4 +98,8 @@ class RouteConstants {
   static const String logMoodEnergy = '/mood-energy/log';
   static const String moodEnergyHistory = '/mood-energy/history';
   static const String moodEnergyInsights = '/mood-energy/insights';
+
+  // Sleep Routes
+  static const String logSleep = '/sleep/log';
+  static const String sleepHistory = '/sleep/history';
 }

@@ -242,9 +242,11 @@ class InsightGenerator {
     required int readinessScore,
   }) {
     // Priority-based insight generation
+    // Note: sleepHours == 0 means no data available, not zero sleep
+    final hasSleepData = sleepHours > 0;
 
-    // Good recovery + high energy
-    if (sleepHours >= 7 && energyLevel >= 4 && readinessScore >= 70) {
+    // Good recovery + high energy (only if we have sleep data)
+    if (hasSleepData && sleepHours >= 7 && energyLevel >= 4 && readinessScore >= 70) {
       return const SmartInsight(
         icon: '💪',
         title: 'Great recovery!',
@@ -255,14 +257,26 @@ class InsightGenerator {
       );
     }
 
-    // Poor sleep
-    if (sleepHours < 6) {
-      return const SmartInsight(
+    // Poor sleep (only if we have actual sleep data, not just missing data)
+    if (hasSleepData && sleepHours < 6) {
+      return SmartInsight(
         icon: '😴',
-        title: 'Sleep was light',
+        title: 'Only ${sleepHours.toStringAsFixed(1)}h sleep',
         message: 'Consider a gentler workout today. Your body needs recovery time.',
         actionLabel: 'Light Workouts',
         actionRoute: '/workouts',
+        type: InsightType.sleep,
+      );
+    }
+
+    // No sleep data - encourage tracking
+    if (!hasSleepData) {
+      return const SmartInsight(
+        icon: '🌙',
+        title: 'Track your sleep',
+        message: 'Connect a health app or log manually to get personalised recovery insights.',
+        actionLabel: 'Health Settings',
+        actionRoute: '/settings/health-sync',
         type: InsightType.sleep,
       );
     }

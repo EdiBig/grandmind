@@ -10,6 +10,7 @@ import '../../../profile/data/services/user_stats_service.dart';
 import '../../../progress/presentation/providers/progress_providers.dart';
 import '../../../health/presentation/providers/health_providers.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
+import '../../../sleep/presentation/providers/sleep_providers.dart';
 
 /// Provider for current user data
 final currentUserProvider = StreamProvider<UserModel?>((ref) {
@@ -42,6 +43,7 @@ final dashboardStatsProvider = Provider<AsyncValue<DashboardStats>>((ref) {
   final recentWorkoutsAsync = ref.watch(recentWorkoutLogsProvider);
   final recentHabitsAsync = ref.watch(recentHabitLogsProvider);
   final healthSummaryAsync = ref.watch(healthSummaryProvider);
+  final manualSleepAsync = ref.watch(todaySleepLogProvider);
 
   if (workoutStatsAsync.isLoading ||
       habitStatsAsync.isLoading ||
@@ -88,6 +90,7 @@ final dashboardStatsProvider = Provider<AsyncValue<DashboardStats>>((ref) {
   final recentWorkouts = recentWorkoutsAsync.asData?.value ?? [];
   final recentHabits = recentHabitsAsync.asData?.value ?? [];
   final healthSummary = healthSummaryAsync.asData?.value;
+  final manualSleep = manualSleepAsync.asData?.value;
 
   final lastWorkoutDate =
       recentWorkouts.isNotEmpty ? recentWorkouts.first.startedAt : null;
@@ -98,6 +101,15 @@ final dashboardStatsProvider = Provider<AsyncValue<DashboardStats>>((ref) {
     if (lastActivityDate == null || lastHabitDate.isAfter(lastActivityDate)) {
       lastActivityDate = lastHabitDate;
     }
+  }
+
+  // Use manual sleep data if available, otherwise fall back to health sync data
+  // If both exist, prefer manual entry as it's more intentional
+  double hoursSlept = 0.0;
+  if (manualSleep != null) {
+    hoursSlept = manualSleep.hoursSlept;
+  } else if (healthSummary?.sleepHours != null && healthSummary!.sleepHours > 0) {
+    hoursSlept = healthSummary.sleepHours;
   }
 
   return AsyncValue.data(
@@ -112,7 +124,7 @@ final dashboardStatsProvider = Provider<AsyncValue<DashboardStats>>((ref) {
       currentStreak: userStats.currentStreak,
       longestStreak: userStats.longestStreak,
       stepsToday: healthSummary?.steps ?? 0,
-      hoursSlept: healthSummary?.sleepHours ?? 0.0,
+      hoursSlept: hoursSlept,
       lastWorkoutDate: lastWorkoutDate,
       lastActivityDate: lastActivityDate,
     ),

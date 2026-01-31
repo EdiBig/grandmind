@@ -79,6 +79,8 @@ import '../features/mood_energy/presentation/screens/mood_energy_history_screen.
 import '../features/mood_energy/presentation/screens/mood_energy_insights_screen.dart';
 import '../features/mood_energy/data/services/mood_energy_insights_service.dart';
 import '../features/mood_energy/domain/models/energy_log.dart';
+import '../features/sleep/presentation/screens/log_sleep_screen.dart';
+import '../features/sleep/domain/models/sleep_log.dart';
 
 /// Provider for the app router
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -485,6 +487,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final insights = state.extra as MoodEnergyInsights;
           return MoodEnergyInsightsScreen(insights: insights);
+        },
+      ),
+
+      // Sleep Routes
+      GoRoute(
+        path: RouteConstants.logSleep,
+        name: 'logSleep',
+        builder: (context, state) {
+          final existingLog = state.extra as SleepLog?;
+          return LogSleepScreen(existingLog: existingLog);
         },
       ),
 

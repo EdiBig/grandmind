@@ -30,7 +30,6 @@ class DashboardTab extends ConsumerStatefulWidget {
 class _DashboardTabState extends ConsumerState<DashboardTab>
     with SingleTickerProviderStateMixin {
   late AnimationController _staggerController;
-  SmartInsight? _currentInsight;
   bool _insightDismissed = false;
 
   @override
@@ -244,65 +243,66 @@ class _DashboardTabState extends ConsumerState<DashboardTab>
       return const SizedBox.shrink();
     }
 
-    // Generate insight if we don't have one
-    if (_currentInsight == null) {
-      final stats = statsAsync.maybeWhen(
-        data: (s) => s,
-        orElse: () => null,
-      );
+    // Generate insight fresh each time based on current data (live updates)
+    final stats = statsAsync.maybeWhen(
+      data: (s) => s,
+      orElse: () => null,
+    );
 
-      final energyLogs = energyLogsAsync.maybeWhen(
-        data: (logs) => logs,
-        orElse: () => <dynamic>[],
-      );
+    final energyLogs = energyLogsAsync.maybeWhen(
+      data: (logs) => logs,
+      orElse: () => <dynamic>[],
+    );
 
-      if (stats != null) {
-        final sleepHours = stats.hoursSlept ?? 0.0;
-        final habitsCompleted = stats.habitsCompleted ?? 0;
-        final totalHabits = stats.totalHabits ?? 0;
-        final workoutsThisWeek = stats.workoutsThisWeek ?? 0;
-        final currentStreak = stats.currentStreak ?? 0;
+    SmartInsight? insight;
 
-        int energyLevel = 3;
-        if (energyLogs.isNotEmpty) {
-          final sorted = List.from(energyLogs)
-            ..sort((a, b) => b.loggedAt.compareTo(a.loggedAt));
-          energyLevel = sorted.first.energyLevel ?? 3;
-        }
+    if (stats != null) {
+      final sleepHours = stats.hoursSlept ?? 0.0;
+      final habitsCompleted = stats.habitsCompleted ?? 0;
+      final totalHabits = stats.totalHabits ?? 0;
+      final workoutsThisWeek = stats.workoutsThisWeek ?? 0;
+      final currentStreak = stats.currentStreak ?? 0;
 
-        final readinessScore = _calculateReadinessScore(
-          sleepHours: sleepHours,
-          energyLevel: energyLevel,
-          habitsCompleted: habitsCompleted,
-          totalHabits: totalHabits,
-        );
-
-        _currentInsight = InsightGenerator.generateInsight(
-          sleepHours: sleepHours,
-          energyLevel: energyLevel,
-          workoutsThisWeek: workoutsThisWeek,
-          currentStreak: currentStreak,
-          habitsCompleted: habitsCompleted,
-          totalHabits: totalHabits,
-          readinessScore: readinessScore,
-        );
+      int energyLevel = 3;
+      if (energyLogs.isNotEmpty) {
+        final sorted = List.from(energyLogs)
+          ..sort((a, b) => b.loggedAt.compareTo(a.loggedAt));
+        energyLevel = sorted.first.energyLevel ?? 3;
       }
+
+      final readinessScore = _calculateReadinessScore(
+        sleepHours: sleepHours,
+        energyLevel: energyLevel,
+        habitsCompleted: habitsCompleted,
+        totalHabits: totalHabits,
+      );
+
+      insight = InsightGenerator.generateInsight(
+        sleepHours: sleepHours,
+        energyLevel: energyLevel,
+        workoutsThisWeek: workoutsThisWeek,
+        currentStreak: currentStreak,
+        habitsCompleted: habitsCompleted,
+        totalHabits: totalHabits,
+        readinessScore: readinessScore,
+      );
     }
 
-    if (_currentInsight == null) {
+    if (insight == null) {
       return const SizedBox.shrink();
     }
 
     return SmartInsightCard(
-      insight: _currentInsight!,
+      key: ValueKey('insight_${insight.title}'), // Force rebuild when insight changes
+      insight: insight,
       onDismiss: () {
         setState(() {
           _insightDismissed = true;
         });
       },
       onAction: () {
-        if (_currentInsight?.actionRoute != null) {
-          context.push(_currentInsight!.actionRoute!);
+        if (insight?.actionRoute != null) {
+          context.push(insight!.actionRoute!);
         }
       },
     );
@@ -336,7 +336,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab>
           totalHabits: stats.totalHabits ?? 0,
           workoutsThisWeek: stats.workoutsThisWeek ?? 0,
           sleepDelta: null, // TODO: Calculate sleep delta from average
-          onSleepTap: () => context.push(RouteConstants.healthDetails),
+          onSleepTap: () => context.push(RouteConstants.logSleep),
           onEnergyTap: () => context.push(RouteConstants.logMoodEnergy),
           onStepsTap: () => context.push(RouteConstants.healthDetails),
           onHeartTap: () => context.push(RouteConstants.healthDetails),
@@ -353,7 +353,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab>
         habitsCompleted: 0,
         totalHabits: 0,
         workoutsThisWeek: 0,
-        onSleepTap: () => context.push(RouteConstants.healthDetails),
+        onSleepTap: () => context.push(RouteConstants.logSleep),
         onEnergyTap: () => context.push(RouteConstants.logMoodEnergy),
         onStepsTap: () => context.push(RouteConstants.healthDetails),
         onHeartTap: () => context.push(RouteConstants.healthDetails),
