@@ -431,12 +431,17 @@ service cloud.firestore {
       allow update: if false;
     }
 
-    // Challenge moderation settings (for challenge creators)
+    // Helper function to check if user is the challenge creator
+    function isChallengeCreator(challengeId) {
+      return get(/databases/$(database)/documents/challenges/$(challengeId)).data.createdBy == request.auth.uid;
+    }
+
+    // Challenge moderation settings (for challenge creators only)
     match /challengeModerationSettings/{challengeId} {
       // Anyone in challenge can read settings
       allow read: if isAuthenticated();
-      // Only challenge creator can modify (validated in app code)
-      allow create, update: if isAuthenticated();
+      // Only challenge creator can create/update moderation settings
+      allow create, update: if isAuthenticated() && isChallengeCreator(challengeId);
       allow delete: if false;
     }
 
