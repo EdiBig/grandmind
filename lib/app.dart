@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_presets.dart';
+import 'core/services/deferred_init_service.dart';
 import 'features/health/presentation/providers/health_providers.dart';
 import 'features/settings/presentation/providers/app_settings_provider.dart';
 import 'features/notifications/data/services/notification_navigation.dart';
@@ -31,6 +32,9 @@ class _KinesaAppState extends ConsumerState<KinesaApp>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Initialize non-critical services after first frame renders
+      // This improves perceived startup performance on lower-end devices
+      DeferredInitService.initialize();
       NotificationNavigation.handlePendingNavigation();
     });
     _currentUserSub =

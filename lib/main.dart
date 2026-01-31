@@ -1,6 +1,4 @@
 import 'dart:io' show Platform;
-import 'package:firebase_app_check/firebase_app_check.dart';
-import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -8,111 +6,65 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:timezone/data/latest.dart' as tz;
 import 'app.dart';
 import 'firebase_options.dart';
-import 'core/config/ai_config.dart';
-import 'core/config/remote_config_service.dart';
 import 'core/providers/shared_preferences_provider.dart';
-import 'features/notifications/data/services/notification_service.dart';
-import 'features/notifications/data/services/fcm_service.dart';
 import 'features/ai/presentation/providers/ai_providers.dart';
 import 'features/ai/presentation/providers/ai_coach_provider.dart';
 import 'features/ai/data/repositories/ai_conversation_repository.dart';
 import 'features/nutrition/presentation/providers/nutrition_ai_provider.dart';
 import 'features/nutrition/data/services/nutrition_ai_service.dart';
 import 'features/authentication/data/repositories/auth_repository.dart';
-import 'features/health/data/services/health_background_sync.dart';
 import 'core/providers/analytics_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Critical: UI mode setup (affects first frame)
   if (!kIsWeb && Platform.isAndroid) {
     await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   }
 
+  // Web-specific error filter (not critical but lightweight)
   if (kIsWeb) {
     FlutterError.onError = (details) {
       final message = details.exceptionAsString();
-      if (message.contains('AssetManifest.bin.json')) {
-        return;
-      }
+      if (message.contains('AssetManifest.bin.json')) return;
       FlutterError.presentError(details);
     };
   }
 
-  // Initialize Firebase (handle duplicate app error for hot restart)
+  // Critical: Firebase must be initialized before runApp for auth state
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
   } catch (e) {
     if (e.toString().contains('duplicate-app')) {
-      // Firebase already initialized (hot restart case)
-      debugPrint('Firebase already initialized, skipping re-initialization');
+      debugPrint('Firebase already initialized (hot restart)');
     } else {
-      // Re-throw other errors
       rethrow;
     }
   }
 
-  // Initialize Crashlytics (not available on web)
-  if (!kIsWeb) {
-    // Pass all uncaught Flutter errors to Crashlytics
-    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
-
-    // Pass all uncaught asynchronous errors to Crashlytics
-    PlatformDispatcher.instance.onError = (error, stack) {
-      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-      return true;
-    };
-  }
-
+  // Critical: Web auth persistence
   if (kIsWeb) {
     await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
     await AuthRepository().handleWebRedirectResult();
   }
 
-  if (!kIsWeb) {
-    // ignore: deprecated_member_use - providerAndroid/providerApple params available in newer version
-    await FirebaseAppCheck.instance.activate(
-      androidProvider:
-          kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
-      appleProvider:
-          kDebugMode ? AppleProvider.debug : AppleProvider.appAttest,
-    );
-  }
-
-  // Initialize timezone database
-  tz.initializeTimeZones();
-
-  // Initialize notification service
-  await NotificationService().initialize();
-
-  // Initialize FCM for push notifications (skip on web)
-  if (!kIsWeb) {
-    await FCMService().initialize();
-  }
-
-  // Initialize SharedPreferences for AI caching
+  // Critical: SharedPreferences needed for provider overrides
   final sharedPreferences = await SharedPreferences.getInstance();
 
-  // Initialize Remote Config (before AI Config)
-  await RemoteConfigService.initialize();
-
-  // Initialize AI Config (uses Remote Config for settings)
-  await AIConfig.initialize();
-
-  await registerHealthBackgroundSync();
+  // Note: Non-critical services (Crashlytics, AppCheck, Notifications, FCM,
+  // RemoteConfig, AIConfig, HealthSync) are initialized after first frame
+  // via DeferredInitService in app.dart
 
   runApp(
     ProviderScope(
       overrides: [
-        // Override SharedPreferences provider for AI caching
         sharedPreferencesProvider.overrideWithValue(sharedPreferences),
 
-        // Override AI Coach provider with actual implementation
         aiCoachProvider.overrideWith((ref) {
           final sendMessageUseCase = ref.watch(sendCoachMessageUseCaseProvider);
           final workoutRecommendationUseCase =
@@ -130,7 +82,6 @@ void main() async {
           );
         }),
 
-        // Override Nutrition AI Service provider with actual implementation
         nutritionAIServiceProvider.overrideWith((ref) {
           final apiService = ref.watch(claudeAPIServiceProvider);
           return NutritionAIService(apiService: apiService);
