@@ -56,6 +56,11 @@
 		<string>processing</string>
 		<string>fetch</string>
 	</array>
+	<!-- Background Task Identifiers (required for processing mode) -->
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.kinesa.kinesa.healthsync</string>
+	</array>
 	<!-- Camera Permission for Barcode Scanning and Meal Photos -->
 	<key>NSCameraUsageDescription</key>
 	<string>Kinesa needs camera access to scan product barcodes and take meal photos for nutrition tracking.</string>
