@@ -336,7 +336,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab>
           totalHabits: stats.totalHabits ?? 0,
           workoutsThisWeek: stats.workoutsThisWeek ?? 0,
           sleepDelta: null, // TODO: Calculate sleep delta from average
-          onSleepTap: () => context.push(RouteConstants.logSleep),
+          onSleepTap: () => context.push(RouteConstants.sleepHistory),
           onEnergyTap: () => context.push(RouteConstants.logMoodEnergy),
           onStepsTap: () => context.push(RouteConstants.healthDetails),
           onHeartTap: () => context.push(RouteConstants.healthDetails),
@@ -353,7 +353,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab>
         habitsCompleted: 0,
         totalHabits: 0,
         workoutsThisWeek: 0,
-        onSleepTap: () => context.push(RouteConstants.logSleep),
+        onSleepTap: () => context.push(RouteConstants.sleepHistory),
         onEnergyTap: () => context.push(RouteConstants.logMoodEnergy),
         onStepsTap: () => context.push(RouteConstants.healthDetails),
         onHeartTap: () => context.push(RouteConstants.healthDetails),

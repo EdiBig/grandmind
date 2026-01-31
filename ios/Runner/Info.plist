@@ -50,6 +50,12 @@
 	<string>Kinesa needs access to your health data to track your fitness progress, including steps, workouts, heart rate, and sleep.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>Kinesa writes your workout data to the Health app so you can track all your fitness activities in one place.</string>
+	<!-- Background Modes for HealthKit -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>processing</string>
+		<string>fetch</string>
+	</array>
 	<!-- Camera Permission for Barcode Scanning and Meal Photos -->
 	<key>NSCameraUsageDescription</key>
 	<string>Kinesa needs camera access to scan product barcodes and take meal photos for nutrition tracking.</string>

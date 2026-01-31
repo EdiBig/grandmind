@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:health/health.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../providers/health_providers.dart';
 
@@ -202,6 +203,35 @@ class _HealthSyncScreenState extends ConsumerState<HealthSyncScreen> {
                 error: (_, __) => const SizedBox.shrink(),
               ),
             ),
+          // iOS-specific: Open Health app settings
+          if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  // Try to open Health app settings
+                  final healthUrl = Uri.parse('x-apple-health://');
+                  final settingsUrl = Uri.parse('app-settings:');
+
+                  if (await canLaunchUrl(healthUrl)) {
+                    await launchUrl(healthUrl);
+                  } else if (await canLaunchUrl(settingsUrl)) {
+                    await launchUrl(settingsUrl);
+                  } else if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Go to Settings > Health > Data Access & Devices > Kinesa to manage permissions.',
+                        ),
+                        duration: Duration(seconds: 5),
+                      ),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.settings),
+                label: const Text('Open Health Settings'),
+              ),
+            ),
         ],
       ),
     );
@@ -329,11 +359,59 @@ class _HealthSyncScreenState extends ConsumerState<HealthSyncScreen> {
     BuildContext context,
     bool showHealthConnectCTA,
   ) async {
+    final isIOS = defaultTargetPlatform == TargetPlatform.iOS;
+
+    // Show iOS-specific instructions before requesting
+    if (isIOS) {
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Apple Health Access'),
+          content: const Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'When the Health access screen appears:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 12),
+              Text('1. Tap "Turn On All" at the top to enable all data types'),
+              SizedBox(height: 8),
+              Text('2. Or manually enable: Steps, Distance, Heart Rate, Sleep, Workouts, and Weight'),
+              SizedBox(height: 8),
+              Text('3. Tap "Allow" to confirm'),
+              SizedBox(height: 16),
+              Text(
+                'Note: You can change these permissions later in Settings > Health > Data Access > Kinesa',
+                style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Continue'),
+            ),
+          ],
+        ),
+      );
+
+      if (proceed != true) return;
+    }
+
+    if (!context.mounted) return;
     setState(() => _isRequesting = true);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Requesting health access...'),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: Text(isIOS
+            ? 'Opening Health access...'
+            : 'Requesting health access...'),
+        duration: const Duration(seconds: 2),
       ),
     );
     final healthService = ref.read(healthServiceProvider);
@@ -367,7 +445,39 @@ class _HealthSyncScreenState extends ConsumerState<HealthSyncScreen> {
 
       final granted = await healthService.requestAuthorization();
       if (!context.mounted) return;
-      if (granted) {
+
+      // On iOS, 'granted' just means the dialog was shown, not that permissions were granted
+      if (isIOS) {
+        ref.invalidate(healthPermissionsProvider);
+        // Try to sync - this will work if user enabled permissions
+        try {
+          await ref.read(healthSyncProvider.future);
+          await ref.read(healthSummaryProvider.notifier).refresh(force: true);
+        } catch (_) {
+          // Sync may fail if no permissions granted - that's ok
+        }
+        if (!context.mounted) return;
+
+        // Show follow-up dialog for iOS
+        await showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Check Your Permissions'),
+            content: const Text(
+              'If you enabled health data access, your data will sync automatically.\n\n'
+              'If data isn\'t showing up, go to:\n'
+              'Settings > Health > Data Access & Devices > Kinesa\n\n'
+              'Make sure all the data types you want to share are enabled.',
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Got it'),
+              ),
+            ],
+          ),
+        );
+      } else if (granted) {
         ref.invalidate(healthPermissionsProvider);
         await ref.read(healthSyncProvider.future);
         await ref
@@ -390,8 +500,10 @@ class _HealthSyncScreenState extends ConsumerState<HealthSyncScreen> {
     } catch (_) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Unable to request health permissions. Try again.'),
+        SnackBar(
+          content: Text(isIOS
+              ? 'Unable to open Health permissions. Try going to Settings > Health > Data Access > Kinesa.'
+              : 'Unable to request health permissions. Try again.'),
         ),
       );
     } finally {

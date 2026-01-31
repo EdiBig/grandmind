@@ -33,7 +33,7 @@ class SleepRepository {
         'hours': log.hoursSlept,
         'quality': log.quality ?? 0,
         'source': log.source,
-        'has_tags': log.tags.isNotEmpty,
+        'has_tags': log.tags.isNotEmpty ? 1 : 0,
       },
     );
 

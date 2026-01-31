@@ -222,6 +222,15 @@ service cloud.firestore {
                               isUserIdImmutable();
     }
 
+    // Sleep logs collection - users can only access their own sleep logs
+    match /sleep_logs/{logId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() &&
+                              resource.data.userId == request.auth.uid &&
+                              isUserIdImmutable();
+    }
+
     // AI cache collection - users can only access their own cached responses
     match /ai_cache/{cacheId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;

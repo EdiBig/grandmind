@@ -80,6 +80,7 @@ import '../features/mood_energy/presentation/screens/mood_energy_insights_screen
 import '../features/mood_energy/data/services/mood_energy_insights_service.dart';
 import '../features/mood_energy/domain/models/energy_log.dart';
 import '../features/sleep/presentation/screens/log_sleep_screen.dart';
+import '../features/sleep/presentation/screens/sleep_history_screen.dart';
 import '../features/sleep/domain/models/sleep_log.dart';
 
 /// Provider for the app router
@@ -498,6 +499,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final existingLog = state.extra as SleepLog?;
           return LogSleepScreen(existingLog: existingLog);
         },
+      ),
+      GoRoute(
+        path: RouteConstants.sleepHistory,
+        name: 'sleepHistory',
+        builder: (context, state) => const SleepHistoryScreen(),
       ),
 
       // Health Routes
