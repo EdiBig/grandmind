@@ -25,41 +25,13 @@ workflows:
           cd ios
           pod install
 
-      - name: Debug and create certificate
+      - name: Fetch signing files
         script: |
-          # Debug: Check if variables are set
-          echo "Checking environment variables..."
-          echo "ISSUER_ID set: $([ -n "$APP_STORE_CONNECT_ISSUER_ID" ] && echo 'YES' || echo 'NO')"
-          echo "KEY_ID set: $([ -n "$APP_STORE_CONNECT_KEY_IDENTIFIER" ] && echo 'YES' || echo 'NO')"
-          echo "PRIVATE_KEY set: $([ -n "$APP_STORE_CONNECT_PRIVATE_KEY" ] && echo 'YES' || echo 'NO')"
-
-          # List all APP_STORE related env vars (names only)
-          echo "Available APP_STORE env vars:"
-          env | grep -i "APP_STORE" | cut -d'=' -f1 || echo "None found"
-
-          # Generate a new private key for the certificate
-          openssl genrsa -out /tmp/cert_key.pem 2048
-
-          # Read the key content
-          CERT_KEY=$(cat /tmp/cert_key.pem)
-
-          # Try with the available credentials
-          if [ -n "$APP_STORE_CONNECT_PRIVATE_KEY" ]; then
-            echo "Using APP_STORE_CONNECT variables..."
-            app-store-connect fetch-signing-files "$BUNDLE_ID" \
-              --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
-              --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
-              --private-key "$APP_STORE_CONNECT_PRIVATE_KEY" \
-              --type IOS_APP_STORE \
-              --create \
-              --certificate-key="$CERT_KEY"
-          else
-            echo "APP_STORE_CONNECT variables not found, trying without explicit credentials..."
-            app-store-connect fetch-signing-files "$BUNDLE_ID" \
-              --type IOS_APP_STORE \
-              --create \
-              --certificate-key="$CERT_KEY"
-          fi
+          # Fetch existing signing files without creating new certificates
+          # Uses the App Store Connect integration configured above
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --strict-match-identifier
 
       - name: Set up keychain
         script: |
