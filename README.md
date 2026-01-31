@@ -246,17 +246,33 @@ lib/
    flutter run -d <device-id>
    ```
 
-## AI API Key Setup
+## AI Configuration
 
-The app supports two ways to configure the Claude API key:
+The Claude API key is stored **server-side only** for security. The app never has direct access to the API key.
 
-1. **Firebase Remote Config (recommended)**
-   - Set the key `claude_api_key` in Remote Config.
-   - On first run, the app fetches and stores it in secure storage.
+### Architecture
+- **Cloud Functions Proxy**: All AI requests go through a Cloud Run proxy (`claudeproxy`)
+- **API Key**: Stored securely in Cloud Run environment variables
+- **Client**: Only knows the proxy URL, never the API key
 
-2. **Local secure storage (development only)**
-   - Use `lib/core/config/setup_api_key.dart` to store a key locally.
-   - Example usage is documented in that file.
+### Configuration via Firebase Remote Config
+
+The following settings can be configured in Firebase Remote Config:
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `ai_proxy_url` | Cloud Functions proxy endpoint | (set in code) |
+| `ai_default_model` | Default Claude model | `claude-3-haiku-20240307` |
+| `ai_free_monthly_limit` | Free tier message limit | `20` |
+| `ai_coach_enabled` | Enable AI Coach feature | `true` |
+| `maintenance_mode` | Put app in maintenance mode | `false` |
+
+### Build-time Override (Dev/Staging)
+
+For different environments, use `--dart-define`:
+```bash
+flutter build apk --dart-define=AI_PROXY_URL=https://staging-proxy.example.com
+```
 
 ## Testing
 
