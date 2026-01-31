@@ -23,35 +23,166 @@ const WGER_LANGUAGE_ID_EN = 2;
 const WORKOUTS_COLLECTION = "workouts";
 const WGER_SOURCE = "wger";
 
+// Rate limiting: track requests per UID (in-memory, resets on cold start)
+// For production, consider using Redis or Firestore for persistent rate limiting
+const rateLimitMap = new Map();
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX_REQUESTS = 20; // 20 requests per minute per user
+
+// Allowed models whitelist
+const ALLOWED_MODELS = [
+  "claude-3-haiku-20240307",
+  "claude-3-sonnet-20240229",
+  "claude-3-5-sonnet-20241022",
+];
+
+// Max payload constraints
+const MAX_SYSTEM_LENGTH = 4000;
+const MAX_MESSAGE_LENGTH = 8000;
+const MAX_MESSAGES_COUNT = 50;
+const MAX_TOKENS_LIMIT = 4096;
+
+/**
+ * Verify Firebase ID token from Authorization header
+ * @param {string} authHeader - Authorization header value
+ * @returns {Promise<{uid: string, email: string}|null>} Decoded token or null
+ */
+async function verifyFirebaseToken(authHeader) {
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return null;
+  }
+  const idToken = authHeader.substring(7);
+  try {
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    return {uid: decodedToken.uid, email: decodedToken.email || null};
+  } catch (error) {
+    console.warn("Token verification failed:", error.message);
+    return null;
+  }
+}
+
+/**
+ * Check rate limit for a user
+ * @param {string} uid - User ID
+ * @returns {{allowed: boolean, remaining: number, resetIn: number}}
+ */
+function checkRateLimit(uid) {
+  const now = Date.now();
+  const userLimit = rateLimitMap.get(uid);
+
+  if (!userLimit || now - userLimit.windowStart > RATE_LIMIT_WINDOW_MS) {
+    // New window
+    rateLimitMap.set(uid, {windowStart: now, count: 1});
+    return {allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - 1, resetIn: RATE_LIMIT_WINDOW_MS};
+  }
+
+  if (userLimit.count >= RATE_LIMIT_MAX_REQUESTS) {
+    const resetIn = RATE_LIMIT_WINDOW_MS - (now - userLimit.windowStart);
+    return {allowed: false, remaining: 0, resetIn};
+  }
+
+  userLimit.count += 1;
+  return {
+    allowed: true,
+    remaining: RATE_LIMIT_MAX_REQUESTS - userLimit.count,
+    resetIn: RATE_LIMIT_WINDOW_MS - (now - userLimit.windowStart),
+  };
+}
+
+/**
+ * Validate request payload
+ * @param {object} body - Request body
+ * @returns {{valid: boolean, error?: string}}
+ */
+function validatePayload(body) {
+  const {messages, model, max_tokens: maxTokens, system} = body;
+
+  // Validate messages
+  if (!Array.isArray(messages) || messages.length === 0) {
+    return {valid: false, error: "messages is required and must be non-empty array"};
+  }
+  if (messages.length > MAX_MESSAGES_COUNT) {
+    return {valid: false, error: `Too many messages (max ${MAX_MESSAGES_COUNT})`};
+  }
+  for (const msg of messages) {
+    if (typeof msg.content === "string" && msg.content.length > MAX_MESSAGE_LENGTH) {
+      return {valid: false, error: `Message too long (max ${MAX_MESSAGE_LENGTH} chars)`};
+    }
+  }
+
+  // Validate model
+  if (model && !ALLOWED_MODELS.includes(model)) {
+    return {valid: false, error: `Model not allowed. Use: ${ALLOWED_MODELS.join(", ")}`};
+  }
+
+  // Validate max_tokens
+  if (maxTokens && (typeof maxTokens !== "number" || maxTokens > MAX_TOKENS_LIMIT)) {
+    return {valid: false, error: `max_tokens must be <= ${MAX_TOKENS_LIMIT}`};
+  }
+
+  // Validate system prompt
+  if (system && typeof system === "string" && system.length > MAX_SYSTEM_LENGTH) {
+    return {valid: false, error: `System prompt too long (max ${MAX_SYSTEM_LENGTH} chars)`};
+  }
+
+  return {valid: true};
+}
+
 exports.claudeProxy = onRequest(
   {secrets: [CLAUDE_API_KEY], region: "us-central1", invoker: "public"},
   (req, res) => {
     cors(req, res, async () => {
+      // 1. Method check
       if (req.method !== "POST") {
         res.status(405).json({error: {message: "Method not allowed"}});
         return;
       }
 
-      const body = req.body || {};
-      const messages = body.messages;
-
-      if (!Array.isArray(messages) || messages.length === 0) {
-        res.status(400).json({error: {message: "messages is required"}});
+      // 2. Verify Firebase ID token (REQUIRED)
+      const user = await verifyFirebaseToken(req.get("Authorization"));
+      if (!user) {
+        res.status(401).json({error: {message: "Unauthorized: Invalid or missing Firebase ID token"}});
         return;
       }
 
+      // 3. Rate limiting per UID
+      const rateLimit = checkRateLimit(user.uid);
+      res.set("X-RateLimit-Remaining", String(rateLimit.remaining));
+      res.set("X-RateLimit-Reset", String(Math.ceil(rateLimit.resetIn / 1000)));
+
+      if (!rateLimit.allowed) {
+        res.status(429).json({
+          error: {
+            message: "Rate limit exceeded",
+            retryAfter: Math.ceil(rateLimit.resetIn / 1000),
+          },
+        });
+        return;
+      }
+
+      // 4. Validate payload
+      const body = req.body || {};
+      const validation = validatePayload(body);
+      if (!validation.valid) {
+        res.status(400).json({error: {message: validation.error}});
+        return;
+      }
+
+      // 5. Build sanitized payload
       const payload = {
         model: body.model || "claude-3-haiku-20240307",
-        max_tokens: body.max_tokens || 1024,
+        max_tokens: Math.min(body.max_tokens || 1024, MAX_TOKENS_LIMIT),
         temperature:
-          typeof body.temperature === "number" ? body.temperature : 0.7,
-        messages: messages,
+          typeof body.temperature === "number" ?
+            Math.max(0, Math.min(1, body.temperature)) : 0.7,
+        messages: body.messages,
       };
 
       if (typeof body.system === "string" && body.system.trim().length > 0) {
-        payload.system = body.system;
+        payload.system = body.system.substring(0, MAX_SYSTEM_LENGTH);
       }
 
+      // 6. Call Claude API
       try {
         const response = await fetch(CLAUDE_API_URL, {
           method: "POST",
@@ -65,14 +196,19 @@ exports.claudeProxy = onRequest(
 
         const data = await response.json();
         if (!response.ok) {
-          res.status(response.status).json(data);
+          // Don't expose internal API errors in detail
+          console.error(`Claude API error for user ${user.uid}:`, data);
+          res.status(response.status >= 500 ? 502 : response.status).json({
+            error: {message: data.error?.message || "AI service error"},
+          });
           return;
         }
 
         res.status(200).json(data);
       } catch (error) {
+        console.error(`Claude proxy error for user ${user.uid}:`, error);
         res.status(500).json({
-          error: {message: "Claude proxy failed", detail: String(error)},
+          error: {message: "AI service temporarily unavailable"},
         });
       }
     });

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:logger/logger.dart';
 import 'package:kinesa/core/config/ai_config.dart';
 import 'package:kinesa/features/ai/data/repositories/ai_cache_repository.dart';
@@ -130,6 +131,25 @@ class ClaudeAPIService {
     _dio.options.headers = {
       'Content-Type': 'application/json',
     };
+
+    // Add Firebase auth interceptor - adds ID token to every request
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) async {
+          try {
+            final user = FirebaseAuth.instance.currentUser;
+            if (user != null) {
+              final idToken = await user.getIdToken();
+              options.headers['Authorization'] = 'Bearer $idToken';
+            }
+          } catch (e) {
+            _logger.w('Failed to get Firebase ID token: $e');
+            // Continue without token - server will reject with 401
+          }
+          return handler.next(options);
+        },
+      ),
+    );
 
     // Add logging interceptor
     _dio.interceptors.add(LogInterceptor(
