@@ -12,6 +12,7 @@ import 'package:timezone/data/latest.dart' as tz;
 import 'app.dart';
 import 'firebase_options.dart';
 import 'core/config/ai_config.dart';
+import 'core/config/remote_config_service.dart';
 import 'core/providers/shared_preferences_provider.dart';
 import 'features/notifications/data/services/notification_service.dart';
 import 'features/notifications/data/services/fcm_service.dart';
@@ -97,7 +98,10 @@ void main() async {
   // Initialize SharedPreferences for AI caching
   final sharedPreferences = await SharedPreferences.getInstance();
 
-  // Initialize AI Config (secure API key storage)
+  // Initialize Remote Config (before AI Config)
+  await RemoteConfigService.initialize();
+
+  // Initialize AI Config (uses Remote Config for settings)
   await AIConfig.initialize();
 
   await registerHealthBackgroundSync();

@@ -86,9 +86,7 @@ class SyncStatusIndicator extends ConsumerWidget {
             : iconColor ?? theme.colorScheme.primary;
 
         return InkWell(
-          onTap: hasConflicts
-              ? () => _showConflictDialog(context, ref)
-              : null,
+          onTap: hasConflicts ? () => _showConflictDialog(context, ref) : null,
           borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -172,7 +170,7 @@ class _ConflictResolutionDialogState
     extends ConsumerState<ConflictResolutionDialog> {
   List<SyncRecord>? _conflicts;
   bool _isLoading = true;
-  int _currentIndex = 0;
+  final int _currentIndex = 0;
 
   @override
   void initState() {

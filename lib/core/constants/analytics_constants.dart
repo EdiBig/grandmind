@@ -1,5 +1,6 @@
 /// Analytics event names and parameter constants
 /// Based on CLAUDE.md analytics events specification
+library;
 
 class AnalyticsEvents {
   // Onboarding

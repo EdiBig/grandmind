@@ -31,7 +31,7 @@
 /// }
 /// ```
 
-library sync;
+library;
 
 // Models
 export 'models/sync_record.dart';

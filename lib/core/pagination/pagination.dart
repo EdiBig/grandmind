@@ -92,7 +92,7 @@
 /// }
 /// ```
 
-library pagination;
+library;
 
 // Models
 export 'models/paginated_result.dart';

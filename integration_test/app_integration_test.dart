@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:kinesa/app.dart';
 import 'package:kinesa/firebase_options.dart';
 import 'package:kinesa/core/theme/app_theme.dart';
 import 'package:kinesa/features/authentication/presentation/screens/login_screen.dart';
@@ -282,7 +281,10 @@ void main() {
             .where('name', isEqualTo: 'Test Habit')
             .get();
 
-        expect(query.docs.isNotEmpty || find.byType(CreateHabitScreen).evaluate().isEmpty, isTrue);
+        expect(
+            query.docs.isNotEmpty ||
+                find.byType(CreateHabitScreen).evaluate().isEmpty,
+            isTrue);
       }
     });
   });
@@ -356,7 +358,8 @@ void main() {
   });
 
   group('UI Components', () {
-    testWidgets('Loading indicator shows during async operations', (tester) async {
+    testWidgets('Loading indicator shows during async operations',
+        (tester) async {
       bool isLoading = true;
 
       await tester.pumpWidget(

@@ -13,6 +13,7 @@
 /// // Get with offline fallback
 /// final logs = await repo.getWorkoutLogs(userId);
 /// ```
+library;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -101,9 +102,7 @@ class SyncableWorkoutLogRepository with SyncableRepository {
     );
 
     // Parse and sort
-    final logs = results
-        .map((data) => WorkoutLog.fromJson(data))
-        .toList()
+    final logs = results.map((data) => WorkoutLog.fromJson(data)).toList()
       ..sort((a, b) => b.startedAt.compareTo(a.startedAt));
 
     if (limit != null && logs.length > limit) {
