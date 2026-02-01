@@ -6,6 +6,7 @@ import 'package:kinesa/features/authentication/data/repositories/auth_repository
 import 'package:kinesa/features/user/data/services/firestore_service.dart';
 import 'package:kinesa/features/user/data/models/user_model.dart';
 import 'package:kinesa/core/errors/exceptions.dart';
+import '../../helpers/test_helpers.dart';
 
 // Mocks
 class MockFirebaseAuth extends Mock implements FirebaseAuth {}
@@ -42,6 +43,7 @@ void main() {
       firebaseAuth: mockFirebaseAuth,
       googleSignIn: mockGoogleSignIn,
       firestoreService: mockFirestoreService,
+      analytics: MockAnalyticsService(),
     );
   });
 

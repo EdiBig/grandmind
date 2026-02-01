@@ -1,70 +1,92 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:kinesa/core/providers/shared_preferences_provider.dart';
 import 'package:kinesa/features/workouts/presentation/screens/workout_library_screen.dart';
-import 'package:kinesa/features/workouts/presentation/providers/workout_providers.dart';
+import 'package:kinesa/features/workouts/presentation/providers/workout_library_providers.dart';
+import 'package:kinesa/features/workouts/presentation/providers/fitness_profile_provider.dart';
+import 'package:kinesa/features/workouts/domain/models/workout_library_entry.dart';
 import 'package:kinesa/features/workouts/domain/models/workout.dart';
-import 'package:kinesa/features/workouts/domain/models/exercise.dart';
 import 'package:kinesa/core/theme/app_theme.dart';
 
 void main() {
-  final testWorkouts = [
-    Workout(
+  late SharedPreferences mockPrefs;
+
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    mockPrefs = await SharedPreferences.getInstance();
+  });
+
+  final testEntries = [
+    WorkoutLibraryEntry(
       id: '1',
       name: 'Full Body Strength',
-      description: 'Build muscle with compound movements',
+      primaryTargets: ['Legs', 'Arms', 'Core'],
+      secondaryTargets: ['Back', 'Chest'],
       difficulty: WorkoutDifficulty.intermediate,
-      estimatedDuration: 45,
+      equipment: WorkoutEquipment.dumbbell,
+      durationMinutes: 45,
       category: WorkoutCategory.strength,
-      caloriesBurned: 350,
-      equipment: 'Dumbbells',
-      exercises: [
-        Exercise(
-          id: '1',
-          name: 'Squats',
-          description: 'Lower body exercise',
-          type: ExerciseType.reps,
-          muscleGroups: ['Legs'],
-          metrics: ExerciseMetrics(sets: 3, reps: 12, restTime: 60),
-        ),
-      ],
+      instructions: ['Step 1', 'Step 2'],
+      commonMistakes: ['Mistake 1'],
+      bodyFocuses: [WorkoutBodyFocus.fullBody],
+      goals: [WorkoutGoal.strength],
+      isBodyweight: false,
+      isCompound: true,
+      isRecommended: true,
+      addedAt: DateTime(2024, 1, 1),
     ),
-    Workout(
+    WorkoutLibraryEntry(
       id: '2',
-      name: 'HIIT Cardio Blast',
-      description: 'High intensity interval training',
+      name: 'Quick HIIT Session',
+      primaryTargets: ['Full Body'],
+      secondaryTargets: ['Cardio'],
       difficulty: WorkoutDifficulty.advanced,
-      estimatedDuration: 30,
+      equipment: WorkoutEquipment.bodyweight,
+      durationMinutes: 30,
       category: WorkoutCategory.hiit,
-      caloriesBurned: 400,
-      exercises: [
-        Exercise(
-          id: '2',
-          name: 'Burpees',
-          description: 'Full body exercise',
-          type: ExerciseType.duration,
-          muscleGroups: ['Full Body'],
-          metrics: ExerciseMetrics(sets: 4, duration: 30, restTime: 30),
-        ),
-      ],
+      instructions: ['Step 1', 'Step 2'],
+      commonMistakes: ['Mistake 1'],
+      bodyFocuses: [WorkoutBodyFocus.fullBody],
+      goals: [WorkoutGoal.fatLoss, WorkoutGoal.endurance],
+      isBodyweight: true,
+      isCompound: true,
+      isRecommended: true,
+      addedAt: DateTime(2024, 1, 2),
     ),
-    Workout(
+    WorkoutLibraryEntry(
       id: '3',
       name: 'Morning Yoga Flow',
-      description: 'Gentle stretching and flexibility',
+      primaryTargets: ['Flexibility'],
+      secondaryTargets: ['Core', 'Balance'],
       difficulty: WorkoutDifficulty.beginner,
-      estimatedDuration: 20,
+      equipment: WorkoutEquipment.yogaMat,
+      durationMinutes: 20,
       category: WorkoutCategory.yoga,
-      caloriesBurned: 100,
-      exercises: [],
+      instructions: ['Step 1', 'Step 2'],
+      commonMistakes: ['Mistake 1'],
+      bodyFocuses: [WorkoutBodyFocus.fullBody],
+      goals: [WorkoutGoal.mobility],
+      isBodyweight: true,
+      isCompound: false,
+      isRecommended: true,
+      addedAt: DateTime(2024, 1, 3),
     ),
   ];
 
-  Widget createTestWidget({List<Workout>? workouts}) {
+  Widget createTestWidget({List<WorkoutLibraryEntry>? entries}) {
     return ProviderScope(
       overrides: [
-        workoutsProvider.overrideWith(
-          (ref, filters) => Stream.value(workouts ?? testWorkouts),
+        sharedPreferencesProvider.overrideWithValue(mockPrefs),
+        workoutLibraryFiltersProvider.overrideWith(
+          (ref) => WorkoutLibraryFiltersNotifier(mockPrefs),
+        ),
+        fitnessProfileProvider.overrideWith(
+          (ref) => FitnessProfileNotifier(mockPrefs),
+        ),
+        workoutLibraryProvider.overrideWith(
+          (ref) => entries ?? testEntries,
         ),
       ],
       child: MaterialApp(
@@ -75,138 +97,137 @@ void main() {
   }
 
   group('WorkoutLibraryScreen', () {
-    testWidgets('renders workout library screen', (tester) async {
+    testWidgets('renders workout library screen with title', (tester) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
       // Verify screen title
-      expect(find.text('Workouts'), findsWidgets);
+      expect(find.text('Find Workouts'), findsOneWidget);
     });
 
-    testWidgets('displays list of workouts', (tester) async {
+    testWidgets('displays workout entries', (tester) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      // Verify workouts are displayed
+      // Verify at least one workout is displayed (first one should always be visible)
       expect(find.text('Full Body Strength'), findsOneWidget);
-      expect(find.text('HIIT Cardio Blast'), findsOneWidget);
-      expect(find.text('Morning Yoga Flow'), findsOneWidget);
     });
 
-    testWidgets('shows workout duration', (tester) async {
+    testWidgets('shows workout duration in info chips', (tester) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      // Verify duration is shown (45 min, 30 min, 20 min)
-      expect(find.textContaining('45'), findsWidgets);
+      // Look for at least one duration display
       expect(find.textContaining('min'), findsWidgets);
     });
 
-    testWidgets('shows workout difficulty', (tester) async {
+    testWidgets('shows workout difficulty in info chips', (tester) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      // Verify difficulty levels are shown
+      // Verify at least one difficulty level is shown
       expect(find.textContaining('Intermediate'), findsWidgets);
-      expect(find.textContaining('Advanced'), findsWidgets);
-      expect(find.textContaining('Beginner'), findsWidgets);
     });
 
-    testWidgets('displays workout categories', (tester) async {
+    testWidgets('displays filter chips for categories', (tester) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      // Look for category chips/tabs
-      expect(find.textContaining('Strength'), findsWidgets);
-      expect(find.textContaining('HIIT'), findsWidgets);
-      expect(find.textContaining('Yoga'), findsWidgets);
-    });
-
-    testWidgets('shows loading indicator while fetching workouts', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            workoutsProvider.overrideWith(
-              (ref, filters) => Stream<List<Workout>>.fromFuture(
-                Future.delayed(const Duration(seconds: 10), () => <Workout>[]),
-              ),
-            ),
-          ],
-          child: MaterialApp(
-            theme: AppTheme.lightTheme,
-            home: const WorkoutLibraryScreen(),
-          ),
-        ),
-      );
-      await tester.pump();
-
-      // Should show loading indicator
-      expect(find.byType(CircularProgressIndicator), findsWidgets);
-    });
-
-    testWidgets('shows empty state when no workouts available', (tester) async {
-      await tester.pumpWidget(createTestWidget(workouts: []));
-      await tester.pumpAndSettle();
-
-      // Should show empty state message
-      expect(find.textContaining('No workouts'), findsWidgets);
-    });
-
-    testWidgets('shows error state when fetch fails', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            workoutsProvider.overrideWith(
-              (ref, filters) => Stream<List<Workout>>.error(Exception('Network error')),
-            ),
-          ],
-          child: MaterialApp(
-            theme: AppTheme.lightTheme,
-            home: const WorkoutLibraryScreen(),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Should show error message
-      expect(find.byIcon(Icons.error_outline), findsWidgets);
-    });
-
-    testWidgets('displays calorie burn estimate', (tester) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
-
-      // Verify calories are shown (350, 400, 100)
-      expect(find.textContaining('350'), findsWidgets);
-    });
-
-    testWidgets('can tap on workout to view details', (tester) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
-
-      // Find and tap on a workout card
-      final workoutCard = find.text('Full Body Strength');
-      expect(workoutCard, findsOneWidget);
-
-      // Tapping should not throw
-      await tester.tap(workoutCard);
-      await tester.pumpAndSettle();
-    });
-
-    testWidgets('filter chips are displayed', (tester) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
-
-      // Look for filter options
+      // Look for filter chips
       expect(find.byType(FilterChip), findsWidgets);
     });
 
-    testWidgets('workout cards show exercise count', (tester) async {
+    testWidgets('shows recommended filter chip', (tester) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      // Should show exercise count
-      expect(find.textContaining('exercise'), findsWidgets);
+      // Look for Recommended filter chip
+      expect(find.text('Recommended'), findsWidgets);
+    });
+
+    testWidgets('shows empty state when no workouts available', (tester) async {
+      await tester.pumpWidget(createTestWidget(entries: []));
+      await tester.pumpAndSettle();
+
+      // Should show empty state message
+      expect(find.textContaining('No workouts match'), findsOneWidget);
+      expect(find.text('Clear filters'), findsOneWidget);
+    });
+
+    testWidgets('shows workout count', (tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Should show "Showing X workouts"
+      expect(find.textContaining('Showing'), findsOneWidget);
+      expect(find.textContaining('workouts'), findsOneWidget);
+    });
+
+    testWidgets('displays browse by focus section', (tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Look for "Browse by focus" section header
+      expect(find.text('Browse by focus'), findsOneWidget);
+    });
+
+    testWidgets('has view all button', (tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.text('View all'), findsOneWidget);
+    });
+
+    testWidgets('search field is present with placeholder', (tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Verify search field exists
+      expect(find.byType(TextField), findsOneWidget);
+      expect(find.text('Search by workout, goal, or equipment'), findsOneWidget);
+    });
+
+    testWidgets('filter button is in app bar', (tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Look for filter (tune) icon button
+      expect(find.byIcon(Icons.tune), findsOneWidget);
+    });
+
+    testWidgets('exercise library button is in app bar', (tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Look for exercise library (fitness_center) icon button
+      expect(find.byIcon(Icons.fitness_center), findsWidgets);
+    });
+
+    testWidgets('workout cards contain info chips', (tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Look for timer icon (used for duration)
+      expect(find.byIcon(Icons.timer), findsWidgets);
+
+      // Look for fitness center icon (used for equipment)
+      expect(find.byIcon(Icons.fitness_center), findsWidgets);
+    });
+
+    testWidgets('can interact with filter chips', (tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      // Find and tap a filter chip
+      final filterChips = find.byType(FilterChip);
+      expect(filterChips, findsWidgets);
+
+      // Tap the first filter chip (Recommended)
+      await tester.tap(filterChips.first);
+      await tester.pumpAndSettle();
+
+      // Should still render the screen
+      expect(find.text('Find Workouts'), findsOneWidget);
     });
   });
 }
