@@ -128,3 +128,4 @@ kinesa_*.dart
 
 # Test files (not in test/ structure)
 /test/workout_*.dart
+serviceAccountKey.json

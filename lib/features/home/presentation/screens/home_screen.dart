@@ -6,7 +6,7 @@ import 'dashboard_tab.dart';
 import 'workouts_tab.dart';
 import 'track_tab.dart';
 import 'progress_tab.dart';
-import '../../../challenges/presentation/screens/unity_hub_screen.dart';
+import '../../../unity/presentation/screens/unity_hub_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});

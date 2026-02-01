@@ -1,0 +1,12 @@
+{
+  "name": "grandmind-scripts",
+  "version": "1.0.0",
+  "description": "Migration and utility scripts for Grandmind/Kinesa",
+  "scripts": {
+    "migrate:circle-members": "node migrate_circle_member_ids.js",
+    "migrate:circle-members:dry-run": "node migrate_circle_member_ids.js --dry-run --verbose"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  }
+}

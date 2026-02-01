@@ -385,6 +385,139 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
+    // ============================================
+    // UNITY FEATURE - Challenge Participations
+    // ============================================
+
+    // Challenge participations with daily progress subcollection
+    match /challenge_participations/{participationId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() &&
+                      resource.data.userId == request.auth.uid &&
+                      isUserIdImmutable();
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+
+      // Daily progress subcollection
+      match /daily_progress/{dateKey} {
+        allow read: if isAuthenticated();
+        allow write: if isAuthenticated() &&
+                       get(/databases/$(database)/documents/challenge_participations/$(participationId)).data.userId == request.auth.uid;
+      }
+    }
+
+    // ============================================
+    // UNITY FEATURE - Circles (Micro-communities)
+    // ============================================
+
+    // Helper function to check if user is a circle member
+    function isCircleMember(circleId) {
+      return exists(/databases/$(database)/documents/circles/$(circleId)/members/$(request.auth.uid));
+    }
+
+    // Helper function to check if user is a circle admin
+    function isCircleAdmin(circleId) {
+      let circle = get(/databases/$(database)/documents/circles/$(circleId));
+      return circle.data.createdBy == request.auth.uid ||
+             (circle.data.admins != null && request.auth.uid in circle.data.admins);
+    }
+
+    // Circles collection
+    match /circles/{circleId} {
+      // Allow read for: public circles OR circle members OR circle creator
+      // Simplified to allow any authenticated user to read (filtering done in app)
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.createdBy == request.auth.uid;
+      allow update: if isAuthenticated() && isCircleAdmin(circleId) && isCreatedByImmutable();
+      allow delete: if isAuthenticated() && resource.data.createdBy == request.auth.uid;
+
+      // Circle members subcollection
+      match /members/{memberId} {
+        // Allow users to read their own membership (by doc ID or userId field)
+        // or if they are already a member of the circle
+        allow read: if isAuthenticated() &&
+                      (memberId == request.auth.uid ||
+                       resource.data.userId == request.auth.uid ||
+                       isCircleMember(circleId));
+        allow create: if isAuthenticated() &&
+                        (request.resource.data.userId == request.auth.uid || isCircleAdmin(circleId));
+        allow update: if isAuthenticated() &&
+                        (resource.data.userId == request.auth.uid || isCircleAdmin(circleId));
+        allow delete: if isAuthenticated() &&
+                        (resource.data.userId == request.auth.uid || isCircleAdmin(circleId));
+      }
+    }
+
+    // Circle invites
+    match /circle_invites/{inviteId} {
+      allow read: if isAuthenticated() &&
+                    (resource.data.invitedUserId == request.auth.uid ||
+                     resource.data.invitedBy == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.invitedBy == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.invitedUserId == request.auth.uid;
+      allow delete: if isAuthenticated() &&
+                      (resource.data.invitedBy == request.auth.uid ||
+                       resource.data.invitedUserId == request.auth.uid);
+    }
+
+    // ============================================
+    // UNITY FEATURE - Feed Posts
+    // ============================================
+
+    // Circle/Challenge feed posts
+    match /circle_feed_posts/{postId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.authorId == request.auth.uid;
+      allow update: if isAuthenticated() &&
+                      (resource.data.authorId == request.auth.uid ||
+                       // Allow updating cheers and totalCheers by any authenticated user
+                       request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['cheers', 'totalCheers', 'commentCount']));
+      allow delete: if isAuthenticated() && resource.data.authorId == request.auth.uid;
+    }
+
+    // Feed comments
+    match /feed_comments/{commentId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.authorId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.authorId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.authorId == request.auth.uid;
+    }
+
+    // ============================================
+    // UNITY FEATURE - Cheers
+    // ============================================
+
+    // Cheers/encouragements
+    match /cheers/{cheerId} {
+      // Sender and receiver can read
+      allow read: if isAuthenticated() &&
+                    (resource.data.senderId == request.auth.uid ||
+                     resource.data.receiverId == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.senderId == request.auth.uid;
+      // Only receiver can update (mark as read)
+      allow update: if isAuthenticated() && resource.data.receiverId == request.auth.uid;
+      // Sender can delete their own cheers
+      allow delete: if isAuthenticated() && resource.data.senderId == request.auth.uid;
+    }
+
+    // ============================================
+    // UNITY FEATURE - Settings & Consents
+    // ============================================
+
+    // Unity user settings (privacy, notifications)
+    match /unity_settings/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Unity consents (GDPR tracking)
+    match /unity_consents/{consentId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow delete: if false; // Consents are never deleted, only revoked
+    }
+
     // Challenge milestones
     match /challengeMilestones/{milestoneId} {
       allow read: if isAuthenticated();

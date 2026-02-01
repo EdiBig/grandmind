@@ -16,7 +16,7 @@ import 'onboarding_routes.dart';
 import 'home_routes.dart';
 import 'profile_routes.dart';
 import 'settings_routes.dart';
-import 'challenge_routes.dart';
+import 'unity_routes.dart';
 import 'habits_routes.dart';
 import 'ai_routes.dart';
 import 'health_routes.dart';
@@ -66,7 +66,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ...homeRoutes(scheduleHomeTab),
       ...profileRoutes,
       ...settingsRoutes,
-      ...challengeRoutes,
+      ...unityRoutes,
       ...habitsRoutes,
       ...aiRoutes,
       ...healthRoutes,

@@ -24,18 +24,10 @@ List<GoRoute> homeRoutes(void Function(int) scheduleHomeTab) => [
     },
   ),
   GoRoute(
-    path: RouteConstants.unity,
-    name: 'unity',
-    builder: (context, state) {
-      scheduleHomeTab(2);
-      return const HomeScreen();
-    },
-  ),
-  GoRoute(
     path: RouteConstants.habits,
     name: 'habits',
     builder: (context, state) {
-      scheduleHomeTab(3);
+      scheduleHomeTab(2);
       return const HomeScreen();
     },
   ),
@@ -43,15 +35,7 @@ List<GoRoute> homeRoutes(void Function(int) scheduleHomeTab) => [
     path: RouteConstants.progress,
     name: 'progress',
     builder: (context, state) {
-      scheduleHomeTab(4);
-      return const HomeScreen();
-    },
-  ),
-  GoRoute(
-    path: RouteConstants.nutrition,
-    name: 'nutrition',
-    builder: (context, state) {
-      scheduleHomeTab(5);
+      scheduleHomeTab(3);
       return const HomeScreen();
     },
   ),
