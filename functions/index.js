@@ -1,4 +1,3 @@
-const cors = require("cors")({origin: true});
 const admin = require("firebase-admin");
 const algoliasearch = require("algoliasearch");
 const {onRequest} = require("firebase-functions/v2/https");
@@ -7,6 +6,33 @@ const {onDocumentWritten} = require("firebase-functions/v2/firestore");
 const {defineSecret} = require("firebase-functions/params");
 
 admin.initializeApp();
+
+// CORS: Restrict to Kinesa domains only
+const allowedOrigins = [
+  "https://kinesa.app",
+  "https://app.kinesa.app",
+  "https://www.kinesa.app",
+  // Development origins (remove in production if not needed)
+  "http://localhost:3000",
+  "http://localhost:5000",
+];
+
+const cors = require("cors")({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+    if (allowedOrigins.includes(origin) || origin.endsWith(".kinesa.app")) {
+      callback(null, true);
+    } else {
+      console.warn(`CORS blocked origin: ${origin}`);
+      callback(new Error("CORS not allowed"), false);
+    }
+  },
+  credentials: true,
+});
 
 const CLAUDE_API_KEY = defineSecret("CLAUDE_API_KEY");
 const CLAUDE_API_URL = "https://api.anthropic.com/v1/messages";
@@ -23,14 +49,49 @@ const WGER_LANGUAGE_ID_EN = 2;
 const WORKOUTS_COLLECTION = "workouts";
 const WGER_SOURCE = "wger";
 
-// Rate limiting: track requests per UID (in-memory, resets on cold start)
-// For production, consider using Redis or Firestore for persistent rate limiting
-const rateLimitMap = new Map();
+// Rate limiting configuration (persistent via Firestore)
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
 const RATE_LIMIT_MAX_REQUESTS = 20; // 20 requests per minute per user
 
-// Allowed models whitelist
-const ALLOWED_MODELS = [
+// Daily/monthly token budgets per tier
+const TOKEN_BUDGETS = {
+  free: {
+    dailyInputTokens: 50000,
+    dailyOutputTokens: 20000,
+    monthlyInputTokens: 500000,
+    monthlyOutputTokens: 200000,
+  },
+  premium: {
+    dailyInputTokens: 200000,
+    dailyOutputTokens: 80000,
+    monthlyInputTokens: 2000000,
+    monthlyOutputTokens: 800000,
+  },
+  premium_annual: {
+    dailyInputTokens: 300000,
+    dailyOutputTokens: 120000,
+    monthlyInputTokens: 3000000,
+    monthlyOutputTokens: 1200000,
+  },
+};
+
+// Allowed models per tier
+const ALLOWED_MODELS_BY_TIER = {
+  free: ["claude-3-haiku-20240307"],
+  premium: [
+    "claude-3-haiku-20240307",
+    "claude-3-sonnet-20240229",
+    "claude-3-5-sonnet-20241022",
+  ],
+  premium_annual: [
+    "claude-3-haiku-20240307",
+    "claude-3-sonnet-20240229",
+    "claude-3-5-sonnet-20241022",
+  ],
+};
+
+// All allowed models (for validation)
+const ALL_ALLOWED_MODELS = [
   "claude-3-haiku-20240307",
   "claude-3-sonnet-20240229",
   "claude-3-5-sonnet-20241022",
@@ -62,39 +123,221 @@ async function verifyFirebaseToken(authHeader) {
 }
 
 /**
- * Check rate limit for a user
+ * Get user's subscription tier from Firestore
  * @param {string} uid - User ID
- * @returns {{allowed: boolean, remaining: number, resetIn: number}}
+ * @returns {Promise<string>} Subscription tier
  */
-function checkRateLimit(uid) {
+async function getUserTier(uid) {
+  try {
+    const userDoc = await admin.firestore().doc(`users/${uid}`).get();
+    if (!userDoc.exists) return "free";
+    return userDoc.data()?.subscriptionTier || "free";
+  } catch (error) {
+    console.warn("Failed to get user tier:", error.message);
+    return "free";
+  }
+}
+
+/**
+ * Check rate limit for a user (Firestore-backed, persistent)
+ * @param {string} uid - User ID
+ * @returns {Promise<{allowed: boolean, remaining: number, resetIn: number}>}
+ */
+async function checkRateLimit(uid) {
+  const db = admin.firestore();
   const now = Date.now();
-  const userLimit = rateLimitMap.get(uid);
+  const rateLimitRef = db.doc(`aiRateLimits/${uid}`);
 
-  if (!userLimit || now - userLimit.windowStart > RATE_LIMIT_WINDOW_MS) {
-    // New window
-    rateLimitMap.set(uid, {windowStart: now, count: 1});
-    return {allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - 1, resetIn: RATE_LIMIT_WINDOW_MS};
+  try {
+    const result = await db.runTransaction(async (transaction) => {
+      const doc = await transaction.get(rateLimitRef);
+      const data = doc.exists ? doc.data() : null;
+
+      // Check if we're in a new window
+      if (!data || now - data.windowStart > RATE_LIMIT_WINDOW_MS) {
+        transaction.set(rateLimitRef, {
+          windowStart: now,
+          count: 1,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        return {
+          allowed: true,
+          remaining: RATE_LIMIT_MAX_REQUESTS - 1,
+          resetIn: RATE_LIMIT_WINDOW_MS,
+        };
+      }
+
+      // Check if rate limit exceeded
+      if (data.count >= RATE_LIMIT_MAX_REQUESTS) {
+        const resetIn = RATE_LIMIT_WINDOW_MS - (now - data.windowStart);
+        return {allowed: false, remaining: 0, resetIn};
+      }
+
+      // Increment count
+      transaction.update(rateLimitRef, {
+        count: data.count + 1,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      return {
+        allowed: true,
+        remaining: RATE_LIMIT_MAX_REQUESTS - data.count - 1,
+        resetIn: RATE_LIMIT_WINDOW_MS - (now - data.windowStart),
+      };
+    });
+
+    return result;
+  } catch (error) {
+    console.error("Rate limit check failed:", error);
+    // Fail open but with reduced limit (allow 1 request on error)
+    return {allowed: true, remaining: 0, resetIn: RATE_LIMIT_WINDOW_MS};
   }
+}
 
-  if (userLimit.count >= RATE_LIMIT_MAX_REQUESTS) {
-    const resetIn = RATE_LIMIT_WINDOW_MS - (now - userLimit.windowStart);
-    return {allowed: false, remaining: 0, resetIn};
+/**
+ * Check and update daily/monthly token budget
+ * @param {string} uid - User ID
+ * @param {string} tier - Subscription tier
+ * @param {number} inputTokens - Estimated input tokens
+ * @returns {Promise<{allowed: boolean, reason?: string, usage?: object}>}
+ */
+async function checkTokenBudget(uid, tier, inputTokens) {
+  const db = admin.firestore();
+  const budgetRef = db.doc(`aiUsage/${uid}`);
+  const budget = TOKEN_BUDGETS[tier] || TOKEN_BUDGETS.free;
+
+  const now = new Date();
+  const todayStr = now.toISOString().split("T")[0]; // YYYY-MM-DD
+  const monthStr = todayStr.substring(0, 7); // YYYY-MM
+
+  try {
+    const result = await db.runTransaction(async (transaction) => {
+      const doc = await transaction.get(budgetRef);
+      const data = doc.exists ? doc.data() : {};
+
+      // Reset daily counters if new day
+      let dailyInput = data.dailyInputTokens || 0;
+      let dailyOutput = data.dailyOutputTokens || 0;
+      if (data.dailyDate !== todayStr) {
+        dailyInput = 0;
+        dailyOutput = 0;
+      }
+
+      // Reset monthly counters if new month
+      let monthlyInput = data.monthlyInputTokens || 0;
+      let monthlyOutput = data.monthlyOutputTokens || 0;
+      if (data.monthlyDate !== monthStr) {
+        monthlyInput = 0;
+        monthlyOutput = 0;
+      }
+
+      // Check daily budget
+      if (dailyInput + inputTokens > budget.dailyInputTokens) {
+        return {
+          allowed: false,
+          reason: "Daily input token limit exceeded. Resets at midnight UTC.",
+          usage: {dailyInput, dailyOutput, monthlyInput, monthlyOutput},
+        };
+      }
+
+      // Check monthly budget
+      if (monthlyInput + inputTokens > budget.monthlyInputTokens) {
+        return {
+          allowed: false,
+          reason: "Monthly input token limit exceeded. Resets on the 1st.",
+          usage: {dailyInput, dailyOutput, monthlyInput, monthlyOutput},
+        };
+      }
+
+      // Update usage (we'll add actual tokens after response)
+      transaction.set(budgetRef, {
+        dailyDate: todayStr,
+        dailyInputTokens: dailyInput,
+        dailyOutputTokens: dailyOutput,
+        monthlyDate: monthStr,
+        monthlyInputTokens: monthlyInput,
+        monthlyOutputTokens: monthlyOutput,
+        tier: tier,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, {merge: true});
+
+      return {
+        allowed: true,
+        usage: {dailyInput, dailyOutput, monthlyInput, monthlyOutput},
+      };
+    });
+
+    return result;
+  } catch (error) {
+    console.error("Budget check failed:", error);
+    // Fail open on error (but log it)
+    return {allowed: true, usage: {}};
   }
+}
 
-  userLimit.count += 1;
-  return {
-    allowed: true,
-    remaining: RATE_LIMIT_MAX_REQUESTS - userLimit.count,
-    resetIn: RATE_LIMIT_WINDOW_MS - (now - userLimit.windowStart),
-  };
+/**
+ * Update token usage after successful API call
+ * @param {string} uid - User ID
+ * @param {number} inputTokens - Actual input tokens used
+ * @param {number} outputTokens - Actual output tokens used
+ */
+async function updateTokenUsage(uid, inputTokens, outputTokens) {
+  const db = admin.firestore();
+  const budgetRef = db.doc(`aiUsage/${uid}`);
+
+  try {
+    await budgetRef.update({
+      dailyInputTokens: admin.firestore.FieldValue.increment(inputTokens),
+      dailyOutputTokens: admin.firestore.FieldValue.increment(outputTokens),
+      monthlyInputTokens: admin.firestore.FieldValue.increment(inputTokens),
+      monthlyOutputTokens: admin.firestore.FieldValue.increment(outputTokens),
+      totalInputTokens: admin.firestore.FieldValue.increment(inputTokens),
+      totalOutputTokens: admin.firestore.FieldValue.increment(outputTokens),
+      requestCount: admin.firestore.FieldValue.increment(1),
+      lastRequestAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  } catch (error) {
+    console.error("Failed to update token usage:", error);
+  }
+}
+
+/**
+ * Log AI request for audit trail
+ * @param {object} params - Log parameters
+ */
+async function logAIRequest(params) {
+  const db = admin.firestore();
+  const {uid, model, inputTokens, outputTokens, success, errorType} = params;
+
+  // Calculate approximate cost
+  const isHaiku = model?.includes("haiku");
+  const inputCost = (inputTokens / 1000000) * (isHaiku ? 0.25 : 3);
+  const outputCost = (outputTokens / 1000000) * (isHaiku ? 1.25 : 15);
+  const totalCost = inputCost + outputCost;
+
+  try {
+    await db.collection("aiLogs").add({
+      uid,
+      model: model || "unknown",
+      inputTokens: inputTokens || 0,
+      outputTokens: outputTokens || 0,
+      cost: totalCost,
+      success: success !== false,
+      errorType: errorType || null,
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  } catch (error) {
+    console.error("Failed to log AI request:", error);
+  }
 }
 
 /**
  * Validate request payload
  * @param {object} body - Request body
- * @returns {{valid: boolean, error?: string}}
+ * @param {string} tier - User's subscription tier
+ * @returns {{valid: boolean, error?: string, estimatedInputTokens?: number}}
  */
-function validatePayload(body) {
+function validatePayload(body, tier = "free") {
   const {messages, model, max_tokens: maxTokens, system} = body;
 
   // Validate messages
@@ -104,15 +347,36 @@ function validatePayload(body) {
   if (messages.length > MAX_MESSAGES_COUNT) {
     return {valid: false, error: `Too many messages (max ${MAX_MESSAGES_COUNT})`};
   }
+
+  let totalContentLength = 0;
   for (const msg of messages) {
-    if (typeof msg.content === "string" && msg.content.length > MAX_MESSAGE_LENGTH) {
+    // Only allow string content (reject array content for images, etc.)
+    if (typeof msg.content !== "string") {
+      return {valid: false, error: "Only text messages are supported"};
+    }
+    if (msg.content.length > MAX_MESSAGE_LENGTH) {
       return {valid: false, error: `Message too long (max ${MAX_MESSAGE_LENGTH} chars)`};
     }
+    // Validate role
+    if (msg.role !== "user" && msg.role !== "assistant") {
+      return {valid: false, error: "Invalid message role"};
+    }
+    totalContentLength += msg.content.length;
   }
 
-  // Validate model
-  if (model && !ALLOWED_MODELS.includes(model)) {
-    return {valid: false, error: `Model not allowed. Use: ${ALLOWED_MODELS.join(", ")}`};
+  // Validate model against tier
+  const allowedModels = ALLOWED_MODELS_BY_TIER[tier] || ALLOWED_MODELS_BY_TIER.free;
+  const requestedModel = model || "claude-3-haiku-20240307";
+
+  if (!ALL_ALLOWED_MODELS.includes(requestedModel)) {
+    return {valid: false, error: `Model not allowed. Use: ${ALL_ALLOWED_MODELS.join(", ")}`};
+  }
+  if (!allowedModels.includes(requestedModel)) {
+    return {
+      valid: false,
+      error: `Model ${requestedModel} requires premium subscription. ` +
+             `Available models: ${allowedModels.join(", ")}`,
+    };
   }
 
   // Validate max_tokens
@@ -125,65 +389,118 @@ function validatePayload(body) {
     return {valid: false, error: `System prompt too long (max ${MAX_SYSTEM_LENGTH} chars)`};
   }
 
-  return {valid: true};
+  // Estimate input tokens (~4 chars per token on average)
+  const systemLength = (typeof system === "string") ? system.length : 0;
+  const estimatedInputTokens = Math.ceil((totalContentLength + systemLength) / 4);
+
+  return {valid: true, estimatedInputTokens};
 }
 
 exports.claudeProxy = onRequest(
   {secrets: [CLAUDE_API_KEY], region: "us-central1", invoker: "public"},
   (req, res) => {
     cors(req, res, async () => {
-      // 1. Method check
-      if (req.method !== "POST") {
-        res.status(405).json({error: {message: "Method not allowed"}});
-        return;
-      }
+      let user = null;
+      let tier = "free";
+      const requestedModel = req.body?.model || "claude-3-haiku-20240307";
 
-      // 2. Verify Firebase ID token (REQUIRED)
-      const user = await verifyFirebaseToken(req.get("Authorization"));
-      if (!user) {
-        res.status(401).json({error: {message: "Unauthorized: Invalid or missing Firebase ID token"}});
-        return;
-      }
-
-      // 3. Rate limiting per UID
-      const rateLimit = checkRateLimit(user.uid);
-      res.set("X-RateLimit-Remaining", String(rateLimit.remaining));
-      res.set("X-RateLimit-Reset", String(Math.ceil(rateLimit.resetIn / 1000)));
-
-      if (!rateLimit.allowed) {
-        res.status(429).json({
-          error: {
-            message: "Rate limit exceeded",
-            retryAfter: Math.ceil(rateLimit.resetIn / 1000),
-          },
-        });
-        return;
-      }
-
-      // 4. Validate payload
-      const body = req.body || {};
-      const validation = validatePayload(body);
-      if (!validation.valid) {
-        res.status(400).json({error: {message: validation.error}});
-        return;
-      }
-
-      // 5. Build sanitized payload
-      const payload = {
-        model: body.model || "claude-3-haiku-20240307",
-        max_tokens: Math.min(body.max_tokens || 1024, MAX_TOKENS_LIMIT),
-        temperature:
-          typeof body.temperature === "number" ?
-            Math.max(0, Math.min(1, body.temperature)) : 0.7,
-        messages: body.messages,
-      };
-
-      if (typeof body.system === "string" && body.system.trim().length > 0) {
-        payload.system = body.system.substring(0, MAX_SYSTEM_LENGTH);
-      }
-
-      // 6. Call Claude API
       try {
+        // 1. Method check
+        if (req.method !== "POST") {
+          res.status(405).json({error: {message: "Method not allowed"}});
+          return;
+        }
+
+        // 2. Verify Firebase ID token (REQUIRED)
+        user = await verifyFirebaseToken(req.get("Authorization"));
+        if (!user) {
+          await logAIRequest({
+            uid: "anonymous",
+            model: requestedModel,
+            success: false,
+            errorType: "auth_failed",
+          });
+          res.status(401).json({
+            error: {message: "Unauthorized: Invalid or missing Firebase ID token"},
+          });
+          return;
+        }
+
+        // 3. Get user's subscription tier
+        tier = await getUserTier(user.uid);
+
+        // 4. Rate limiting per UID (Firestore-backed)
+        const rateLimit = await checkRateLimit(user.uid);
+        res.set("X-RateLimit-Remaining", String(rateLimit.remaining));
+        res.set("X-RateLimit-Reset", String(Math.ceil(rateLimit.resetIn / 1000)));
+
+        if (!rateLimit.allowed) {
+          await logAIRequest({
+            uid: user.uid,
+            model: requestedModel,
+            success: false,
+            errorType: "rate_limit",
+          });
+          res.status(429).json({
+            error: {
+              message: "Rate limit exceeded",
+              retryAfter: Math.ceil(rateLimit.resetIn / 1000),
+            },
+          });
+          return;
+        }
+
+        // 5. Validate payload (including model access by tier)
+        const body = req.body || {};
+        const validation = validatePayload(body, tier);
+        if (!validation.valid) {
+          await logAIRequest({
+            uid: user.uid,
+            model: requestedModel,
+            success: false,
+            errorType: "validation_failed",
+          });
+          res.status(400).json({error: {message: validation.error}});
+          return;
+        }
+
+        // 6. Check daily/monthly token budget
+        const budgetCheck = await checkTokenBudget(
+            user.uid,
+            tier,
+            validation.estimatedInputTokens,
+        );
+        if (!budgetCheck.allowed) {
+          await logAIRequest({
+            uid: user.uid,
+            model: requestedModel,
+            success: false,
+            errorType: "budget_exceeded",
+          });
+          res.status(429).json({
+            error: {
+              message: budgetCheck.reason,
+              usage: budgetCheck.usage,
+            },
+          });
+          return;
+        }
+
+        // 7. Build sanitized payload
+        const payload = {
+          model: body.model || "claude-3-haiku-20240307",
+          max_tokens: Math.min(body.max_tokens || 1024, MAX_TOKENS_LIMIT),
+          temperature:
+            typeof body.temperature === "number" ?
+              Math.max(0, Math.min(1, body.temperature)) : 0.7,
+          messages: body.messages,
+        };
+
+        if (typeof body.system === "string" && body.system.trim().length > 0) {
+          payload.system = body.system.substring(0, MAX_SYSTEM_LENGTH);
+        }
+
+        // 8. Call Claude API
         const response = await fetch(CLAUDE_API_URL, {
           method: "POST",
           headers: {
@@ -195,18 +512,47 @@ exports.claudeProxy = onRequest(
         });
 
         const data = await response.json();
+
         if (!response.ok) {
           // Don't expose internal API errors in detail
           console.error(`Claude API error for user ${user.uid}:`, data);
+          await logAIRequest({
+            uid: user.uid,
+            model: payload.model,
+            success: false,
+            errorType: `api_error_${response.status}`,
+          });
           res.status(response.status >= 500 ? 502 : response.status).json({
             error: {message: data.error?.message || "AI service error"},
           });
           return;
         }
 
+        // 9. Update token usage tracking
+        const inputTokens = data.usage?.input_tokens || 0;
+        const outputTokens = data.usage?.output_tokens || 0;
+
+        // Fire-and-forget: update usage and log (don't block response)
+        Promise.all([
+          updateTokenUsage(user.uid, inputTokens, outputTokens),
+          logAIRequest({
+            uid: user.uid,
+            model: payload.model,
+            inputTokens,
+            outputTokens,
+            success: true,
+          }),
+        ]).catch((err) => console.error("Post-request logging failed:", err));
+
         res.status(200).json(data);
       } catch (error) {
-        console.error(`Claude proxy error for user ${user.uid}:`, error);
+        console.error(`Claude proxy error for user ${user?.uid || "unknown"}:`, error);
+        await logAIRequest({
+          uid: user?.uid || "unknown",
+          model: requestedModel,
+          success: false,
+          errorType: "internal_error",
+        }).catch(() => {});
         res.status(500).json({
           error: {message: "AI service temporarily unavailable"},
         });

@@ -23,12 +23,6 @@ service cloud.firestore {
       return request.resource.data.createdBy == resource.data.createdBy;
     }
 
-    // Enforce immutable uid field on user docs (allow setting if missing)
-    function isUidImmutable() {
-      return resource.data.uid == null ||
-             request.resource.data.uid == resource.data.uid;
-    }
-
     // Users collection - users can only read/write their own data
     match /users/{userId} {
       allow read: if isOwner(userId);
@@ -270,6 +264,26 @@ service cloud.firestore {
     // Sync status collection - read-only for authenticated users (written by Cloud Functions)
     match /sync_status/{statusId} {
       allow read: if isAuthenticated();
+      allow write: if false; // Only Cloud Functions (admin SDK) can write
+    }
+
+    // AI rate limits - managed by Cloud Functions only
+    // Users can read their own rate limit status
+    match /aiRateLimits/{userId} {
+      allow read: if isOwner(userId);
+      allow write: if false; // Only Cloud Functions (admin SDK) can write
+    }
+
+    // AI usage tracking - managed by Cloud Functions only
+    // Users can read their own usage stats
+    match /aiUsage/{userId} {
+      allow read: if isOwner(userId);
+      allow write: if false; // Only Cloud Functions (admin SDK) can write
+    }
+
+    // AI request logs - managed by Cloud Functions only (audit trail)
+    match /aiLogs/{logId} {
+      allow read: if false; // Only admin/Cloud Functions can read logs
       allow write: if false; // Only Cloud Functions (admin SDK) can write
     }
 

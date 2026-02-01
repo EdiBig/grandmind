@@ -340,13 +340,33 @@ class ClaudeAPIService {
 
     if (statusCode == 401) {
       return ClaudeAPIException(
-        'Invalid API key or authentication failed',
+        'Authentication failed. Please sign in again.',
         statusCode: 401,
         errorType: 'authentication_error',
       );
     }
 
     if (statusCode == 429) {
+      // Check if it's a budget limit or rate limit
+      if (responseData is Map<String, dynamic>) {
+        final errorObj = responseData['error'] as Map<String, dynamic>?;
+        final message = errorObj?['message'] as String?;
+        if (message != null && message.contains('token limit')) {
+          return ClaudeAPIException(
+            message,
+            statusCode: 429,
+            errorType: 'budget_exceeded',
+          );
+        }
+        final retryAfter = errorObj?['retryAfter'] as int?;
+        if (retryAfter != null) {
+          return ClaudeAPIException(
+            'Too many requests. Please wait ${retryAfter}s.',
+            statusCode: 429,
+            errorType: 'rate_limit_error',
+          );
+        }
+      }
       return ClaudeAPIException(
         'Rate limit exceeded. Please try again later.',
         statusCode: 429,
@@ -354,9 +374,29 @@ class ClaudeAPIService {
       );
     }
 
+    if (statusCode == 400) {
+      // Validation error (e.g., model not allowed for tier)
+      if (responseData is Map<String, dynamic>) {
+        final errorObj = responseData['error'] as Map<String, dynamic>?;
+        final message = errorObj?['message'] as String?;
+        if (message != null && message.contains('premium')) {
+          return ClaudeAPIException(
+            message,
+            statusCode: 400,
+            errorType: 'subscription_required',
+          );
+        }
+        return ClaudeAPIException(
+          message ?? 'Invalid request',
+          statusCode: 400,
+          errorType: 'validation_error',
+        );
+      }
+    }
+
     if (statusCode == 500 || statusCode == 502 || statusCode == 503) {
       return ClaudeAPIException(
-        'Claude API is temporarily unavailable. Please try again later.',
+        'AI service is temporarily unavailable. Please try again later.',
         statusCode: statusCode,
         errorType: 'server_error',
       );
