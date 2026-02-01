@@ -402,6 +402,10 @@ class _MyRoutinesScreenState extends ConsumerState<MyRoutinesScreen> {
                       value: _TemplateAction.open,
                       child: Text('Open'),
                     ),
+                    const PopupMenuItem(
+                      value: _TemplateAction.delete,
+                      child: Text('Delete'),
+                    ),
                   ],
                   icon: const Icon(Icons.more_vert),
                 ),
@@ -554,7 +558,7 @@ class _MyRoutinesScreenState extends ConsumerState<MyRoutinesScreen> {
   ) {
     switch (action) {
       case _RoutineAction.remove:
-        _removeSavedWorkout(context, saved);
+        _confirmRemoveSavedWorkout(context, saved, workout);
         break;
       case _RoutineAction.share:
         if (workout == null) {
@@ -563,6 +567,40 @@ class _MyRoutinesScreenState extends ConsumerState<MyRoutinesScreen> {
         }
         _shareRoutine(context, workout);
         break;
+    }
+  }
+
+  Future<void> _confirmRemoveSavedWorkout(
+    BuildContext context,
+    UserSavedWorkout saved,
+    Workout? workout,
+  ) async {
+    final workoutName = workout?.name ?? 'this workout';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remove from Routines'),
+        content: Text(
+          'Are you sure you want to remove "$workoutName" from My Routines?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _removeSavedWorkout(context, saved);
     }
   }
 
@@ -575,6 +613,60 @@ class _MyRoutinesScreenState extends ConsumerState<MyRoutinesScreen> {
       case _TemplateAction.open:
         _openTemplate(context, workout);
         break;
+      case _TemplateAction.delete:
+        _confirmDeleteTemplate(context, workout);
+        break;
+    }
+  }
+
+  Future<void> _confirmDeleteTemplate(
+    BuildContext context,
+    Workout workout,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Workout'),
+        content: Text(
+          'Are you sure you want to delete "${workout.name}"? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _deleteTemplate(context, workout);
+    }
+  }
+
+  Future<void> _deleteTemplate(
+    BuildContext context,
+    Workout workout,
+  ) async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) {
+      _showMessage(context, 'Sign in to manage workouts.');
+      return;
+    }
+    try {
+      await ref.read(workoutRepositoryProvider).deleteWorkout(workout.id);
+      if (!context.mounted) return;
+      _showMessage(context, 'Workout deleted.');
+    } catch (error) {
+      if (!context.mounted) return;
+      _showMessage(context, 'Failed to delete workout. Please try again.');
     }
   }
 
@@ -602,7 +694,7 @@ class _MyRoutinesScreenState extends ConsumerState<MyRoutinesScreen> {
 
 enum _RoutineAction { remove, share }
 
-enum _TemplateAction { open }
+enum _TemplateAction { open, delete }
 
 class _RoutineItem {
   const _RoutineItem({required this.workout, required this.saved});

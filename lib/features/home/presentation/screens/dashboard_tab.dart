@@ -410,10 +410,10 @@ class _DashboardTabState extends ConsumerState<DashboardTab>
       QuickAction.logWorkout(() => context.push(RouteConstants.logActivity)),
       QuickAction.aiCoach(() => context.push(RouteConstants.aiCoach)),
       QuickAction.planWeek(() => context.push(RouteConstants.goals)), // Plan → Goals
-      QuickAction.unity(() => _openHomeTab(2, RouteConstants.unity)), // Unity tab
+      QuickAction.unity(() => _openHomeTab(4, RouteConstants.unity)), // Unity tab (index 4)
       QuickAction.checkIn(() => context.push(RouteConstants.logMoodEnergy)),
       QuickAction.health(() => context.push(RouteConstants.healthDetails)),
-      QuickAction.progress(() => _openHomeTab(4, RouteConstants.progress)),
+      QuickAction.progress(() => _openHomeTab(3, RouteConstants.progress)), // Progress tab (index 3)
     ];
 
     return QuickActionsRow(actions: actions);

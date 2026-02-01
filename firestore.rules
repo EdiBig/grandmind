@@ -53,135 +53,147 @@ service cloud.firestore {
                      resource.data.createdBy == null);
       allow create: if isAuthenticated() &&
                      request.resource.data.createdBy == request.auth.uid;
-      allow update, delete: if isAuthenticated() &&
-                              resource.data.createdBy == request.auth.uid &&
-                              isCreatedByImmutable();
+      allow update: if isAuthenticated() &&
+                      resource.data.createdBy == request.auth.uid &&
+                      isCreatedByImmutable();
+      allow delete: if isAuthenticated() && resource.data.createdBy == request.auth.uid;
     }
 
     // Workout logs collection - users can only access their own workout logs
     match /workout_logs/{logId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() &&
-                              resource.data.userId == request.auth.uid &&
-                              isUserIdImmutable();
+      allow update: if isAuthenticated() &&
+                      resource.data.userId == request.auth.uid &&
+                      isUserIdImmutable();
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
     // Habits collection - users can only access their own habits
     match /habits/{habitId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() &&
-                              resource.data.userId == request.auth.uid &&
-                              isUserIdImmutable();
+      allow update: if isAuthenticated() &&
+                      resource.data.userId == request.auth.uid &&
+                      isUserIdImmutable();
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
     // Habit logs collection - users can only access their own habit logs
     match /habit_logs/{logId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() &&
-                              resource.data.userId == request.auth.uid &&
-                              isUserIdImmutable();
+      allow update: if isAuthenticated() &&
+                      resource.data.userId == request.auth.uid &&
+                      isUserIdImmutable();
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
     // Progress collection - users can only access their own progress
     match /progress/{progressId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() &&
-                              resource.data.userId == request.auth.uid &&
-                              isUserIdImmutable();
+      allow update: if isAuthenticated() &&
+                      resource.data.userId == request.auth.uid &&
+                      isUserIdImmutable();
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
     // Health data collection - users can only access their own health data
     match /health_data/{healthId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() &&
-                              resource.data.userId == request.auth.uid &&
-                              isUserIdImmutable();
+      allow update: if isAuthenticated() &&
+                      resource.data.userId == request.auth.uid &&
+                      isUserIdImmutable();
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
     // Weight entries collection - users can only access their own weight data
     match /weight_entries/{entryId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() &&
-                              resource.data.userId == request.auth.uid &&
-                              isUserIdImmutable();
+      allow update: if isAuthenticated() &&
+                      resource.data.userId == request.auth.uid &&
+                      isUserIdImmutable();
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
     // Measurement entries collection - users can only access their own measurements
     match /measurement_entries/{entryId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() &&
-                              resource.data.userId == request.auth.uid &&
-                              isUserIdImmutable();
+      allow update: if isAuthenticated() &&
+                      resource.data.userId == request.auth.uid &&
+                      isUserIdImmutable();
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
     // Progress photos collection - users can only access their own photos
     match /progress_photos/{photoId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() &&
-                              resource.data.userId == request.auth.uid &&
-                              isUserIdImmutable();
+      allow update: if isAuthenticated() &&
+                      resource.data.userId == request.auth.uid &&
+                      isUserIdImmutable();
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
     // Progress goals collection - users can only access their own goals
     match /progress_goals/{goalId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() &&
-                              resource.data.userId == request.auth.uid &&
-                              isUserIdImmutable();
+      allow update: if isAuthenticated() &&
+                      resource.data.userId == request.auth.uid &&
+                      isUserIdImmutable();
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
     // Notification schedules collection - users can only access their own schedules
     match /notification_schedules/{scheduleId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() &&
-                              resource.data.userId == request.auth.uid &&
-                              isUserIdImmutable();
+      allow update: if isAuthenticated() &&
+                      resource.data.userId == request.auth.uid &&
+                      isUserIdImmutable();
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
     // Notification logs collection - users can only read their own logs
     match /notification_logs/{logId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow delete: if isAuthenticated() &&
-                     resource.data.userId == request.auth.uid &&
-                     isUserIdImmutable();
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
     // Meals collection - users can only access their own meals
     match /meals/{mealId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() &&
-                              resource.data.userId == request.auth.uid &&
-                              isUserIdImmutable();
+      allow update: if isAuthenticated() &&
+                      resource.data.userId == request.auth.uid &&
+                      isUserIdImmutable();
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
     // Water logs collection - users can only access their own water logs
     match /water_logs/{logId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() &&
-                              resource.data.userId == request.auth.uid &&
-                              isUserIdImmutable();
+      allow update: if isAuthenticated() &&
+                      resource.data.userId == request.auth.uid &&
+                      isUserIdImmutable();
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
     // Nutrition goals collection - users can only access their own goals
     match /nutrition_goals/{goalId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() &&
-                              resource.data.userId == request.auth.uid &&
-                              isUserIdImmutable();
+      allow update: if isAuthenticated() &&
+                      resource.data.userId == request.auth.uid &&
+                      isUserIdImmutable();
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
     // Food items collection - read: own items OR shared/public foods, write: only owner
@@ -193,72 +205,80 @@ service cloud.firestore {
         resource.data.userId == null
       );
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() &&
-                              resource.data.userId == request.auth.uid &&
-                              isUserIdImmutable();
+      allow update: if isAuthenticated() &&
+                      resource.data.userId == request.auth.uid &&
+                      isUserIdImmutable();
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
-    // Saved workouts collection - users can only access their own saved items  
+    // Saved workouts collection - users can only access their own saved items
     match /user_saved_workouts/{savedWorkoutId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() &&
-                              resource.data.userId == request.auth.uid &&
-                              isUserIdImmutable();
+      allow update: if isAuthenticated() &&
+                      resource.data.userId == request.auth.uid &&
+                      isUserIdImmutable();
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
     // Mood & energy logs collection
     match /mood_energy_logs/{logId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() &&
-                              resource.data.userId == request.auth.uid &&
-                              isUserIdImmutable();
+      allow update: if isAuthenticated() &&
+                      resource.data.userId == request.auth.uid &&
+                      isUserIdImmutable();
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
     // Sleep logs collection - users can only access their own sleep logs
     match /sleep_logs/{logId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() &&
-                              resource.data.userId == request.auth.uid &&
-                              isUserIdImmutable();
+      allow update: if isAuthenticated() &&
+                      resource.data.userId == request.auth.uid &&
+                      isUserIdImmutable();
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
     // AI cache collection - users can only access their own cached responses
     match /ai_cache/{cacheId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() &&
-                              resource.data.userId == request.auth.uid &&
-                              isUserIdImmutable();
+      allow update: if isAuthenticated() &&
+                      resource.data.userId == request.auth.uid &&
+                      isUserIdImmutable();
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
     // AI conversations collection - users can only access their own conversations
     match /ai_conversations/{conversationId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() &&
-                              resource.data.userId == request.auth.uid &&
-                              isUserIdImmutable();
+      allow update: if isAuthenticated() &&
+                      resource.data.userId == request.auth.uid &&
+                      isUserIdImmutable();
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
     // Personal bests collection - users can only access their own personal bests
     match /personal_bests/{bestId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() &&
-                              resource.data.userId == request.auth.uid &&
-                              isUserIdImmutable();
+      allow update: if isAuthenticated() &&
+                      resource.data.userId == request.auth.uid &&
+                      isUserIdImmutable();
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
     // Milestones collection - users can only access their own milestones
     match /milestones/{milestoneId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() &&
-                              resource.data.userId == request.auth.uid &&
-                              isUserIdImmutable();
+      allow update: if isAuthenticated() &&
+                      resource.data.userId == request.auth.uid &&
+                      isUserIdImmutable();
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
     // Sync status collection - read-only for authenticated users (written by Cloud Functions)
@@ -307,9 +327,10 @@ service cloud.firestore {
     match /challengeParticipants/{participantId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() &&
-                              resource.data.userId == request.auth.uid &&
-                              isUserIdImmutable();
+      allow update: if isAuthenticated() &&
+                      resource.data.userId == request.auth.uid &&
+                      isUserIdImmutable();
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
     // Challenge consents collection - GDPR consent tracking
@@ -358,9 +379,10 @@ service cloud.firestore {
     match /challengeProgress/{progressId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() &&
-                              resource.data.userId == request.auth.uid &&
-                              isUserIdImmutable();
+      allow update: if isAuthenticated() &&
+                      resource.data.userId == request.auth.uid &&
+                      isUserIdImmutable();
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
     // Challenge milestones

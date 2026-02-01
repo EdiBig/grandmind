@@ -79,6 +79,7 @@ class _HabitHistoryScreenState extends ConsumerState<HabitHistoryScreen> {
   Map<String, Habit> _habitsMap = {};
   List<HabitLog> _logs = [];
   bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -94,41 +95,58 @@ class _HabitHistoryScreenState extends ConsumerState<HabitHistoryScreen> {
   }
 
   Future<void> _loadData() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
 
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) {
-      setState(() => _isLoading = false);
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Please sign in to view history.';
+      });
       return;
     }
 
-    final repository = ref.read(habitRepositoryProvider);
+    try {
+      final repository = ref.read(habitRepositoryProvider);
 
-    // Load habits for display
-    final habits = await repository.getUserHabits(userId);
-    _habitsMap = {for (var h in habits) h.id: h};
+      // Load habits for display
+      final habits = await repository.getUserHabits(userId);
+      _habitsMap = {for (var h in habits) h.id: h};
 
-    // Load specific habit if provided
-    if (widget.habitId != null) {
-      _habit = await repository.getHabit(widget.habitId!);
+      // Load specific habit if provided
+      if (widget.habitId != null) {
+        _habit = await repository.getHabit(widget.habitId!);
+      }
+
+      // Load logs
+      if (widget.habitId != null) {
+        _logs = await repository.getHabitLogs(
+          widget.habitId!,
+          userId,
+          startDate: _startDate,
+          endDate: _endDate,
+        );
+      } else {
+        _logs = await repository.getUserHabitLogsInRange(userId, _startDate, _endDate);
+      }
+
+      // Sort by date descending
+      _logs.sort((a, b) => b.date.compareTo(a.date));
+
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Failed to load history. Please try again.';
+        });
+      }
     }
-
-    // Load logs
-    if (widget.habitId != null) {
-      _logs = await repository.getHabitLogs(
-        widget.habitId!,
-        userId,
-        startDate: _startDate,
-        endDate: _endDate,
-      );
-    } else {
-      _logs = await repository.getUserHabitLogsInRange(userId, _startDate, _endDate);
-    }
-
-    // Sort by date descending
-    _logs.sort((a, b) => b.date.compareTo(a.date));
-
-    setState(() => _isLoading = false);
   }
 
   Future<void> _selectDateRange() async {
@@ -253,11 +271,52 @@ class _HabitHistoryScreenState extends ConsumerState<HabitHistoryScreen> {
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : _logs.isEmpty
-                    ? _buildEmptyState(theme)
-                    : _buildLogsList(theme),
+                : _errorMessage != null
+                    ? _buildErrorState(theme)
+                    : _logs.isEmpty
+                        ? _buildEmptyState(theme)
+                        : _buildLogsList(theme),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(ThemeData theme) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: theme.colorScheme.error.withValues(alpha: 0.7),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Something went wrong',
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _errorMessage ?? 'An error occurred',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: _loadData,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Try Again'),
+            ),
+          ],
+        ),
       ),
     );
   }
