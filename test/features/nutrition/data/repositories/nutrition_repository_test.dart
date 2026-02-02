@@ -1,8 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kinesa/features/nutrition/domain/models/meal.dart';
-import 'package:kinesa/features/nutrition/domain/models/water_log.dart';
 import 'package:kinesa/features/nutrition/domain/models/food_item.dart';
-import 'package:kinesa/features/nutrition/domain/models/nutrition_goal.dart';
 import 'package:kinesa/features/nutrition/domain/models/daily_nutrition_summary.dart';
 import '../../../../helpers/test_fixtures.dart';
 
