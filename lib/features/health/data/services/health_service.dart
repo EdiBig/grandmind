@@ -2,6 +2,7 @@ import 'package:health/health.dart';
 import 'package:flutter/foundation.dart';
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../domain/models/health_data.dart';
 
 /// Service for managing health data integration with HealthKit (iOS) and Health Connect (Android)
@@ -165,20 +166,72 @@ class HealthService {
     return false;
   }
 
-  /// Check if we have authorization
+  /// Open system settings to allow users to enable health permissions
+  /// On iOS, opens the Health app settings; on Android, opens Health Connect settings
+  Future<bool> openHealthSettings() async {
+    if (kIsWeb) return false;
+
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      // On iOS, open the Settings app to the Health section
+      // Users can then navigate to Kinesa to enable permissions
+      try {
+        final uri = Uri.parse('app-settings:');
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri);
+          return true;
+        }
+        // Fallback: try opening Health app directly
+        final healthUri = Uri.parse('x-apple-health://');
+        if (await canLaunchUrl(healthUri)) {
+          await launchUrl(healthUri);
+          return true;
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('Error opening iOS settings: $e');
+        }
+      }
+      return false;
+    }
+
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return await openHealthConnectSettings();
+    }
+
+    return false;
+  }
+
+  /// Check if we have authorization for at least core health data types
+  /// Returns true if we have permission for steps (the minimum required)
   Future<bool> hasPermissions() async {
+    try {
+      await _configureFuture;
+      // Check if we have at least steps permission (core health data)
+      final stepsPermission = await _health.hasPermissions([HealthDataType.STEPS]);
+      return stepsPermission == true;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error checking health permissions: $e');
+      }
+      return false;
+    }
+  }
+
+  /// Check permissions for all requested types (more detailed check)
+  Future<Map<HealthDataType, bool>> getDetailedPermissions() async {
+    final permissions = <HealthDataType, bool>{};
     try {
       await _configureFuture;
       for (var type in _requestedTypes()) {
         final status = await _health.hasPermissions([type]);
-        if (status == null || !status) {
-          return false;
-        }
+        permissions[type] = status == true;
       }
-      return true;
     } catch (e) {
-      return false;
+      if (kDebugMode) {
+        debugPrint('Error checking detailed permissions: $e');
+      }
     }
+    return permissions;
   }
 
   /// Get steps for today

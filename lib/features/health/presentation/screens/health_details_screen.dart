@@ -592,15 +592,49 @@ class _HealthDetailsScreenState extends ConsumerState<HealthDetailsScreen>
                   ref
                       .read(healthSummaryProvider.notifier)
                       .refresh(force: true);
+                } else if (context.mounted) {
+                  // Permission request failed - show snackbar with option to open settings
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text(
+                        'Permission denied. Open Settings to enable health access.',
+                      ),
+                      duration: const Duration(seconds: 5),
+                      action: SnackBarAction(
+                        label: 'Settings',
+                        onPressed: () async {
+                          await healthService.openHealthSettings();
+                        },
+                      ),
+                    ),
+                  );
                 }
               },
-              icon: Icon(Icons.lock_open),
+              icon: const Icon(Icons.lock_open),
               label: const Text('Grant Access'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: AppColors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               ),
+            ),
+            const SizedBox(height: 16),
+            // Secondary button to open settings directly
+            TextButton.icon(
+              onPressed: () async {
+                final healthService = ref.read(healthServiceProvider);
+                await healthService.openHealthSettings();
+              },
+              icon: const Icon(Icons.settings),
+              label: const Text('Open Health Settings'),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'If you previously denied access, you may need to enable it in your device settings.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
