@@ -1,7 +1,7 @@
 /// Unity Data Models
 ///
 /// Export all Unity models for easy importing.
-library unity_models;
+library;
 
 export 'enums.dart';
 export 'challenge.dart';

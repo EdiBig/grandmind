@@ -27,7 +27,8 @@ class TierSelectionCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: isSelected ? color : theme.colorScheme.outline.withOpacity(0.3),
+          color:
+              isSelected ? color : theme.colorScheme.outline.withOpacity(0.3),
           width: isSelected ? 2 : 1,
         ),
       ),
@@ -82,7 +83,7 @@ class TierSelectionCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      '${tierConfig!.targetValue.toStringAsFixed(0)}',
+                      tierConfig!.targetValue.toStringAsFixed(0),
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: color,

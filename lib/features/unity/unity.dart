@@ -7,7 +7,7 @@
 /// 1. Adaptive Participation - Challenges adjust to YOUR energy and capacity
 /// 2. Collaborative Over Competitive - Team goals > individual rankings
 /// 3. Privacy by Design - You control exactly what others see
-library unity;
+library;
 
 // Data Layer
 export 'data/models/models.dart';

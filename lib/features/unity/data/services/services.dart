@@ -1,7 +1,7 @@
 /// Unity Services
 ///
 /// Export all Unity services for easy importing.
-library unity_services;
+library;
 
 export 'challenge_progress_service.dart';
 export 'adaptive_challenge_service.dart';

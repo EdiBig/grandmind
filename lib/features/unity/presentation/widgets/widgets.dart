@@ -1,5 +1,5 @@
 /// Unity Widgets
-library unity_widgets;
+library;
 
 /// Export all Unity widgets for easy importing.
 /// These are reusable UI components for the Unity social fitness feature.

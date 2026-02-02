@@ -663,7 +663,7 @@ class _TierCard extends StatelessWidget {
         title: Text(tier.name),
         subtitle: Text(tier.description),
         trailing: Text(
-          '${tier.targetValue.toStringAsFixed(0)}',
+          tier.targetValue.toStringAsFixed(0),
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),

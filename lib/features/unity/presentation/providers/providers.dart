@@ -1,7 +1,7 @@
 /// Unity Providers
 ///
 /// Export all Unity Riverpod providers for easy importing.
-library unity_providers;
+library;
 
 export 'challenge_providers.dart';
 export 'circle_providers.dart';

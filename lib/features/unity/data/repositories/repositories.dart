@@ -1,7 +1,7 @@
 /// Unity Repositories
 ///
 /// Export all Unity repositories for easy importing.
-library unity_repositories;
+library;
 
 export 'challenge_repository.dart';
 export 'participation_repository.dart';

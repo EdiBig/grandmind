@@ -58,7 +58,8 @@ class MilestoneBadge extends StatelessWidget {
                     milestone.description,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: isUnlocked
-                          ? theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.7)
+                          ? theme.colorScheme.onPrimaryContainer
+                              .withValues(alpha: 0.7)
                           : theme.colorScheme.outline,
                     ),
                   ),
@@ -66,7 +67,7 @@ class MilestoneBadge extends StatelessWidget {
             ),
           ),
           Text(
-            '${milestone.targetValue.toStringAsFixed(0)}',
+            milestone.targetValue.toStringAsFixed(0),
             style: theme.textTheme.labelMedium?.copyWith(
               color: isUnlocked
                   ? theme.colorScheme.primary

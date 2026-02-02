@@ -1,7 +1,7 @@
 /// Unity Screens
 ///
 /// Export all Unity screens for easy importing.
-library unity_screens;
+library;
 
 export 'unity_hub_screen.dart';
 export 'challenge_detail_screen.dart';

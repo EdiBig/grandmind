@@ -18,7 +18,8 @@ class ProgressPortraitScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final challengeAsync = ref.watch(challengeByIdProvider(challengeId));
-    final participantsAsync = ref.watch(challengeParticipantsProvider(challengeId));
+    final participantsAsync =
+        ref.watch(challengeParticipantsProvider(challengeId));
 
     return Scaffold(
       appBar: AppBar(
@@ -57,9 +58,8 @@ class ProgressPortraitScreen extends ConsumerWidget {
       0,
       (sum, p) => sum + p.currentProgress,
     );
-    final averageProgress = participants.isNotEmpty
-        ? totalProgress / participants.length
-        : 0.0;
+    final averageProgress =
+        participants.isNotEmpty ? totalProgress / participants.length : 0.0;
     final collectiveGoal = challenge.goal.targetValue * participants.length;
     final collectivePercentage =
         collectiveGoal > 0 ? (totalProgress / collectiveGoal * 100) : 0.0;
@@ -69,7 +69,8 @@ class ProgressPortraitScreen extends ConsumerWidget {
         participants.where((p) => !p.whisperModeEnabled).toList();
 
     // Sort by progress for visualization (but don't show rankings)
-    visibleParticipants.sort((a, b) => b.percentComplete.compareTo(a.percentComplete));
+    visibleParticipants
+        .sort((a, b) => b.percentComplete.compareTo(a.percentComplete));
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -151,7 +152,7 @@ class ProgressPortraitScreen extends ConsumerWidget {
               Expanded(
                 child: _StatCard(
                   icon: Icons.trending_up,
-                  value: '${averageProgress.toStringAsFixed(0)}',
+                  value: averageProgress.toStringAsFixed(0),
                   label: 'Avg ${challenge.goal.effectiveUnit}',
                 ),
               ),
@@ -398,8 +399,7 @@ class _ParticipantProgressBar extends StatelessWidget {
                 child: LinearProgressIndicator(
                   value: progress.clamp(0.0, 1.0),
                   minHeight: 24,
-                  backgroundColor:
-                      theme.colorScheme.surfaceContainerHighest,
+                  backgroundColor: theme.colorScheme.surfaceContainerHighest,
                   valueColor: AlwaysStoppedAnimation(color.withOpacity(0.8)),
                 ),
               ),

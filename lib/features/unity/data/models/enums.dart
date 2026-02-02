@@ -2,7 +2,7 @@
 ///
 /// Core enumerations for the Unity social fitness feature.
 /// "Progress together, at your own pace"
-library unity_enums;
+library;
 
 /// Types of challenges available in Unity
 enum ChallengeType {
@@ -338,9 +338,10 @@ extension ParticipationStatusExtension on ParticipationStatus {
   }
 
   bool get isActive => this == ParticipationStatus.active;
-  bool get isEnded => this == ParticipationStatus.completed ||
-                      this == ParticipationStatus.withdrawn ||
-                      this == ParticipationStatus.disqualified;
+  bool get isEnded =>
+      this == ParticipationStatus.completed ||
+      this == ParticipationStatus.withdrawn ||
+      this == ParticipationStatus.disqualified;
   bool get canContribute => this == ParticipationStatus.active;
 }
 
