@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:go_router/go_router.dart';
+import 'package:health/health.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/route_constants.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -552,93 +554,198 @@ class _HealthDetailsScreenState extends ConsumerState<HealthDetailsScreen>
   }
 
   Widget _buildPermissionRequired(BuildContext context) {
+    final isAndroid = defaultTargetPlatform == TargetPlatform.android;
+    final healthConnectStatusAsync = isAndroid
+        ? ref.watch(healthConnectStatusProvider)
+        : const AsyncValue<HealthConnectSdkStatus?>.data(null);
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.health_and_safety,
-              size: 80,
-              color: Theme.of(context).colorScheme.outline,
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Health Permissions Required',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'To view your health details, please grant access to your health data.',
-              style: Theme.of(context).textTheme.bodyMedium,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: () async {
-                final healthService = ref.read(healthServiceProvider);
-                final granted = await healthService.requestAuthorization();
-
-                if (granted && context.mounted) {
-                  ref.invalidate(healthPermissionsProvider);
-                  await _runHealthSync();
-                  ref.invalidate(weeklyHealthStatsProvider);
-                  ref.invalidate(syncedTodayHealthDataProvider);
-                  ref.invalidate(dailyHealthPointsProvider);
-                  ref
-                      .read(healthSummaryProvider.notifier)
-                      .refresh(force: true);
-                } else if (context.mounted) {
-                  // Permission request failed - show snackbar with option to open settings
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text(
-                        'Permission denied. Open Settings to enable health access.',
-                      ),
-                      duration: const Duration(seconds: 5),
-                      action: SnackBarAction(
-                        label: 'Settings',
-                        onPressed: () async {
-                          await healthService.openHealthSettings();
-                        },
-                      ),
-                    ),
-                  );
-                }
-              },
-              icon: const Icon(Icons.lock_open),
-              label: const Text('Grant Access'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: AppColors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.health_and_safety,
+                size: 80,
+                color: Theme.of(context).colorScheme.outline,
               ),
-            ),
-            const SizedBox(height: 16),
-            // Secondary button to open settings directly
-            TextButton.icon(
-              onPressed: () async {
-                final healthService = ref.read(healthServiceProvider);
-                await healthService.openHealthSettings();
-              },
-              icon: const Icon(Icons.settings),
-              label: const Text('Open Health Settings'),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'If you previously denied access, you may need to enable it in your device settings.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.outline,
-                  ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+              const SizedBox(height: 24),
+
+              // Check if Health Connect needs to be installed (Android only)
+              if (isAndroid)
+                healthConnectStatusAsync.when(
+                  data: (status) {
+                    if (status != null &&
+                        status != HealthConnectSdkStatus.sdkAvailable) {
+                      return _buildHealthConnectRequired(context, status);
+                    }
+                    return _buildPermissionRequestUI(context);
+                  },
+                  loading: () => const CircularProgressIndicator(),
+                  error: (_, __) => _buildPermissionRequestUI(context),
+                )
+              else
+                _buildPermissionRequestUI(context),
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildHealthConnectRequired(
+      BuildContext context, HealthConnectSdkStatus status) {
+    final healthService = ref.read(healthServiceProvider);
+
+    String title;
+    String description;
+    String buttonText;
+
+    switch (status) {
+      case HealthConnectSdkStatus.sdkUnavailable:
+        title = 'Health Connect Not Available';
+        description =
+            'Your device does not support Health Connect. Please update your Android system or use a compatible device.';
+        buttonText = 'Check Again';
+        break;
+      case HealthConnectSdkStatus.sdkUnavailableProviderUpdateRequired:
+        title = 'Health Connect Update Required';
+        description =
+            'Please update the Health Connect app from the Play Store to use health features.';
+        buttonText = 'Install/Update';
+        break;
+      default:
+        title = 'Health Connect Required';
+        description =
+            'Please install Health Connect from the Play Store to sync your health data.';
+        buttonText = 'Install Health Connect';
+    }
+
+    return Column(
+      children: [
+        Text(
+          title,
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 16),
+        Text(
+          description,
+          style: Theme.of(context).textTheme.bodyMedium,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 32),
+        ElevatedButton.icon(
+          onPressed: () async {
+            await healthService.installHealthConnect();
+            // Refresh status after attempting install
+            if (context.mounted) {
+              ref.invalidate(healthConnectStatusProvider);
+              ref.invalidate(healthPermissionsProvider);
+            }
+          },
+          icon: const Icon(Icons.download),
+          label: Text(buttonText),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            foregroundColor: AppColors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+          ),
+        ),
+        const SizedBox(height: 16),
+        TextButton.icon(
+          onPressed: () {
+            ref.invalidate(healthConnectStatusProvider);
+            ref.invalidate(healthPermissionsProvider);
+          },
+          icon: const Icon(Icons.refresh),
+          label: const Text('Check Again'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPermissionRequestUI(BuildContext context) {
+    final isAndroid = defaultTargetPlatform == TargetPlatform.android;
+    final healthSourceName = isAndroid ? 'Health Connect' : 'Apple Health';
+
+    return Column(
+      children: [
+        Text(
+          'Health Permissions Required',
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'To view your health details, please grant Kinesa access to $healthSourceName.',
+          style: Theme.of(context).textTheme.bodyMedium,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 32),
+        ElevatedButton.icon(
+          onPressed: () async {
+            final healthService = ref.read(healthServiceProvider);
+            final granted = await healthService.requestAuthorization();
+
+            if (granted && context.mounted) {
+              ref.invalidate(healthPermissionsProvider);
+              await _runHealthSync();
+              ref.invalidate(weeklyHealthStatsProvider);
+              ref.invalidate(syncedTodayHealthDataProvider);
+              ref.invalidate(dailyHealthPointsProvider);
+              ref.read(healthSummaryProvider.notifier).refresh(force: true);
+            } else if (context.mounted) {
+              // Permission request failed - show snackbar with option to open settings
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Permission denied. Open $healthSourceName settings to enable access.',
+                  ),
+                  duration: const Duration(seconds: 5),
+                  action: SnackBarAction(
+                    label: 'Settings',
+                    onPressed: () async {
+                      await healthService.openHealthSettings();
+                    },
+                  ),
+                ),
+              );
+            }
+          },
+          icon: const Icon(Icons.lock_open),
+          label: const Text('Grant Access'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            foregroundColor: AppColors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Secondary button to open settings directly
+        TextButton.icon(
+          onPressed: () async {
+            final healthService = ref.read(healthServiceProvider);
+            await healthService.openHealthSettings();
+          },
+          icon: const Icon(Icons.settings),
+          label: Text('Open $healthSourceName Settings'),
+        ),
+        const SizedBox(height: 24),
+        Text(
+          'If you previously denied access, you may need to enable it in your device settings.',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.outline,
+              ),
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 
