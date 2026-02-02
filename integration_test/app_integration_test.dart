@@ -352,8 +352,12 @@ void main() {
       await tester.pumpAndSettle();
 
       final passwordField = find.byType(TextFormField).at(1);
-      final textFormField = tester.widget<TextFormField>(passwordField);
-      expect(textFormField.obscureText, isTrue);
+      final textField = find.descendant(
+        of: passwordField,
+        matching: find.byType(TextField),
+      );
+      final textFieldWidget = tester.widget<TextField>(textField);
+      expect(textFieldWidget.obscureText, isTrue);
     });
   });
 
