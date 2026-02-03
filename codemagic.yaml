@@ -82,3 +82,12 @@ workflows:
     artifacts:
       - build/**/outputs/**/*.apk
       - build/**/outputs/**/*.aab
+
+    publishing:
+      firebase:
+        firebase_service_account: $FIREBASE_SERVICE_ACCOUNT
+        android:
+          app_id: $FIREBASE_ANDROID_APP_ID
+          groups:
+            - testers
+          artifact_type: apk
